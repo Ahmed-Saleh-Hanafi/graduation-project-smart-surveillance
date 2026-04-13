@@ -10,3 +10,9 @@ __pycache__/
 # IDE/editor folders
 .vscode/
 .idea/
+=======
+.vs/
+node_modules/
+.angular/
+dist/
+
