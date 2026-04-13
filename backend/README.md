@@ -1,205 +1,79 @@
-# Smart Surveillance and Safety System - Backend
+Smart Surveillance System Backend
 
-## 📌 Overview
+<p align="center"> A scalable backend built with <b>ASP.NET Core</b> following <b>Clean Architecture</b> principles for a Smart Surveillance System. </p> <p align="center"> <img src="https://img.shields.io/badge/.NET-8.0-blueviolet?style=for-the-badge&logo=dotnet" /> <img src="https://img.shields.io/badge/Architecture-Clean%20Architecture-brightgreen?style=for-the-badge" /> <img src="https://img.shields.io/badge/Database-Entity%20Framework%20Core-blue?style=for-the-badge" /> <img src="https://img.shields.io/badge/Auth-Identity%20%26%20JWT-orange?style=for-the-badge" /> <img src="https://img.shields.io/badge/Status-In%20Development-yellow?style=for-the-badge" /> </p>
 
-The **Smart Surveillance and Safety System** is an AI-powered platform designed to enhance public safety through real-time monitoring, automated threat detection, and intelligent event analysis.
-
-Traditional surveillance systems rely heavily on manual monitoring, which leads to delayed responses and missed critical events. This project introduces an intelligent backend system that integrates **Artificial Intelligence, Computer Vision, and IoT** to detect abnormal and safety-critical activities in real-time.
 
 ---
 
-## 🚀 Key Features
+# 📂 Project Structure
 
-* 🔐 Authentication & Authorization (JWT-based)
-* 📡 Real-time event detection integration (AI models)
-* 🎥 Camera management system
-* 🌡️ Sensor integration (motion, smoke, gas, etc.)
-* 🚨 Real-time alerts & notifications
-* 🧠 Abnormal behavior detection (violence, theft, fire, etc.)
-* 🧍 Face recognition & identity verification
-* 📊 Event logging & history tracking
-* 📱 Dashboard support (Web & Mobile APIs)
-* ⚡ Scalable and modular architecture
+This project follows a **Clean Architecture** approach.
 
----
+## 🧱 Overall Structure
 
-## 🧱 Architecture
-
-This project follows **Clean Architecture** to ensure scalability, maintainability, and separation of concerns.
-
-### Layers:
-
-* **Domain Layer**
-
-  * Core business logic
-  * Entities & Value Objects
-  * Interfaces (contracts)
-
-* **Application Layer**
-
-  * Use Cases / Services
-  * DTOs
-  * Validation
-  * Business rules
-
-* **Infrastructure Layer**
-
-  * Database access (EF Core)
-  * External services integration
-  * File storage / logging
-
-* **API Layer**
-
-  * Controllers
-  * Endpoints
-  * Middleware
-  * Swagger configuration
-
----
-
-## 🛠️ Technologies Used
-
-* ASP.NET Core
-* Entity Framework Core
-* SQL Server
-* JWT Authentication
-* AutoMapper
-* MediatR (CQRS Pattern)
-* FluentValidation
-* Swagger (OpenAPI)
-* Logging & Exception Handling Middleware
-
----
-
-## 🤖 AI & Detection Capabilities
-
-The system integrates with AI models to detect:
-
-* Violence & abuse
-* Theft & robbery
-* Fire & smoke
-* Explosions
-* Weapon detection
-* Vandalism
-* Restricted-area breaches
-* Suspicious/abnormal behavior
-* Face recognition & identity verification
-
----
-
-## 📊 Datasets
-
-* **UCF-Crime Dataset** + curated videos (~4,500 samples)
-* Image datasets (~10,000 samples) from:
-
-  * Kaggle
-  * Hugging Face
-
-These datasets improve detection accuracy and reduce false positives.
-
----
-
-## 🔄 System Workflow
-
-1. Cameras stream video to edge devices
-2. AI models analyze video in real-time
-3. If abnormal activity is detected:
-
-   * A probability score is generated
-   * If threshold exceeded → event triggered
-4. Relevant video segment + metadata sent to backend
-5. Backend:
-
-   * Stores event
-   * Triggers alerts
-   * Sends data to dashboard
-
----
-
-## ⚙️ Getting Started
-
-### Prerequisites
-
-* .NET SDK
-* SQL Server
-* Visual Studio / VS Code
-
-### Installation
-
-```bash
-git clone <your-repo-link>
-cd <project-folder>
 ```
-
-### Apply Migrations
-
-```bash
-dotnet ef database update
-```
-
-### Run the Project
-
-```bash
-dotnet run
+Solution 'Smart_Surveillance'
+│
+├── Application
+│   ├── Dto
+│   ├── Interfaces
+│   └── Services
+│
+├── Domain
+│   ├── Entities
+│   └── Enums
+│
+├── Infrastructure
+│   └── Data
+│       ├── Configurations
+│       ├── ApplicationDbContext.cs
+│       └── Migrations
+│
+└── Smart_Surveillance (API)
+    ├── Controllers
+    ├── appsettings.json
+    └── Program.cs
 ```
 
 ---
 
-## 🔐 Configuration
+## 🧩 Layer Responsibilities
 
-Update `appsettings.json`:
+### 🔹 Application Layer
 
-```json
-"ConnectionStrings": {
-  "DefaultConnection": "your_connection_string"
-},
-"Jwt": {
-  "Key": "your_secret_key",
-  "Issuer": "your_issuer",
-  "Audience": "your_audience"
-}
-```
+Contains business logic and application rules.
+
+* **Dto** → Request/response models
+* **Interfaces** → Service & repository contracts
+* **Services** → Business logic implementation
 
 ---
 
-## 📡 API Documentation
+### 🔹 Domain Layer
 
-Swagger UI will be available at:
+Core of the system (pure business models).
 
-```
-https://localhost:<port>/swagger
-```
-
----
-
-## 📁 Project Structure
-
-```
-/src
- ├── Domain
- ├── Application
- ├── Infrastructure
- └── API
-```
+* **Entities** → Main domain models
+* **Enums** → Constant values
 
 ---
 
-## 📈 Future Improvements
+### 🔹 Infrastructure Layer
 
-* Real-time notifications (SignalR)
-* AI model optimization
-* Cloud deployment (Azure / AWS)
-* Microservices architecture
-* Advanced analytics dashboard
+Handles database and external systems.
 
----
-
-## 👨‍💻 Contributors
-
-* Backend Team
+* **Configurations** → EF Core entity configurations
+* **ApplicationDbContext** → Database context
+* **Migrations** → Database schema changes
 
 ---
 
-## 📄 License
+### 🔹 API Layer (Smart_Surveillance)
 
-This project is for educational and research purposes.
+Entry point of the application.
+
+* **Controllers** → API endpoints
+* **appsettings.json** → Configuration settings
+* **Program.cs** → Startup configuration
+
+
