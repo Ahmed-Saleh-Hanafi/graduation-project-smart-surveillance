@@ -1,6 +1,0 @@
-<Solution>
-  <Project Path="Application/Application.csproj" Id="6e87d2fb-43d7-4bd2-b8e7-5c78abb58369" />
-  <Project Path="Domain/Domain.csproj" Id="fd3a1a4b-4c44-481e-9cb9-9c9d4b499d03" />
-  <Project Path="Infrastructure/Infrastructure.csproj" Id="112bd363-d732-46bc-a634-761e839e56da" />
-  <Project Path="SmartSurviellance/SmartSurviellance.csproj" />
-</Solution>
