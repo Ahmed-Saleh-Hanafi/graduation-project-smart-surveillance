@@ -1,0 +1,12 @@
+F:\Smart_Surviellance_System\graduation-project-smart-surveillance\backend\Smart_Surviellance\Domain\bin\Debug\net10.0\Domain.deps.json
+F:\Smart_Surviellance_System\graduation-project-smart-surveillance\backend\Smart_Surviellance\Domain\bin\Debug\net10.0\Domain.dll
+F:\Smart_Surviellance_System\graduation-project-smart-surveillance\backend\Smart_Surviellance\Domain\bin\Debug\net10.0\Domain.pdb
+F:\Smart_Surviellance_System\graduation-project-smart-surveillance\backend\Smart_Surviellance\Domain\obj\Debug\net10.0\Domain.csproj.AssemblyReference.cache
+F:\Smart_Surviellance_System\graduation-project-smart-surveillance\backend\Smart_Surviellance\Domain\obj\Debug\net10.0\Domain.GeneratedMSBuildEditorConfig.editorconfig
+F:\Smart_Surviellance_System\graduation-project-smart-surveillance\backend\Smart_Surviellance\Domain\obj\Debug\net10.0\Domain.AssemblyInfoInputs.cache
+F:\Smart_Surviellance_System\graduation-project-smart-surveillance\backend\Smart_Surviellance\Domain\obj\Debug\net10.0\Domain.AssemblyInfo.cs
+F:\Smart_Surviellance_System\graduation-project-smart-surveillance\backend\Smart_Surviellance\Domain\obj\Debug\net10.0\Domain.csproj.CoreCompileInputs.cache
+F:\Smart_Surviellance_System\graduation-project-smart-surveillance\backend\Smart_Surviellance\Domain\obj\Debug\net10.0\Domain.dll
+F:\Smart_Surviellance_System\graduation-project-smart-surveillance\backend\Smart_Surviellance\Domain\obj\Debug\net10.0\refint\Domain.dll
+F:\Smart_Surviellance_System\graduation-project-smart-surveillance\backend\Smart_Surviellance\Domain\obj\Debug\net10.0\Domain.pdb
+F:\Smart_Surviellance_System\graduation-project-smart-surveillance\backend\Smart_Surviellance\Domain\obj\Debug\net10.0\ref\Domain.dll

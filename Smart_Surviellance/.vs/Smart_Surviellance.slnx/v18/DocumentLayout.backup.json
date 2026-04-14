@@ -1,0 +1,130 @@
+{
+  "Version": 1,
+  "WorkspaceRootPath": "F:\\Smart_Surviellance_System\\graduation-project-smart-surveillance\\backend\\Smart_Surviellance\\",
+  "Documents": [
+    {
+      "AbsoluteMoniker": "D:0:0:{F80C4E72-27A0-12B5-0634-DD5C11CFB0C1}|Application\\Application.csproj|f:\\smart_surviellance_system\\graduation-project-smart-surveillance\\backend\\smart_surviellance\\application\\services\\implementations\\authservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{F80C4E72-27A0-12B5-0634-DD5C11CFB0C1}|Application\\Application.csproj|solutionrelative:application\\services\\implementations\\authservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{F80C4E72-27A0-12B5-0634-DD5C11CFB0C1}|Application\\Application.csproj|f:\\smart_surviellance_system\\graduation-project-smart-surveillance\\backend\\smart_surviellance\\application\\dto\\authresponsedto.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{F80C4E72-27A0-12B5-0634-DD5C11CFB0C1}|Application\\Application.csproj|solutionrelative:application\\dto\\authresponsedto.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{F80C4E72-27A0-12B5-0634-DD5C11CFB0C1}|Application\\Application.csproj|f:\\smart_surviellance_system\\graduation-project-smart-surveillance\\backend\\smart_surviellance\\application\\common\\apiresponse.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{F80C4E72-27A0-12B5-0634-DD5C11CFB0C1}|Application\\Application.csproj|solutionrelative:application\\common\\apiresponse.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{F80C4E72-27A0-12B5-0634-DD5C11CFB0C1}|Application\\Application.csproj|f:\\smart_surviellance_system\\graduation-project-smart-surveillance\\backend\\smart_surviellance\\application\\dto\\registerdto.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{F80C4E72-27A0-12B5-0634-DD5C11CFB0C1}|Application\\Application.csproj|solutionrelative:application\\dto\\registerdto.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{E528BBC3-1C26-8C35-F682-23718816ADCD}|Domain\\Domain.csproj|f:\\smart_surviellance_system\\graduation-project-smart-surveillance\\backend\\smart_surviellance\\domain\\entities\\user.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{E528BBC3-1C26-8C35-F682-23718816ADCD}|Domain\\Domain.csproj|solutionrelative:domain\\entities\\user.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{E4B829AE-2152-EE94-3053-23C277B450BA}|Smart_Surviellance\\Smart_Surviellance.csproj|f:\\smart_surviellance_system\\graduation-project-smart-surveillance\\backend\\smart_surviellance\\smart_surviellance\\controllers\\accountcontroller.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{E4B829AE-2152-EE94-3053-23C277B450BA}|Smart_Surviellance\\Smart_Surviellance.csproj|solutionrelative:smart_surviellance\\controllers\\accountcontroller.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    }
+  ],
+  "DocumentGroupContainers": [
+    {
+      "Orientation": 0,
+      "VerticalTabListWidth": 256,
+      "DocumentGroups": [
+        {
+          "DockedWidth": 200,
+          "SelectedChildIndex": 5,
+          "Children": [
+            {
+              "$type": "Document",
+              "DocumentIndex": 2,
+              "Title": "ApiResponse.cs",
+              "DocumentMoniker": "F:\\Smart_Surviellance_System\\graduation-project-smart-surveillance\\backend\\Smart_Surviellance\\Application\\Common\\ApiResponse.cs",
+              "RelativeDocumentMoniker": "Application\\Common\\ApiResponse.cs",
+              "ToolTip": "F:\\Smart_Surviellance_System\\graduation-project-smart-surveillance\\backend\\Smart_Surviellance\\Application\\Common\\ApiResponse.cs",
+              "RelativeToolTip": "Application\\Common\\ApiResponse.cs",
+              "ViewState": "AgIAAAkAAAAAAAAAAAA1wA0AAAAtAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-04-14T14:39:07.883Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 1,
+              "Title": "AuthResponseDto.cs",
+              "DocumentMoniker": "F:\\Smart_Surviellance_System\\graduation-project-smart-surveillance\\backend\\Smart_Surviellance\\Application\\Dto\\AuthResponseDto.cs",
+              "RelativeDocumentMoniker": "Application\\Dto\\AuthResponseDto.cs",
+              "ToolTip": "F:\\Smart_Surviellance_System\\graduation-project-smart-surveillance\\backend\\Smart_Surviellance\\Application\\Dto\\AuthResponseDto.cs",
+              "RelativeToolTip": "Application\\Dto\\AuthResponseDto.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-04-14T14:38:42.962Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Bookmark",
+              "Name": "ST:129:0:{1fc202d4-d401-403c-9834-5b218574bb67}"
+            },
+            {
+              "$type": "Bookmark",
+              "Name": "ST:0:0:{1c4feeaa-4718-4aa9-859d-94ce25d182ba}"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 3,
+              "Title": "RegisterDto.cs",
+              "DocumentMoniker": "F:\\Smart_Surviellance_System\\graduation-project-smart-surveillance\\backend\\Smart_Surviellance\\Application\\Dto\\RegisterDto.cs",
+              "RelativeDocumentMoniker": "Application\\Dto\\RegisterDto.cs",
+              "ToolTip": "F:\\Smart_Surviellance_System\\graduation-project-smart-surveillance\\backend\\Smart_Surviellance\\Application\\Dto\\RegisterDto.cs",
+              "RelativeToolTip": "Application\\Dto\\RegisterDto.cs",
+              "ViewState": "AgIAAAsAAAAAAAAAAAAAwBYAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-04-14T14:25:28.68Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 0,
+              "Title": "AuthService.cs",
+              "DocumentMoniker": "F:\\Smart_Surviellance_System\\graduation-project-smart-surveillance\\backend\\Smart_Surviellance\\Application\\Services\\Implementations\\AuthService.cs",
+              "RelativeDocumentMoniker": "Application\\Services\\Implementations\\AuthService.cs",
+              "ToolTip": "F:\\Smart_Surviellance_System\\graduation-project-smart-surveillance\\backend\\Smart_Surviellance\\Application\\Services\\Implementations\\AuthService.cs*",
+              "RelativeToolTip": "Application\\Services\\Implementations\\AuthService.cs*",
+              "ViewState": "AgIAAEgAAAAAAAAAAAAAAC0AAAAJAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-04-14T14:24:59.135Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 4,
+              "Title": "User.cs",
+              "DocumentMoniker": "F:\\Smart_Surviellance_System\\graduation-project-smart-surveillance\\backend\\Smart_Surviellance\\Domain\\Entities\\User.cs",
+              "RelativeDocumentMoniker": "Domain\\Entities\\User.cs",
+              "ToolTip": "F:\\Smart_Surviellance_System\\graduation-project-smart-surveillance\\backend\\Smart_Surviellance\\Domain\\Entities\\User.cs",
+              "RelativeToolTip": "Domain\\Entities\\User.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAcAAAAkAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-04-14T14:08:49.186Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 5,
+              "Title": "AccountController.cs",
+              "DocumentMoniker": "F:\\Smart_Surviellance_System\\graduation-project-smart-surveillance\\backend\\Smart_Surviellance\\Smart_Surviellance\\Controllers\\AccountController.cs",
+              "RelativeDocumentMoniker": "Smart_Surviellance\\Controllers\\AccountController.cs",
+              "ToolTip": "F:\\Smart_Surviellance_System\\graduation-project-smart-surveillance\\backend\\Smart_Surviellance\\Smart_Surviellance\\Controllers\\AccountController.cs",
+              "RelativeToolTip": "Smart_Surviellance\\Controllers\\AccountController.cs",
+              "ViewState": "AgIAABsAAAAAAAAAAAAowCsAAAAFAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-04-14T13:40:23.711Z",
+              "EditorCaption": ""
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

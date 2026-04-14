@@ -1,0 +1,6 @@
+@Smart_Surviellance_HostAddress = http://localhost:5198
+
+GET {{Smart_Surviellance_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
