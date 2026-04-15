@@ -3,6 +3,7 @@ using Application.Dto;
 using Application.Interfaces;
 using Application.Services.Interfaces;
 using Domain.Entities;
+using Microsoft.AspNetCore.Identity;
 using System;
 using System.Collections.Generic;
 using System.Text;
@@ -15,13 +16,15 @@ namespace Application.Services.Implementations
         private readonly IUserRepository _userRepository;
         private readonly ITokenService _tokenService;
         private readonly ISignInService _signInService;
+        private readonly UserManager<User> _userManager;
 
 
-        public AuthService(IUserRepository userRepository, ITokenService tokenService, ISignInService signInService)
+        public AuthService(IUserRepository userRepository, ITokenService tokenService, ISignInService signInService, UserManager<User> userManager)
         {
             _userRepository = userRepository;
             _tokenService = tokenService;
             _signInService = signInService;
+            _userManager = userManager;
         }
 
         public async Task<ApiResponse<AuthResponseDto>> LoginAsync(LoginDto loginDto)
@@ -36,12 +39,15 @@ namespace Application.Services.Implementations
             if (!result)
                 return ApiResponse<AuthResponseDto>.Fail("Invalid credentials");
 
-            var token = _tokenService.CreateToken(user);
+            var roles = await _userManager.GetRolesAsync(user);
+
+            var token = _tokenService.CreateToken(user , roles);
 
             return ApiResponse<AuthResponseDto>.Success(new AuthResponseDto
             {
                 Email = user.Email,
-                Token = token
+                Token = token,
+                Roles = roles.ToList()
             },"User logged in successfully");
         }
 
@@ -58,9 +64,11 @@ namespace Application.Services.Implementations
                 UserName = registerDto.UserName
             };
 
-            await _userRepository.CreateUserAsync(user, registerDto.Password);
+             await _userRepository.CreateUserAsync(user, registerDto.Password);
 
             
+
+            await _userManager.AddToRoleAsync(user, "User");
 
             return ApiResponse<AuthResponseDto>.SuccessNoData("User registered successfully");
         }

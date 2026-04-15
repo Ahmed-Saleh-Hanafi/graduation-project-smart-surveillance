@@ -3,6 +3,7 @@ using Application.Services.Implementations;
 using Application.Services.Interfaces;
 using Domain.Entities;
 using Infrastructure.Data;
+using Infrastructure.Data.Seed;
 using Infrastructure.Repositories;
 using Infrastructure.Services;
 using Microsoft.AspNetCore.Identity;
@@ -89,6 +90,18 @@ if (app.Environment.IsDevelopment())
     //app.MapOpenApi();
     app.UseSwagger();
     app.UseSwaggerUI();
+}
+
+
+
+using (var scope = app.Services.CreateScope())
+{
+    var services = scope.ServiceProvider;
+
+    var userManager = services.GetRequiredService<UserManager<User>>();
+    var roleManager = services.GetRequiredService<RoleManager<IdentityRole>>();
+
+    await IdentitySeeder.SeedAsync(userManager, roleManager);
 }
 
 
