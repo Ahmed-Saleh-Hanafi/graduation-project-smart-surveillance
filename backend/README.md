@@ -1,4 +1,4 @@
-## Structure of Folder AI
+## Structure of Folder Backend
 
 ```
 
@@ -38,14 +38,15 @@ smart-surveillance/
 │   ├── launchSettings.json               <- Local run configuration
 │   └── Connected Services/               <- External integrations (Azure, APIs)
 │
-└── README.md                             <- Project documentation
+└── README.md                             <- documentation for folder backend
 
 ```
 ---
+
 ### Backend Project Setup
 
-##Step One
-#Configure Environment Variables
+## Step One
+### Configure Environment Variables
 
 This will be found in appsetting.json so you can configure the Db connection string and JWT token Variables
 ```
@@ -71,20 +72,20 @@ This will be found in appsetting.json so you can configure the Db connection str
 }
 ```
 
-##Step Two
+## Step Two
 
-#Restore Dependencies
+### Restore Dependencies
 ```
 dotnet restore
 ```
 
-##Step Three
+## Step Three
 
-#Apply Database Migrations
+### Apply Database Migrations
 ```
 dotnet ef database update
 ```
-###Api Base URL
+### Api Base URL
 
 This will be available to change in Properties Folder in LaunchSettings.json
 
