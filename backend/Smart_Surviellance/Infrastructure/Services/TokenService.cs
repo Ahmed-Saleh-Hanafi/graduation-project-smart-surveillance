@@ -20,17 +20,23 @@ namespace Infrastructure.Services
             _config = config;
         }
 
-        public string CreateToken(User user)
+        public string CreateToken(User user, IList<string> roles)
         {
             var claims = new List<Claim>
         {
             new Claim(ClaimTypes.Email, user.Email),
-            new Claim(ClaimTypes.Name, user.UserName)
+            new Claim(ClaimTypes.Name, user.UserName),
+            new Claim(ClaimTypes.NameIdentifier, user.Id)
         };
 
             var key = new SymmetricSecurityKey(
                 Encoding.UTF8.GetBytes(_config["JWT:Key"])
             );
+
+            foreach (var role in roles)
+            {
+                claims.Add(new Claim(ClaimTypes.Role, role));
+            }
 
             var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
 
