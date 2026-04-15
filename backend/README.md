@@ -102,6 +102,11 @@ http://localhost:5198
 https://localhost:7274/swagger/index.html
 ```
 
+--
+--
+#Admin Account
+Username: admin@admin.com
+Password: Admin@123
 
 
 
