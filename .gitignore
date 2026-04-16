@@ -1,5 +1,19 @@
+# Python cache and compiled files
+__pycache__/
+*.pyc
+*.pyo
+
+# Environment files
+.env
+
+
+# IDE/editor folders
+.vscode/
+.idea/
+=======
 .vs/
 node_modules/
 .angular/
 dist/
 build/
+
