@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en">
+
+<head>
+    <meta charset="utf-8" />
+    <meta content="width=device-width, initial-scale=1.0" name="viewport" />
+    <title>Nexus Operations | Enterprise Secure Access</title>
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&amp;display=swap"
+        rel="stylesheet" />
+    <link
+        href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap"
+        rel="stylesheet" />
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+
+        .form-input-focus:focus {
+            box-shadow: 0 0 0 1px #005bbf;
+        }
+    </style>
+    <script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "on-tertiary-container": "#0e0200",
+                        "primary-fixed-dim": "#adc7ff",
+                        "tertiary-container": "#c55500",
+                        "surface-container-high": "#e7e8e9",
+                        "surface-bright": "#f8f9fa",
+                        "on-secondary-fixed-variant": "#3d4854",
+                        "surface-container-highest": "#e1e3e4",
+                        "secondary-fixed-dim": "#bcc8d6",
+                        "surface-tint": "#005bc0",
+                        "on-surface-variant": "#414754",
+                        "secondary-fixed": "#d8e4f2",
+                        "outline-variant": "#c1c6d6",
+                        "error": "#ba1a1a",
+                        "outline": "#727785",
+                        "inverse-surface": "#2e3132",
+                        "inverse-on-surface": "#f0f1f2",
+                        "on-tertiary-fixed-variant": "#783100",
+                        "on-surface": "#191c1d",
+                        "tertiary-fixed-dim": "#ffb691",
+                        "surface-container-lowest": "#ffffff",
+                        "on-primary": "#ffffff",
+                        "background": "#f8f9fa",
+                        "tertiary-fixed": "#ffdbcb",
+                        "surface": "#f8f9fa",
+                        "surface-container": "#edeeef",
+                        "on-tertiary": "#ffffff",
+                        "inverse-primary": "#adc7ff",
+                        "tertiary": "#9e4300",
+                        "surface-container-low": "#f3f4f5",
+                        "secondary": "#545f6c",
+                        "primary-fixed": "#d8e2ff",
+                        "on-primary-fixed-variant": "#004493",
+                        "primary-container": "#1a73e8",
+                        "secondary-container": "#d5e1ef",
+                        "on-secondary": "#ffffff",
+                        "surface-dim": "#d9dadb",
+                        "on-error": "#ffffff",
+                        "on-background": "#191c1d",
+                        "surface-variant": "#e1e3e4",
+                        "on-secondary-container": "#596470",
+                        "on-secondary-fixed": "#121d27",
+                        "on-primary-fixed": "#001a41",
+                        "on-error-container": "#93000a",
+                        "on-primary-container": "#ffffff",
+                        "primary": "#005bbf",
+                        "on-tertiary-fixed": "#341100"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.125rem",
+                        "lg": "0.25rem",
+                        "xl": "0.5rem",
+                        "full": "0.75rem"
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+
+<body class="bg-white text-on-surface flex min-h-screen overflow-hidden">
+    <!-- Left Panel: Brand & Visual -->
+    <div class="hidden lg:flex lg:w-1/2 relative bg-inverse-surface items-center justify-center p-12 overflow-hidden">
+        <!-- Abstract Tech Background Overlay -->
+        <div class="absolute inset-0 z-0 opacity-40">
+            <img alt="Tech Background" class="w-full h-full object-cover grayscale brightness-50"
+                src="imgs/bkground_login.jpeg" />
+        </div>
+        <div class="absolute inset-0 bg-gradient-to-tr from-primary/20 via-transparent to-transparent z-1"></div>
+        <div class="relative z-10 max-w-lg">
+            <div class="mb-12">
+                <!-- <div class="flex items-center gap-3 mb-6">
+                    <span class="material-symbols-outlined text-4xl text-primary-fixed">security</span>
+                    <h1 class="text-4xl font-extrabold tracking-tight text-white">Nexus <span
+                            class="font-light text-primary-fixed-dim">Operations</span></h1>
+                </div> -->
+                <!-- <div class="h-1 w-16 bg-primary-container mb-8"></div> -->
+                <img src="imgs/logo.png" alt="logo" width="400px">
+                <h2 class="text-2xl font-medium text-white/90 leading-snug mb-4">Securing enterprise infrastructure with cognitive intelligence.</h2>
+                <p class="text-white/60 text-lg font-light leading-relaxed">
+                 Monitor cameras, detect suspicious behavior, and receive instant alerts through an intelligent & reliable survelliance platform
+                </p>
+            </div>
+            <!-- Trust Indicators -->
+            <div class="grid grid-cols-2 gap-8 pt-8 border-t border-white/10">
+             
+                
+            </div>
+        </div>
+      
+    </div>
+    <!-- Right Panel: Login Form -->
+    <main class="w-full lg:w-1/2 flex flex-col bg-white">
+        <!-- Mobile Header (Only visible on small screens) -->
+        <div class="lg:hidden p-6 flex justify-between items-center border-b border-outline-variant/10">
+            <div class="flex items-center gap-2">
+                <span class="material-symbols-outlined text-primary text-2xl">security</span>
+                <span class="font-bold tracking-tight">Nexus Operations</span>
+            </div>
+        </div>
+        <div class="flex-grow flex items-center justify-center p-8 sm:p-12 lg:p-24">
+            <div class="w-full max-w-sm">
+                <div class="mb-10">
+                    <h3 class="text-2xl font-bold text-on-surface mb-2">System Access</h3>
+                </div>
+                <form class="space-y-6">
+                    <div class="space-y-2">
+                        <label class="text-xs font-bold text-on-surface-variant uppercase tracking-wider"
+                            for="id">Username / Email</label>
+                        <div class="relative group">
+                            <span
+                                class="absolute left-3 top-1/2 -translate-y-1/2 material-symbols-outlined text-outline text-lg group-focus-within:text-primary transition-colors">person</span>
+                            <input autocomplete="username"
+                                class="w-full pl-10 pr-4 py-3 bg-white border border-outline-variant text-sm transition-all outline-none focus:border-primary focus:ring-1 focus:ring-primary/20 placeholder:text-outline/40"
+                                id="id" name="id" placeholder="name@nexus.ops" required="" type="text" />
+                        </div>
+                    </div>
+                    <div class="space-y-2">
+                        <div class="flex justify-between items-center">
+                            <label class="text-xs font-bold text-on-surface-variant uppercase tracking-wider"
+                                for="password">Password</label>
+                            <a class="text-[11px] font-semibold text-primary hover:underline transition-all"
+                                href="#">Forgot password?</a>
+                        </div>
+                        <div class="relative group">
+                            <span
+                                class="absolute left-3 top-1/2 -translate-y-1/2 material-symbols-outlined text-outline text-lg group-focus-within:text-primary transition-colors">lock</span>
+                            <input autocomplete="current-password"
+                                class="w-full pl-10 pr-4 py-3 bg-white border border-outline-variant text-sm transition-all outline-none focus:border-primary focus:ring-1 focus:ring-primary/20 placeholder:text-outline/40"
+                                id="password" name="password" placeholder="••••••••" required="" type="password" />
+                        </div>
+                    </div>
+                    <div class="flex items-center gap-3 py-2">
+                        
+                    </div>
+                    <button
+                        class="w-full bg-primary hover:bg-primary-container text-white font-bold py-4 transition-all duration-200 shadow-md flex items-center justify-center gap-2 group"
+                        type="submit">
+                       Log In
+                        <span
+                            class="material-symbols-outlined text-sm group-hover:translate-x-1 transition-transform">arrow_forward</span>
+                    </button>
+                </form>
+                <div class="mt-12 pt-8 border-t border-outline-variant/30 text-center">
+                    <p class="text-xs text-on-surface-variant font-medium mb-3">Secure Monitoring Platform powered By <span class="font-bold">Camguard</span></p>
+                    
+                </div>
+            </div>
+        </div>
+     
+    </main>
+</body>
+
+</html>
