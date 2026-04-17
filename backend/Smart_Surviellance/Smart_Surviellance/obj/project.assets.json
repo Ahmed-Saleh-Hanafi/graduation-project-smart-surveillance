@@ -1,5 +1,5 @@
 {
-  "version": 3,
+  "version": 4,
   "targets": {
     "net10.0": {
       "Azure.Core/1.47.1": {
@@ -3664,11 +3664,11 @@
   "project": {
     "version": "1.0.0",
     "restore": {
-      "projectUniqueName": "F:\\Smart_Surviellance_System\\graduation-project-smart-surveillance\\backend\\Smart_Surviellance\\Smart_Surviellance\\Smart_Surviellance.csproj",
+      "projectUniqueName": "E:\\CamGuard\\graduation-project-smart-surveillance\\backend\\Smart_Surviellance\\Smart_Surviellance\\Smart_Surviellance.csproj",
       "projectName": "Smart_Surviellance",
-      "projectPath": "F:\\Smart_Surviellance_System\\graduation-project-smart-surveillance\\backend\\Smart_Surviellance\\Smart_Surviellance\\Smart_Surviellance.csproj",
+      "projectPath": "E:\\CamGuard\\graduation-project-smart-surveillance\\backend\\Smart_Surviellance\\Smart_Surviellance\\Smart_Surviellance.csproj",
       "packagesPath": "C:\\Users\\bodya\\.nuget\\packages\\",
-      "outputPath": "F:\\Smart_Surviellance_System\\graduation-project-smart-surveillance\\backend\\Smart_Surviellance\\Smart_Surviellance\\obj\\",
+      "outputPath": "E:\\CamGuard\\graduation-project-smart-surveillance\\backend\\Smart_Surviellance\\Smart_Surviellance\\obj\\",
       "projectStyle": "PackageReference",
       "fallbackFolders": [
         "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages"
@@ -3690,11 +3690,11 @@
           "framework": "net10.0",
           "targetAlias": "net10.0",
           "projectReferences": {
-            "F:\\Smart_Surviellance_System\\graduation-project-smart-surveillance\\backend\\Smart_Surviellance\\Application\\Application.csproj": {
-              "projectPath": "F:\\Smart_Surviellance_System\\graduation-project-smart-surveillance\\backend\\Smart_Surviellance\\Application\\Application.csproj"
+            "E:\\CamGuard\\graduation-project-smart-surveillance\\backend\\Smart_Surviellance\\Application\\Application.csproj": {
+              "projectPath": "E:\\CamGuard\\graduation-project-smart-surveillance\\backend\\Smart_Surviellance\\Application\\Application.csproj"
             },
-            "F:\\Smart_Surviellance_System\\graduation-project-smart-surveillance\\backend\\Smart_Surviellance\\Infrastructure\\Infrastructure.csproj": {
-              "projectPath": "F:\\Smart_Surviellance_System\\graduation-project-smart-surveillance\\backend\\Smart_Surviellance\\Infrastructure\\Infrastructure.csproj"
+            "E:\\CamGuard\\graduation-project-smart-surveillance\\backend\\Smart_Surviellance\\Infrastructure\\Infrastructure.csproj": {
+              "projectPath": "E:\\CamGuard\\graduation-project-smart-surveillance\\backend\\Smart_Surviellance\\Infrastructure\\Infrastructure.csproj"
             }
           }
         }
@@ -3709,7 +3709,7 @@
         "auditLevel": "low",
         "auditMode": "all"
       },
-      "SdkAnalysisLevel": "10.0.200"
+      "SdkAnalysisLevel": "10.0.300"
     },
     "frameworks": {
       "net10.0": {
@@ -3754,7 +3754,7 @@
             "privateAssets": "all"
           }
         },
-        "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\10.0.201/PortableRuntimeIdentifierGraph.json",
+        "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\10.0.300-preview.0.26177.108/PortableRuntimeIdentifierGraph.json",
         "packagesToPrune": {
           "Microsoft.AspNetCore": "(,10.0.32767]",
           "Microsoft.AspNetCore.Antiforgery": "(,10.0.32767]",
