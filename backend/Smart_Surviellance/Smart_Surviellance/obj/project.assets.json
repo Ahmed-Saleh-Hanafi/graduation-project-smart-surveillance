@@ -3658,43 +3658,35 @@
     ]
   },
   "packageFolders": {
-    "C:\\Users\\bodya\\.nuget\\packages\\": {},
-    "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages": {}
+    "C:\\Users\\Office\\.nuget\\packages\\": {}
   },
   "project": {
     "version": "1.0.0",
     "restore": {
-      "projectUniqueName": "F:\\Smart_Surviellance_System\\graduation-project-smart-surveillance\\backend\\Smart_Surviellance\\Smart_Surviellance\\Smart_Surviellance.csproj",
+      "projectUniqueName": "D:\\graduation-project-smart-surveillance\\backend\\smart_surviellance\\Smart_Surviellance\\Smart_Surviellance.csproj",
       "projectName": "Smart_Surviellance",
-      "projectPath": "F:\\Smart_Surviellance_System\\graduation-project-smart-surveillance\\backend\\Smart_Surviellance\\Smart_Surviellance\\Smart_Surviellance.csproj",
-      "packagesPath": "C:\\Users\\bodya\\.nuget\\packages\\",
-      "outputPath": "F:\\Smart_Surviellance_System\\graduation-project-smart-surveillance\\backend\\Smart_Surviellance\\Smart_Surviellance\\obj\\",
+      "projectPath": "D:\\graduation-project-smart-surveillance\\backend\\smart_surviellance\\Smart_Surviellance\\Smart_Surviellance.csproj",
+      "packagesPath": "C:\\Users\\Office\\.nuget\\packages\\",
+      "outputPath": "D:\\graduation-project-smart-surveillance\\backend\\smart_surviellance\\Smart_Surviellance\\obj\\",
       "projectStyle": "PackageReference",
-      "fallbackFolders": [
-        "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages"
-      ],
       "configFilePaths": [
-        "C:\\Users\\bodya\\AppData\\Roaming\\NuGet\\NuGet.Config",
-        "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.FallbackLocation.config",
-        "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.Offline.config"
+        "C:\\Users\\Office\\AppData\\Roaming\\NuGet\\NuGet.Config"
       ],
       "originalTargetFrameworks": [
         "net10.0"
       ],
       "sources": {
-        "C:\\Program Files (x86)\\Microsoft SDKs\\NuGetPackages\\": {},
         "https://api.nuget.org/v3/index.json": {}
       },
       "frameworks": {
         "net10.0": {
-          "framework": "net10.0",
           "targetAlias": "net10.0",
           "projectReferences": {
-            "F:\\Smart_Surviellance_System\\graduation-project-smart-surveillance\\backend\\Smart_Surviellance\\Application\\Application.csproj": {
-              "projectPath": "F:\\Smart_Surviellance_System\\graduation-project-smart-surveillance\\backend\\Smart_Surviellance\\Application\\Application.csproj"
+            "D:\\graduation-project-smart-surveillance\\backend\\smart_surviellance\\Application\\Application.csproj": {
+              "projectPath": "D:\\graduation-project-smart-surveillance\\backend\\smart_surviellance\\Application\\Application.csproj"
             },
-            "F:\\Smart_Surviellance_System\\graduation-project-smart-surveillance\\backend\\Smart_Surviellance\\Infrastructure\\Infrastructure.csproj": {
-              "projectPath": "F:\\Smart_Surviellance_System\\graduation-project-smart-surveillance\\backend\\Smart_Surviellance\\Infrastructure\\Infrastructure.csproj"
+            "D:\\graduation-project-smart-surveillance\\backend\\smart_surviellance\\Infrastructure\\Infrastructure.csproj": {
+              "projectPath": "D:\\graduation-project-smart-surveillance\\backend\\smart_surviellance\\Infrastructure\\Infrastructure.csproj"
             }
           }
         }
@@ -3713,7 +3705,6 @@
     },
     "frameworks": {
       "net10.0": {
-        "framework": "net10.0",
         "targetAlias": "net10.0",
         "dependencies": {
           "Microsoft.AspNetCore.Authentication.JwtBearer": {
@@ -3754,7 +3745,7 @@
             "privateAssets": "all"
           }
         },
-        "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\10.0.201/PortableRuntimeIdentifierGraph.json",
+        "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\10.0.202/PortableRuntimeIdentifierGraph.json",
         "packagesToPrune": {
           "Microsoft.AspNetCore": "(,10.0.32767]",
           "Microsoft.AspNetCore.Antiforgery": "(,10.0.32767]",
