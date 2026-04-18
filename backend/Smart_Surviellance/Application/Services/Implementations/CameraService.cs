@@ -1,4 +1,5 @@
-﻿using Application.Dto;
+﻿using Application.Common;
+using Application.Dto;
 using Application.Interfaces;
 using Application.Services.Interfaces;
 using Domain.Entities;
@@ -26,7 +27,7 @@ namespace Application.Services.Implementations
 
 
 
-        public async Task CreateAsync(CreateCameraDto createCameraDto)
+        public async Task<ApiResponse<CameraDto>> CreateAsync(CreateCameraDto createCameraDto)
         {
             var camera = new Camera
             {
@@ -38,9 +39,17 @@ namespace Application.Services.Implementations
                 Path = createCameraDto.Path
             };
             await _cameraRepository.AddCameraAsync(camera);
+            return ApiResponse<CameraDto>.Success(new CameraDto
+            {
+                Id = camera.Id,
+                Name = camera.Name,
+                IpAddress = camera.IpAddress,
+                Port = camera.Port,
+                StreamUrl = BuildRtspUrl(camera)
+            }, "Camera created successfully.");
         }
 
-        public async Task DeleteAsync(int id)
+        public async Task<ApiResponse<bool>> DeleteAsync(int id)
         {
             var camera = await _cameraRepository.GetCameraByIdAsync(id);
             if (camera == null)
@@ -48,11 +57,13 @@ namespace Application.Services.Implementations
                 throw new Exception($"Camera with ID {id} not found.");
             }
             await _cameraRepository.DeleteCameraAsync(id);
+
+            return ApiResponse<bool>.Success(true, "Camera deleted successfully.");
         }
         
         
 
-        public async Task<List<CameraDto>> GetAllAsync()
+        public async Task<ApiResponse<List<CameraDto>>> GetAllAsync()
         {
             var cameras = await _cameraRepository.GetAllCamerasAsync();
             var cameraDtos = new List<CameraDto>();
@@ -67,29 +78,29 @@ namespace Application.Services.Implementations
                     StreamUrl = BuildRtspUrl(camera)
                 });
             }
-            return cameraDtos;
+            return ApiResponse<List<CameraDto>>.Success(cameraDtos, "Cameras retrieved successfully.");
 
         }
 
-        public async Task<CameraDto> GetByIdAsync(int id)
+        public async Task<ApiResponse<CameraDto>> GetByIdAsync(int id)
         {
             var camera = await _cameraRepository.GetCameraByIdAsync(id);
             if (camera == null)
             {
                 throw new Exception($"Camera with ID {id} not found.");
             }
-            return new CameraDto
+            return ApiResponse<CameraDto>.Success(new CameraDto
             {
                 Id = camera.Id,
                 Name = camera.Name,
                 IpAddress = camera.IpAddress,
                 Port = camera.Port,
                 StreamUrl = BuildRtspUrl(camera)
-            };
+            }, "Camera retrieved successfully.");
 
         }
 
-        public async Task UpdateAsync(int id, CreateCameraDto updateCameraDto)
+        public async Task<ApiResponse<bool>> UpdateAsync(int id, CreateCameraDto updateCameraDto)
         {
             var camera = await _cameraRepository.GetCameraByIdAsync(id);
             if (camera == null)
@@ -105,6 +116,7 @@ namespace Application.Services.Implementations
             camera.Path = updateCameraDto.Path;
 
             await _cameraRepository.UpdateCameraAsync(camera);
+            return ApiResponse<bool>.Success(true, "Camera updated successfully.");
         }
     }
 }
