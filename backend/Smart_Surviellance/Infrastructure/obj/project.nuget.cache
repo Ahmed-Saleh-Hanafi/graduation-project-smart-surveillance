@@ -1,8 +1,8 @@
 {
   "version": 2,
-  "dgSpecHash": "12lD3/jonKw=",
+  "dgSpecHash": "hNtluqC5poQ=",
   "success": true,
-  "projectFilePath": "F:\\Smart_Surviellance_System\\graduation-project-smart-surveillance\\backend\\Smart_Surviellance\\Infrastructure\\Infrastructure.csproj",
+  "projectFilePath": "E:\\CamGuard\\graduation-project-smart-surveillance\\backend\\Smart_Surviellance\\Infrastructure\\Infrastructure.csproj",
   "expectedPackageFiles": [
     "C:\\Users\\bodya\\.nuget\\packages\\azure.core\\1.47.1\\azure.core.1.47.1.nupkg.sha512",
     "C:\\Users\\bodya\\.nuget\\packages\\azure.identity\\1.14.2\\azure.identity.1.14.2.nupkg.sha512",
@@ -88,9 +88,9 @@
     "C:\\Users\\bodya\\.nuget\\packages\\system.diagnostics.eventlog\\9.0.4\\system.diagnostics.eventlog.9.0.4.nupkg.sha512",
     "C:\\Users\\bodya\\.nuget\\packages\\system.identitymodel.tokens.jwt\\7.7.1\\system.identitymodel.tokens.jwt.7.7.1.nupkg.sha512",
     "C:\\Users\\bodya\\.nuget\\packages\\system.memory.data\\8.0.1\\system.memory.data.8.0.1.nupkg.sha512",
-    "C:\\Users\\bodya\\.nuget\\packages\\system.security.cryptography.pkcs\\9.0.4\\system.security.cryptography.pkcs.9.0.4.nupkg.sha512",
+    "C:\\Users\\bodya\\.nuget\\packages\\system.security.cryptography.pkcs\\10.0.6\\system.security.cryptography.pkcs.10.0.6.nupkg.sha512",
     "C:\\Users\\bodya\\.nuget\\packages\\system.security.cryptography.protecteddata\\9.0.4\\system.security.cryptography.protecteddata.9.0.4.nupkg.sha512",
-    "C:\\Users\\bodya\\.nuget\\packages\\system.security.cryptography.xml\\8.0.2\\system.security.cryptography.xml.8.0.2.nupkg.sha512"
+    "C:\\Users\\bodya\\.nuget\\packages\\system.security.cryptography.xml\\10.0.6\\system.security.cryptography.xml.10.0.6.nupkg.sha512"
   ],
   "logs": []
 }
