@@ -1,118 +1,165 @@
 import React from 'react';
 import { Tabs } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { Platform } from 'react-native';
+import { Platform, View, Text, TouchableOpacity, StyleSheet } from 'react-native';
+import { useRouter } from 'expo-router';
+
+const WHITE    = '#FFFFFF';
+const BLACK    = '#1C1C1E';
+const ACTIVE   = '#007AFF';
+const INACTIVE = '#AEAEB2';
+
+function CamGuardHeader() {
+  return (
+    <View style={styles.logoRow}>
+      <View style={styles.logoIcon}>
+        <Ionicons name="shield-checkmark" size={18} color={WHITE} />
+      </View>
+      <View>
+        <View style={styles.nameRow}>
+          <Text style={styles.nameDark}>Cam</Text>
+          <Text style={styles.nameBlue}>Guard</Text>
+        </View>
+        <Text style={styles.tagline}>SMART SECURITY</Text>
+      </View>
+    </View>
+  );
+}
+
+function LogoutButton({ onPress }: { onPress: () => void }) {
+  return (
+    <TouchableOpacity onPress={onPress} style={styles.logoutBtn}>
+      <Ionicons name="exit-outline" size={17} color={INACTIVE} />
+    </TouchableOpacity>
+  );
+}
 
 export default function TabLayout() {
+  const router = useRouter();
+
+  const handleLogout = () => {
+    router.replace('/');
+  };
+
   return (
     <Tabs
       screenOptions={{
-        // إعدادات الهيدر (العنوان العلوي)
         headerShown: true,
-        headerStyle: {
-          backgroundColor: '#ffffff', // خلفية بيضاء نقية
-          elevation: 0, // إلغاء الظل في أندرويد
-          shadowOpacity: 0, // إلغاء الظل في iOS
-          borderBottomWidth: 1,
-          borderBottomColor: '#f0f0f0',
-        },
-        headerTitleStyle: {
-          fontWeight: '700',
-          color: '#1a1a1a',
-          fontSize: 18,
-        },
-        
-        // إعدادات شريط التاب السفلي
+        headerShadowVisible: false,
+        headerStyle: { backgroundColor: WHITE },
+        headerTitle: () => <CamGuardHeader />,
+        headerRight: () => <LogoutButton onPress={handleLogout} />,
+        headerRightContainerStyle: { paddingRight: 16 },
         tabBarStyle: {
-          backgroundColor: '#ffffff',
-          borderTopWidth: 1,
-          borderTopColor: '#f0f0f0',
-          height: Platform.OS === 'ios' ? 85 : 65,
-          paddingBottom: Platform.OS === 'ios' ? 25 : 10,
-          paddingTop: 8,
-          // تأثير ظل خفيف لإعطاء لمسة عصرية
-          shadowColor: '#000',
-          shadowOffset: { width: 0, height: -2 },
-          shadowOpacity: 0.05,
-          shadowRadius: 10,
-          elevation: 5,
+          backgroundColor: WHITE,
+          borderTopWidth: 0.5,
+          borderTopColor: 'rgba(0,0,0,0.07)',
+          height: Platform.OS === 'ios' ? 88 : 68,
+          paddingBottom: Platform.OS === 'ios' ? 26 : 10,
+          paddingTop: 10,
+          position: 'absolute',
+          elevation: 0,
         },
-        
-        tabBarActiveTintColor: '#007AFF', // لون أزرق "Apple Style" هادئ
-        tabBarInactiveTintColor: '#8e8e93',
+        tabBarActiveTintColor: ACTIVE,
+        tabBarInactiveTintColor: INACTIVE,
         tabBarLabelStyle: {
-          fontSize: 12,
-          fontWeight: '500',
-          marginTop: 2,
+          fontSize: 11,
+          fontWeight: '600',
+          letterSpacing: 0.1,
         },
       }}
     >
-      {/* 1. صفحة تسجيل الدخول - مخفية من التاب بار */}
       <Tabs.Screen
         name="index"
-        options={{
-          title: "Login",
-          headerShown: false, // إخفاء الهيدر في صفحة اللوجن
-          tabBarButton: () => null, // حذف الزر من التاب بار تماماً
-          tabBarStyle: { display: "none" }, // التأكيد على إخفاء الشريط
-        }}
+        options={{ href: null, headerShown: false, tabBarStyle: { display: 'none' } }}
       />
-
-      {/* 2. شاشة البث المباشر (Home/Live) */}
       <Tabs.Screen
-        name="home"
+        name="live"
         options={{
-          title: 'Monitor',
-          headerTitle: 'Live Stream',
+          title: 'Live',
+          headerTitle: () => <CamGuardHeader />,
           tabBarIcon: ({ color, focused }) => (
-            <Ionicons name={focused ? "videocam" : "videocam-outline"} size={24} color={color} />
+            <Ionicons name={focused ? 'videocam' : 'videocam-outline'} size={27} color={color} />
           ),
         }}
       />
-
-      {/* 3. شاشة إدارة الوجوه */}
       <Tabs.Screen
         name="faces"
         options={{
           title: 'Faces',
-          headerTitle: 'Identity Management',
           tabBarIcon: ({ color, focused }) => (
-            <Ionicons name={focused ? "person" : "person-outline"} size={24} color={color} />
+            <Ionicons name={focused ? 'person' : 'person-outline'} size={27} color={color} />
           ),
         }}
       />
-
-      {/* 4. شاشة التنبيهات */}
       <Tabs.Screen
         name="alerts"
         options={{
           title: 'Alerts',
-          headerTitle: 'Security Alerts',
           tabBarIcon: ({ color, focused }) => (
-            <Ionicons name={focused ? "notifications" : "notifications-outline"} size={24} color={color} />
+            <Ionicons name={focused ? 'notifications' : 'notifications-outline'} size={27} color={color} />
           ),
         }}
       />
-
-      {/* 5. شاشة الأحداث */}
       <Tabs.Screen
         name="events"
         options={{
           title: 'Events',
-          headerTitle: 'Recorded Events',
           tabBarIcon: ({ color, focused }) => (
-            <Ionicons name={focused ? "time" : "time-outline"} size={24} color={color} />
+            <Ionicons name={focused ? 'time' : 'time-outline'} size={27} color={color} />
           ),
         }}
       />
-
-      {/* شاشة الـ AI Scan مخفية تماماً */}
-      <Tabs.Screen
-        name="ai-scan"
-        options={{
-          href: null,
-        }}
-      />
+      <Tabs.Screen name="ai-scan" options={{ href: null }} />
+      <Tabs.Screen name="explore" options={{ href: null }} />
     </Tabs>
   );
 }
+
+const styles = StyleSheet.create({
+  logoRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 9,
+  },
+  logoIcon: {
+    width: 34,
+    height: 34,
+    borderRadius: 10,
+    backgroundColor: ACTIVE,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  nameRow: {
+    flexDirection: 'row',
+  },
+  nameDark: {
+    fontSize: 18,
+    fontWeight: '800',
+    color: BLACK,
+    letterSpacing: -0.4,
+    fontFamily: Platform.OS === 'ios' ? 'System' : 'sans-serif-black',
+  },
+  nameBlue: {
+    fontSize: 18,
+    fontWeight: '800',
+    color: ACTIVE,
+    letterSpacing: -0.4,
+    fontFamily: Platform.OS === 'ios' ? 'System' : 'sans-serif-black',
+  },
+  tagline: {
+    fontSize: 8,
+    fontWeight: '600',
+    color: INACTIVE,
+    letterSpacing: 1.8,
+    marginTop: 1,
+  },
+  logoutBtn: {
+    width: 32,
+    height: 32,
+    borderRadius: 50,
+    backgroundColor: '#F2F2F7',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+});

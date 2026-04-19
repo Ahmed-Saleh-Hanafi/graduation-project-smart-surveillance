@@ -3663,11 +3663,11 @@
   "project": {
     "version": "1.0.0",
     "restore": {
-      "projectUniqueName": "D:\\graduation-project-smart-surveillance\\backend\\smart_surviellance\\Smart_Surviellance\\Smart_Surviellance.csproj",
+      "projectUniqueName": "D:\\graduation-project-smart-surveillance\\backend\\smart_surviellance\\smart_surviellance\\Smart_Surviellance.csproj",
       "projectName": "Smart_Surviellance",
-      "projectPath": "D:\\graduation-project-smart-surveillance\\backend\\smart_surviellance\\Smart_Surviellance\\Smart_Surviellance.csproj",
+      "projectPath": "D:\\graduation-project-smart-surveillance\\backend\\smart_surviellance\\smart_surviellance\\Smart_Surviellance.csproj",
       "packagesPath": "C:\\Users\\Office\\.nuget\\packages\\",
-      "outputPath": "D:\\graduation-project-smart-surveillance\\backend\\smart_surviellance\\Smart_Surviellance\\obj\\",
+      "outputPath": "D:\\graduation-project-smart-surveillance\\backend\\smart_surviellance\\smart_surviellance\\obj\\",
       "projectStyle": "PackageReference",
       "configFilePaths": [
         "C:\\Users\\Office\\AppData\\Roaming\\NuGet\\NuGet.Config"
