@@ -1,8 +1,8 @@
 {
   "version": 2,
-  "dgSpecHash": "tbDUgBNa2NE=",
+  "dgSpecHash": "euYNNG5iLaw=",
   "success": true,
-  "projectFilePath": "D:\\graduation-project-smart-surveillance\\backend\\smart_surviellance\\smart_surviellance\\Smart_Surviellance.csproj",
+  "projectFilePath": "D:\\project\\graduation-project-smart-surveillance\\backend\\smart_surviellance\\smart_surviellance\\Smart_Surviellance.csproj",
   "expectedPackageFiles": [
     "C:\\Users\\Office\\.nuget\\packages\\azure.core\\1.47.1\\azure.core.1.47.1.nupkg.sha512",
     "C:\\Users\\Office\\.nuget\\packages\\azure.identity\\1.14.2\\azure.identity.1.14.2.nupkg.sha512",

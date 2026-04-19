@@ -3663,11 +3663,11 @@
   "project": {
     "version": "1.0.0",
     "restore": {
-      "projectUniqueName": "D:\\graduation-project-smart-surveillance\\backend\\smart_surviellance\\smart_surviellance\\Smart_Surviellance.csproj",
+      "projectUniqueName": "D:\\project\\graduation-project-smart-surveillance\\backend\\smart_surviellance\\smart_surviellance\\Smart_Surviellance.csproj",
       "projectName": "Smart_Surviellance",
-      "projectPath": "D:\\graduation-project-smart-surveillance\\backend\\smart_surviellance\\smart_surviellance\\Smart_Surviellance.csproj",
+      "projectPath": "D:\\project\\graduation-project-smart-surveillance\\backend\\smart_surviellance\\smart_surviellance\\Smart_Surviellance.csproj",
       "packagesPath": "C:\\Users\\Office\\.nuget\\packages\\",
-      "outputPath": "D:\\graduation-project-smart-surveillance\\backend\\smart_surviellance\\smart_surviellance\\obj\\",
+      "outputPath": "D:\\project\\graduation-project-smart-surveillance\\backend\\smart_surviellance\\smart_surviellance\\obj\\",
       "projectStyle": "PackageReference",
       "configFilePaths": [
         "C:\\Users\\Office\\AppData\\Roaming\\NuGet\\NuGet.Config"
@@ -3682,11 +3682,11 @@
         "net10.0": {
           "targetAlias": "net10.0",
           "projectReferences": {
-            "D:\\graduation-project-smart-surveillance\\backend\\smart_surviellance\\Application\\Application.csproj": {
-              "projectPath": "D:\\graduation-project-smart-surveillance\\backend\\smart_surviellance\\Application\\Application.csproj"
+            "D:\\project\\graduation-project-smart-surveillance\\backend\\smart_surviellance\\Application\\Application.csproj": {
+              "projectPath": "D:\\project\\graduation-project-smart-surveillance\\backend\\smart_surviellance\\Application\\Application.csproj"
             },
-            "D:\\graduation-project-smart-surveillance\\backend\\smart_surviellance\\Infrastructure\\Infrastructure.csproj": {
-              "projectPath": "D:\\graduation-project-smart-surveillance\\backend\\smart_surviellance\\Infrastructure\\Infrastructure.csproj"
+            "D:\\project\\graduation-project-smart-surveillance\\backend\\smart_surviellance\\Infrastructure\\Infrastructure.csproj": {
+              "projectPath": "D:\\project\\graduation-project-smart-surveillance\\backend\\smart_surviellance\\Infrastructure\\Infrastructure.csproj"
             }
           }
         }

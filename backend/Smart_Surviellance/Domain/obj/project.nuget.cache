@@ -1,8 +1,8 @@
 {
   "version": 2,
-  "dgSpecHash": "Jd92qc4yKLE=",
+  "dgSpecHash": "lgT9HrplFRE=",
   "success": true,
-  "projectFilePath": "D:\\graduation-project-smart-surveillance\\backend\\smart_surviellance\\Domain\\Domain.csproj",
+  "projectFilePath": "D:\\project\\graduation-project-smart-surveillance\\backend\\smart_surviellance\\Domain\\Domain.csproj",
   "expectedPackageFiles": [
     "C:\\Users\\Office\\.nuget\\packages\\microsoft.aspnetcore.authentication\\2.3.0\\microsoft.aspnetcore.authentication.2.3.0.nupkg.sha512",
     "C:\\Users\\Office\\.nuget\\packages\\microsoft.aspnetcore.authentication.abstractions\\2.3.0\\microsoft.aspnetcore.authentication.abstractions.2.3.0.nupkg.sha512",
@@ -48,9 +48,9 @@
       "code": "NU1903",
       "level": "Warning",
       "message": "Package 'System.Security.Cryptography.Xml' 9.0.0 has a known high severity vulnerability, https://github.com/advisories/GHSA-37gx-xxp4-5rgx",
-      "projectPath": "D:\\graduation-project-smart-surveillance\\backend\\smart_surviellance\\Domain\\Domain.csproj",
+      "projectPath": "D:\\project\\graduation-project-smart-surveillance\\backend\\smart_surviellance\\Domain\\Domain.csproj",
       "warningLevel": 1,
-      "filePath": "D:\\graduation-project-smart-surveillance\\backend\\smart_surviellance\\Domain\\Domain.csproj",
+      "filePath": "D:\\project\\graduation-project-smart-surveillance\\backend\\smart_surviellance\\Domain\\Domain.csproj",
       "libraryId": "System.Security.Cryptography.Xml",
       "targetGraphs": [
         "net10.0"
@@ -60,9 +60,9 @@
       "code": "NU1903",
       "level": "Warning",
       "message": "Package 'System.Security.Cryptography.Xml' 9.0.0 has a known high severity vulnerability, https://github.com/advisories/GHSA-w3x6-4m5h-cxqf",
-      "projectPath": "D:\\graduation-project-smart-surveillance\\backend\\smart_surviellance\\Domain\\Domain.csproj",
+      "projectPath": "D:\\project\\graduation-project-smart-surveillance\\backend\\smart_surviellance\\Domain\\Domain.csproj",
       "warningLevel": 1,
-      "filePath": "D:\\graduation-project-smart-surveillance\\backend\\smart_surviellance\\Domain\\Domain.csproj",
+      "filePath": "D:\\project\\graduation-project-smart-surveillance\\backend\\smart_surviellance\\Domain\\Domain.csproj",
       "libraryId": "System.Security.Cryptography.Xml",
       "targetGraphs": [
         "net10.0"

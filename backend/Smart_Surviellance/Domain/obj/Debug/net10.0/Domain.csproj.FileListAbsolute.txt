@@ -24,3 +24,16 @@ D:\graduation-project-smart-surveillance\backend\smart_surviellance\Domain\obj\D
 D:\graduation-project-smart-surveillance\backend\smart_surviellance\Domain\obj\Debug\net10.0\refint\Domain.dll
 D:\graduation-project-smart-surveillance\backend\smart_surviellance\Domain\obj\Debug\net10.0\Domain.pdb
 D:\graduation-project-smart-surveillance\backend\smart_surviellance\Domain\obj\Debug\net10.0\ref\Domain.dll
+D:\project\graduation-project-smart-surveillance\backend\smart_surviellance\Domain\bin\Debug\net10.0\Domain.deps.json
+D:\project\graduation-project-smart-surveillance\backend\smart_surviellance\Domain\bin\Debug\net10.0\Domain.dll
+D:\project\graduation-project-smart-surveillance\backend\smart_surviellance\Domain\bin\Debug\net10.0\Domain.pdb
+D:\project\graduation-project-smart-surveillance\backend\smart_surviellance\Domain\obj\Debug\net10.0\Domain.csproj.AssemblyReference.cache
+D:\project\graduation-project-smart-surveillance\backend\smart_surviellance\Domain\obj\Debug\net10.0\Domain.GeneratedMSBuildEditorConfig.editorconfig
+D:\project\graduation-project-smart-surveillance\backend\smart_surviellance\Domain\obj\Debug\net10.0\Domain.AssemblyInfoInputs.cache
+D:\project\graduation-project-smart-surveillance\backend\smart_surviellance\Domain\obj\Debug\net10.0\Domain.AssemblyInfo.cs
+D:\project\graduation-project-smart-surveillance\backend\smart_surviellance\Domain\obj\Debug\net10.0\Domain.csproj.CoreCompileInputs.cache
+D:\project\graduation-project-smart-surveillance\backend\smart_surviellance\Domain\obj\Debug\net10.0\Domain.sourcelink.json
+D:\project\graduation-project-smart-surveillance\backend\smart_surviellance\Domain\obj\Debug\net10.0\Domain.dll
+D:\project\graduation-project-smart-surveillance\backend\smart_surviellance\Domain\obj\Debug\net10.0\refint\Domain.dll
+D:\project\graduation-project-smart-surveillance\backend\smart_surviellance\Domain\obj\Debug\net10.0\Domain.pdb
+D:\project\graduation-project-smart-surveillance\backend\smart_surviellance\Domain\obj\Debug\net10.0\ref\Domain.dll

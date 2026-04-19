@@ -1,8 +1,8 @@
 {
   "version": 2,
-  "dgSpecHash": "UWKdSyazo2Q=",
+  "dgSpecHash": "KPtxx0sgQAs=",
   "success": true,
-  "projectFilePath": "D:\\graduation-project-smart-surveillance\\backend\\smart_surviellance\\Infrastructure\\Infrastructure.csproj",
+  "projectFilePath": "D:\\project\\graduation-project-smart-surveillance\\backend\\smart_surviellance\\Infrastructure\\Infrastructure.csproj",
   "expectedPackageFiles": [
     "C:\\Users\\Office\\.nuget\\packages\\azure.core\\1.47.1\\azure.core.1.47.1.nupkg.sha512",
     "C:\\Users\\Office\\.nuget\\packages\\azure.identity\\1.14.2\\azure.identity.1.14.2.nupkg.sha512",
@@ -101,9 +101,9 @@
       "code": "NU1903",
       "level": "Warning",
       "message": "Package 'System.Security.Cryptography.Xml' 9.0.0 has a known high severity vulnerability, https://github.com/advisories/GHSA-37gx-xxp4-5rgx",
-      "projectPath": "D:\\graduation-project-smart-surveillance\\backend\\smart_surviellance\\Infrastructure\\Infrastructure.csproj",
+      "projectPath": "D:\\project\\graduation-project-smart-surveillance\\backend\\smart_surviellance\\Infrastructure\\Infrastructure.csproj",
       "warningLevel": 1,
-      "filePath": "D:\\graduation-project-smart-surveillance\\backend\\smart_surviellance\\Infrastructure\\Infrastructure.csproj",
+      "filePath": "D:\\project\\graduation-project-smart-surveillance\\backend\\smart_surviellance\\Infrastructure\\Infrastructure.csproj",
       "libraryId": "System.Security.Cryptography.Xml",
       "targetGraphs": [
         "net10.0"
@@ -113,9 +113,9 @@
       "code": "NU1903",
       "level": "Warning",
       "message": "Package 'System.Security.Cryptography.Xml' 9.0.0 has a known high severity vulnerability, https://github.com/advisories/GHSA-w3x6-4m5h-cxqf",
-      "projectPath": "D:\\graduation-project-smart-surveillance\\backend\\smart_surviellance\\Infrastructure\\Infrastructure.csproj",
+      "projectPath": "D:\\project\\graduation-project-smart-surveillance\\backend\\smart_surviellance\\Infrastructure\\Infrastructure.csproj",
       "warningLevel": 1,
-      "filePath": "D:\\graduation-project-smart-surveillance\\backend\\smart_surviellance\\Infrastructure\\Infrastructure.csproj",
+      "filePath": "D:\\project\\graduation-project-smart-surveillance\\backend\\smart_surviellance\\Infrastructure\\Infrastructure.csproj",
       "libraryId": "System.Security.Cryptography.Xml",
       "targetGraphs": [
         "net10.0"

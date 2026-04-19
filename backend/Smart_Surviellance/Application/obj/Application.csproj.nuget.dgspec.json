@@ -1,17 +1,17 @@
 {
   "format": 1,
   "restore": {
-    "D:\\graduation-project-smart-surveillance\\backend\\smart_surviellance\\Application\\Application.csproj": {}
+    "D:\\project\\graduation-project-smart-surveillance\\backend\\smart_surviellance\\Application\\Application.csproj": {}
   },
   "projects": {
-    "D:\\graduation-project-smart-surveillance\\backend\\smart_surviellance\\Application\\Application.csproj": {
+    "D:\\project\\graduation-project-smart-surveillance\\backend\\smart_surviellance\\Application\\Application.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "D:\\graduation-project-smart-surveillance\\backend\\smart_surviellance\\Application\\Application.csproj",
+        "projectUniqueName": "D:\\project\\graduation-project-smart-surveillance\\backend\\smart_surviellance\\Application\\Application.csproj",
         "projectName": "Application",
-        "projectPath": "D:\\graduation-project-smart-surveillance\\backend\\smart_surviellance\\Application\\Application.csproj",
+        "projectPath": "D:\\project\\graduation-project-smart-surveillance\\backend\\smart_surviellance\\Application\\Application.csproj",
         "packagesPath": "C:\\Users\\Office\\.nuget\\packages\\",
-        "outputPath": "D:\\graduation-project-smart-surveillance\\backend\\smart_surviellance\\Application\\obj\\",
+        "outputPath": "D:\\project\\graduation-project-smart-surveillance\\backend\\smart_surviellance\\Application\\obj\\",
         "projectStyle": "PackageReference",
         "configFilePaths": [
           "C:\\Users\\Office\\AppData\\Roaming\\NuGet\\NuGet.Config"
@@ -26,8 +26,8 @@
           "net10.0": {
             "targetAlias": "net10.0",
             "projectReferences": {
-              "D:\\graduation-project-smart-surveillance\\backend\\smart_surviellance\\Domain\\Domain.csproj": {
-                "projectPath": "D:\\graduation-project-smart-surveillance\\backend\\smart_surviellance\\Domain\\Domain.csproj"
+              "D:\\project\\graduation-project-smart-surveillance\\backend\\smart_surviellance\\Domain\\Domain.csproj": {
+                "projectPath": "D:\\project\\graduation-project-smart-surveillance\\backend\\smart_surviellance\\Domain\\Domain.csproj"
               }
             }
           }
@@ -347,14 +347,14 @@
         }
       }
     },
-    "D:\\graduation-project-smart-surveillance\\backend\\smart_surviellance\\Domain\\Domain.csproj": {
+    "D:\\project\\graduation-project-smart-surveillance\\backend\\smart_surviellance\\Domain\\Domain.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "D:\\graduation-project-smart-surveillance\\backend\\smart_surviellance\\Domain\\Domain.csproj",
+        "projectUniqueName": "D:\\project\\graduation-project-smart-surveillance\\backend\\smart_surviellance\\Domain\\Domain.csproj",
         "projectName": "Domain",
-        "projectPath": "D:\\graduation-project-smart-surveillance\\backend\\smart_surviellance\\Domain\\Domain.csproj",
+        "projectPath": "D:\\project\\graduation-project-smart-surveillance\\backend\\smart_surviellance\\Domain\\Domain.csproj",
         "packagesPath": "C:\\Users\\Office\\.nuget\\packages\\",
-        "outputPath": "D:\\graduation-project-smart-surveillance\\backend\\smart_surviellance\\Domain\\obj\\",
+        "outputPath": "D:\\project\\graduation-project-smart-surveillance\\backend\\smart_surviellance\\Domain\\obj\\",
         "projectStyle": "PackageReference",
         "configFilePaths": [
           "C:\\Users\\Office\\AppData\\Roaming\\NuGet\\NuGet.Config"
