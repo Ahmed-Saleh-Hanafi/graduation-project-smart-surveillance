@@ -1,6 +1,10 @@
 import { Ionicons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
 import { useState } from "react";
+import axios from "axios"; 
+import { Keyboard } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useRouter } from "expo-router";
 import {
   Dimensions,
   Image,
@@ -13,14 +17,55 @@ import {
   TextInput,
   TouchableOpacity,
   View,
+  ActivityIndicator,
+  Alert,
 } from "react-native";
 
 const { width, height } = Dimensions.get("window");
 
 export default function App() {
+  const router = useRouter();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [loading, setLoading] = useState(false);
+  const handleLogin = async () => {
+    if (!email || !password) {
+      Alert.alert("Error", "Please enter email and password");
+      return;
+    }
 
+    setLoading(true);
+
+    try {
+      const API_URL = "http://192.168.1.229:5198/api/Account/login";
+      const response = await axios.post(API_URL, {
+        email: email,
+        password: password,
+      });
+
+      if (response.data.isSuccess) {
+        const token = response.data.data.token;
+        await AsyncStorage.setItem('userToken', token);
+
+        console.log("Login Success! Token Saved.");
+
+        router.replace("/(tabs)/live");     
+       }
+    } 
+      catch (error) {
+        if (error.response) {
+            console.log("Status:", error.response.status);
+            console.log("Data:", error.response.data);
+            Alert.alert("Fail", error.response.data.message || "Invalid Data");
+        } else {
+            console.log("Network Error:", error.message);
+            Alert.alert("Network Error", "Please try again");
+        }
+          } finally {
+      setLoading(false);
+      Keyboard.dismiss();
+    }
+  };
   return (
     <View style={styles.container}>
       <StatusBar
@@ -86,7 +131,7 @@ export default function App() {
                 />
               </View>
 
-              <TouchableOpacity activeOpacity={0.8} style={styles.signInBtn}>
+              <TouchableOpacity activeOpacity={0.8} style={styles.signInBtn} onPress={handleLogin} disabled={loading}>
                 <LinearGradient
                   colors={["rgb(0, 110, 255)", "rgb(0, 110, 255)"]}
                   start={{ x: 0, y: 0 }}
