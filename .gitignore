@@ -17,3 +17,5 @@ node_modules/
 dist/
 build/
 
+# env .net
+git rm -r --cached bin obj
