@@ -19,6 +19,7 @@ namespace Infrastructure.Repositories
         public async Task AddCameraAsync(Camera camera)
         {
             await _context.Cameras.AddAsync(camera);
+            await _context.SaveChangesAsync();
             
             
         }
@@ -35,6 +36,9 @@ namespace Infrastructure.Repositories
             {
                 _context.Cameras.Remove(camera);
             }
+            await _context.SaveChangesAsync();
+
+
         }
 
         public async Task<IEnumerable<Camera>> GetAllCamerasAsync()
@@ -47,10 +51,12 @@ namespace Infrastructure.Repositories
             return await _context.Cameras.FindAsync(id);
         }
 
-        public Task UpdateCameraAsync(Camera camera)
+        public async Task UpdateCameraAsync(Camera camera)
         {
             _context.Cameras.Update(camera);
-            return Task.CompletedTask;
+            await _context.SaveChangesAsync();
+                       
         }
     }
 }
+
