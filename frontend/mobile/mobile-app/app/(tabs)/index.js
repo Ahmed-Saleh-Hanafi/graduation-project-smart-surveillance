@@ -22,12 +22,13 @@ import {
 } from "react-native";
 
 const { width, height } = Dimensions.get("window");
-
 export default function App() {
   const router = useRouter();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+
   const handleLogin = async () => {
     if (!email || !password) {
       Alert.alert("Error", "Please enter email and password");
@@ -46,26 +47,24 @@ export default function App() {
       if (response.data.isSuccess) {
         const token = response.data.data.token;
         await AsyncStorage.setItem('userToken', token);
-
         console.log("Login Success! Token Saved.");
-
         router.replace("/(tabs)/live");     
-       }
-    } 
-      catch (error) {
-        if (error.response) {
-            console.log("Status:", error.response.status);
-            console.log("Data:", error.response.data);
-            Alert.alert("Fail", error.response.data.message || "Invalid Data");
-        } else {
-            console.log("Network Error:", error.message);
-            Alert.alert("Network Error", "Please try again");
-        }
-          } finally {
+      }
+    } catch (error) {
+      if (error.response) {
+        console.log("Status:", error.response.status);
+        console.log("Data:", error.response.data);
+        Alert.alert("Fail", error.response.data.message || "Invalid Data");
+      } else {
+        console.log("Network Error:", error.message);
+        Alert.alert("Network Error", "Please try again");
+      }
+    } finally {
       setLoading(false);
       Keyboard.dismiss();
     }
   };
+
   return (
     <View style={styles.container}>
       <StatusBar
@@ -83,9 +82,10 @@ export default function App() {
           showsVerticalScrollIndicator={false}
           bounces={false}
         >
+          {/* Header with logo */}
           <View style={styles.headerSection}>
             <Image
-              source={require("../../assets/images/logo.jpeg")}
+              source={require("../../assets/images/logo3.jpeg")}
               style={styles.logoImage}
               resizeMode="stretch" 
             />
@@ -94,7 +94,8 @@ export default function App() {
           <View style={styles.contentSection}>
             <View style={styles.loginCard}>
               <Text style={styles.welcomeTitle}>Welcome Back</Text>
-              <Text style={styles.welcomeSub}> </Text>
+              {/* ✅ Fixed: subtitle now shows */}
+              <Text style={styles.welcomeSub}>Please sign in to continue</Text>
 
               <Text style={styles.inputLabel}>SYSTEM ID / EMAIL</Text>
               <View style={styles.inputWrapper}>
@@ -106,50 +107,62 @@ export default function App() {
                   value={email}
                   onChangeText={setEmail}
                   autoCapitalize="none"
+                  keyboardType="email-address"
                 />
               </View>
 
-              <View style={styles.passwordHeader}>
-                <Text style={styles.inputLabel}>PASSWORD</Text>
-                <TouchableOpacity>
-                  <Text style={styles.forgotLink}>Forgot password?</Text>
-                </TouchableOpacity>
-              </View>
+                            {/* ✅ Fixed: PASSWORD label without forgot password (matches screenshot) */}
+              <Text style={[styles.inputLabel, { marginTop: 20 }]}>PASSWORD</Text>
               <View style={styles.inputWrapper}>
-                <Ionicons
-                  name="shield-checkmark-outline"
-                  size={18}
-                  color="#94A3B8"
-                />
+                 <TouchableOpacity onPress={() => setShowPassword(!showPassword)}>
+                  <Ionicons
+                    name={showPassword ? "eye-outline" : "eye-off-outline"}
+                    size={20}
+                    color="#94A3B8"
+                  />
+                </TouchableOpacity>
                 <TextInput
                   style={styles.textInput}
-                  placeholder="........"
+                  placeholder="········"
                   placeholderTextColor="#94A3B8"
-                  secureTextEntry
+                  secureTextEntry={!showPassword}
                   value={password}
                   onChangeText={setPassword}
                 />
+                {/* ✅ زرار إظهار/إخفاء الباسوورد */}
+               
               </View>
-
-              <TouchableOpacity activeOpacity={0.8} style={styles.signInBtn} onPress={handleLogin} disabled={loading}>
+              <TouchableOpacity
+                activeOpacity={0.8}
+                style={styles.signInBtn}
+                onPress={handleLogin}
+                disabled={loading}
+              >
                 <LinearGradient
                   colors={["rgb(0, 110, 255)", "rgb(0, 110, 255)"]}
                   start={{ x: 0, y: 0 }}
                   end={{ x: 1, y: 0 }}
                   style={styles.gradientBtn}
                 >
-                  <Text style={styles.signInBtnText}>SIGN IN</Text>
-                  <Ionicons name="chevron-forward" size={20} color="#fff" />
+                  {loading ? (
+                    <ActivityIndicator color="#fff" />
+                  ) : (
+                    <>
+                      <Text style={styles.signInBtnText}>SIGN IN</Text>
+                      <Ionicons name="chevron-forward" size={20} color="#fff" />
+                    </>
+                  )}
                 </LinearGradient>
               </TouchableOpacity>
             </View>
 
-            
+            {/* ✅ Fixed: Footer with shield icon above text */}
             <View style={styles.footerSection}>
+              <Ionicons name="shield-checkmark-outline" size={28} color="rgb(0, 110, 255)" style={{ marginBottom: 8 }} />
               <Text style={styles.footerText}>Secure Monitoring Platform</Text>
               <Text style={styles.footerSubText}>
-                Powered by <Text style={{ fontWeight: 'bold',color: "#3d4753be" }}>Camguard</Text>
-</Text>
+                Powered by <Text style={{ fontWeight: 'bold', color: "#3d4753be" }}>Camguard System</Text>
+              </Text>
             </View>
           </View>
         </ScrollView>
@@ -168,7 +181,7 @@ const styles = StyleSheet.create({
   },
   headerSection: {
     width: width,
-    height: height * 0.4, 
+    height: height * 0.4,
     backgroundColor: "#ffffff", 
   },
   logoImage: {
@@ -177,7 +190,7 @@ const styles = StyleSheet.create({
   },
   contentSection: {
     paddingHorizontal: 25,
-    marginTop: -90, 
+    marginTop: -90,
   },
   loginCard: {
     backgroundColor: "#FFFFFF",
@@ -195,6 +208,7 @@ const styles = StyleSheet.create({
     textAlign: "center",
     color: "#1E293B",
   },
+  // ✅ Fixed: subtitle style
   welcomeSub: {
     fontSize: 14,
     color: "#64748B",
@@ -208,16 +222,6 @@ const styles = StyleSheet.create({
     color: "#475569",
     marginBottom: 8,
     textTransform: "uppercase",
-  },
-  passwordHeader: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    marginTop: 20,
-  },
-  forgotLink: {
-    fontSize: 11,
-    color: "rgb(0, 110, 255)",
-    fontWeight: "700",
   },
   inputWrapper: {
     flexDirection: "row",
@@ -253,17 +257,19 @@ const styles = StyleSheet.create({
     marginRight: 10,
     letterSpacing: 1.5,
   },
+  // ✅ Fixed: footer centered with icon space
   footerSection: {
     alignItems: "center",
-    paddingVertical: 20,
+    paddingVertical: 25,
   },
   footerText: {
-    color: "rgba(47, 45, 45, 0.5)",
-    fontSize: 12,
+    color: "rgba(47, 45, 45, 0.7)",
+    fontSize: 13,
+    fontWeight: "600",
   },
   footerSubText: {
-    color: "rgba(7, 7, 7, 0.3)",
-    fontSize: 11,
-    marginTop: 5,
+    color: "rgba(7, 7, 7, 0.4)",
+    fontSize: 12,
+    marginTop: 4,
   },
 });

@@ -1,6 +1,7 @@
 import React from 'react';
 import { Tabs } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import { Image } from 'expo-image';
 import { Platform, View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { useRouter } from 'expo-router';
 
@@ -11,18 +12,11 @@ const INACTIVE = '#AEAEB2';
 
 function CamGuardHeader() {
   return (
-    <View style={styles.logoRow}>
-      <View style={styles.logoIcon}>
-        <Ionicons name="shield-checkmark" size={18} color={WHITE} />
-      </View>
-      <View>
-        <View style={styles.nameRow}>
-          <Text style={styles.nameDark}>Cam</Text>
-          <Text style={styles.nameBlue}>Guard</Text>
-        </View>
-        <Text style={styles.tagline}>SMART SECURITY</Text>
-      </View>
-    </View>
+    <Image
+      source={require('../../assets/images/logo.png')}
+      style={{ width: 120, height: 70 }}
+      resizeMode="contain"
+    />
   );
 }
 
