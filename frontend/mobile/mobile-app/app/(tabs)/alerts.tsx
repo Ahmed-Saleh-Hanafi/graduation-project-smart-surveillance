@@ -7,6 +7,8 @@ import {
   TouchableOpacity,
   Platform,
   Alert,
+  Modal,
+  
 } from 'react-native';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import * as FileSystem from 'expo-file-system';
@@ -291,27 +293,41 @@ export default function AlertsScreen() {
 
   const pendingCount = alerts.filter(a => a.status === 'pending').length;
 
-  const handleResolve = async (id) => {
-    await resolveAlert(id);
-    setAlerts(prev =>
-      prev.map(a => a.id === id
-        ? { ...a, status: 'resolved', log: [...a.log, { time: 'Now', text: 'Marked resolved by operator', color: '#34C759' }] }
-        : a
-      )
-    );
-    if (selected?.id === id) setSelected(prev => ({ ...prev, status: 'resolved' }));
-  };
+  const handleResolve = async (id: string) => {
+  await resolveAlert(id);
+  const newLog = { time: 'Now', text: 'Marked resolved by operator', color: '#34C759' };
+  setAlerts(prev =>
+    prev.map(a => a.id === id
+      ? { ...a, status: 'resolved', log: [...(a.log || []), newLog] }
+      : a
+    )
+  );
+  if (selected?.id === id) {
+    setSelected(prev => prev ? {
+      ...prev,
+      status: 'resolved',
+      log: [...(prev.log || []), newLog],
+    } : null);
+  }
+};
 
-  const handleEscalate = async (id) => {
-    await escalateAlert(id);
-    setAlerts(prev =>
-      prev.map(a => a.id === id
-        ? { ...a, status: 'investigating', log: [...a.log, { time: 'Now', text: 'Escalated to supervisor', color: '#2563EB' }] }
-        : a
-      )
-    );
-    if (selected?.id === id) setSelected(prev => ({ ...prev, status: 'investigating' }));
-  };
+  const handleEscalate = async (id: string) => {
+  await escalateAlert(id);
+  const newLog = { time: 'Now', text: 'Escalated to supervisor', color: '#2563EB' };
+  setAlerts(prev =>
+    prev.map(a => a.id === id
+      ? { ...a, status: 'investigating', log: [...(a.log || []), newLog] }
+      : a
+    )
+  );
+  if (selected?.id === id) {
+    setSelected(prev => prev ? {
+      ...prev,
+      status: 'investigating',
+      log: [...(prev.log || []), newLog],
+    } : null);
+  }
+};
 
   return (
     <View style={styles.container}>
@@ -348,79 +364,94 @@ export default function AlertsScreen() {
       </ScrollView>
 
       {/* Event Modal */}
+      {/* Event Modal */}
+<Modal
+  visible={!!selected}
+  animationType="slide"
+  transparent
+  onRequestClose={() => setSelected(null)}
+>
+  <View style={styles.modalOverlay}>
+    <TouchableOpacity
+      style={StyleSheet.absoluteFill}
+      onPress={() => setSelected(null)}
+    />
+    <ScrollView
+      style={styles.modalScroll}
+      contentContainerStyle={styles.modal}
+      showsVerticalScrollIndicator={false}
+      bounces={false}
+    >
       {selected && (
-        <View style={styles.modalOverlay}>
-          <TouchableOpacity style={StyleSheet.absoluteFill} onPress={() => setSelected(null)} />
-          <View style={styles.modal}>
-            <View style={styles.modalHandle} />
-            <Text style={styles.modalTitle}>{selected.title}</Text>
-            <Text style={styles.modalSub}>{selected.location} · {selected.camera} · {selected.time}</Text>
+        <>
+          <View style={styles.modalHandle} />
+          <Text style={styles.modalTitle}>{selected.title}</Text>
+          <Text style={styles.modalSub}>
+            {selected.location} · {selected.camera} · {selected.time}
+          </Text>
 
-            {/* Camera placeholder */}
-            <View style={styles.eventShot}>
-              <TypeIcon type={selected.type} size={36} color="rgba(52,199,89,0.4)" />
-            </View>
+          <View style={styles.eventShot}>
+            <TypeIcon type={selected.type} size={36} color="rgba(52,199,89,0.4)" />
+          </View>
 
-            {/* Download buttons */}
-            <View style={styles.downloadRow}>
-              <DownloadButton alert={selected} type="snapshot" />
-              <DownloadButton alert={selected} type="video" />
-            </View>
+          <View style={styles.downloadRow}>
+            <DownloadButton alert={selected} type="snapshot" />
+            <DownloadButton alert={selected} type="video" />
+          </View>
 
-            {/* Detail grid */}
-            <View style={styles.detailGrid}>
-              {[
-                ['Status',     STATUS_BADGE[selected.status]?.label || selected.status],
-                ['Confidence', `${selected.confidence}%`],
-                ['Location',   selected.location],
-                ['Camera',     selected.camera],
-              ].map(([label, value]) => (
-                <View key={label} style={styles.detailCell}>
-                  <Text style={styles.detailLabel}>{label}</Text>
-                  <Text style={styles.detailValue}>{value}</Text>
-                </View>
-              ))}
-            </View>
-
-            {/* Event log */}
-            <Text style={styles.logTitle}>Event log</Text>
-            {selected.log.map((entry, i) => (
-              <View key={i} style={styles.logItem}>
-                <View style={[styles.logDot, { backgroundColor: entry.color }]} />
-                <Text style={styles.logText}>{entry.text}</Text>
-                <Text style={styles.logTime}>{entry.time}</Text>
+          <View style={styles.detailGrid}>
+            {[
+              ['Status',     STATUS_BADGE[selected.status]?.label || selected.status],
+              ['Confidence', `${selected.confidence}%`],
+              ['Location',   selected.location],
+              ['Camera',     selected.camera],
+            ].map(([label, value]) => (
+              <View key={label} style={styles.detailCell}>
+                <Text style={styles.detailLabel}>{label}</Text>
+                <Text style={styles.detailValue}>{value}</Text>
               </View>
             ))}
+          </View>
 
-            {/* Modal actions */}
-            <View style={styles.modalActions}>
-              {selected.status === 'pending' ? (
-                <>
-                  <TouchableOpacity
-                    style={[styles.modalBtn, styles.modalBtnPrimary]}
-                    onPress={() => { handleResolve(selected.id); setSelected(null); }}
-                  >
-                    <Text style={styles.modalBtnPrimaryText}>Mark resolved</Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity
-                    style={[styles.modalBtn, styles.modalBtnSecondary]}
-                    onPress={() => { handleEscalate(selected.id); setSelected(null); }}
-                  >
-                    <Text style={styles.modalBtnSecondaryText}>Escalate</Text>
-                  </TouchableOpacity>
-                </>
-              ) : (
+          <Text style={styles.logTitle}>Event log</Text>
+          {selected.log.map((entry, i) => (
+            <View key={i} style={styles.logItem}>
+              <View style={[styles.logDot, { backgroundColor: entry.color }]} />
+              <Text style={styles.logText}>{entry.text}</Text>
+              <Text style={styles.logTime}>{entry.time}</Text>
+            </View>
+          ))}
+
+          <View style={styles.modalActions}>
+            {selected.status === 'pending' ? (
+              <>
+                <TouchableOpacity
+                  style={[styles.modalBtn, styles.modalBtnPrimary]}
+                  onPress={() => { handleResolve(selected.id); setSelected(null); }}
+                >
+                  <Text style={styles.modalBtnPrimaryText}>Mark resolved</Text>
+                </TouchableOpacity>
                 <TouchableOpacity
                   style={[styles.modalBtn, styles.modalBtnSecondary]}
-                  onPress={() => setSelected(null)}
+                  onPress={() => { handleEscalate(selected.id); setSelected(null); }}
                 >
-                  <Text style={styles.modalBtnSecondaryText}>Close</Text>
+                  <Text style={styles.modalBtnSecondaryText}>Escalate</Text>
                 </TouchableOpacity>
-              )}
-            </View>
+              </>
+            ) : (
+              <TouchableOpacity
+                style={[styles.modalBtn, styles.modalBtnSecondary]}
+                onPress={() => setSelected(null)}
+              >
+                <Text style={styles.modalBtnSecondaryText}>Close</Text>
+              </TouchableOpacity>
+            )}
           </View>
-        </View>
+        </>
       )}
+    </ScrollView>
+  </View>
+</Modal>
 
     </View>
   );
@@ -430,6 +461,7 @@ export default function AlertsScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    
     backgroundColor: '#F2F3F7',
   },
   tabBar: {
@@ -438,9 +470,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingBottom: 12,
     paddingTop: Platform.OS === 'ios' ? 56 : 36,
-    backgroundColor: '#fff',
+    backgroundColor: '#F2F2F7',
     borderBottomWidth: 0.5,
-    borderBottomColor: 'rgba(0,0,0,0.08)',
+    borderBottomColor: 'rgba(255, 255, 255, 0.08)',
   },
   tab: {
     paddingHorizontal: 14,
@@ -448,6 +480,8 @@ const styles = StyleSheet.create({
     borderRadius: 99,
     borderWidth: 0.5,
     borderColor: 'rgba(0,0,0,0.12)',
+      backgroundColor: 'transparent',
+      backgroundColor: '#ffffff',
   },
   tabActive: {
     backgroundColor: '#1C1C1E',
@@ -469,7 +503,7 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     marginTop: 60,
     fontSize: 13,
-    color: '#8E8E93',
+    color: '#ffffff',
   },
   card: {
     backgroundColor: '#fff',
@@ -628,7 +662,7 @@ const styles = StyleSheet.create({
     color: '#8E8E93',
   },
   modalOverlay: {
-    ...StyleSheet.absoluteFillObject,
+    flex: 1,
     backgroundColor: 'rgba(0,0,0,0.4)',
     justifyContent: 'flex-end',
   },
@@ -640,6 +674,12 @@ const styles = StyleSheet.create({
     paddingBottom: 32,
     borderTopWidth: 0.5,
     borderTopColor: 'rgba(0,0,0,0.08)',
+  },
+  modalScroll: {
+    backgroundColor: '#fff',
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    maxHeight: '75%',
   },
   modalHandle: {
     width: 36,

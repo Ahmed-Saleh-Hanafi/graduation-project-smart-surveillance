@@ -132,7 +132,7 @@ const FaceCard: React.FC<FaceCardProps> = ({ face, onDelete, onToggleType }) => 
           hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
           accessibilityLabel={`Toggle ${face.name} access level`}
         >
-          <Feather name="refresh-cw" size={16} color={COLORS.blue} />
+          <Feather name="refresh-cw" size={16} color={'#007AFF'} />
         </TouchableOpacity>
         <TouchableOpacity
           style={[styles.iconBtn, styles.deleteBtn]}
@@ -282,7 +282,7 @@ const AddFaceModal: React.FC<AddFaceModalProps> = ({ visible, onClose, onSave, i
                 </>
               ) : (
                 <>
-                  <Ionicons name="camera" size={28} color={errors.image ? COLORS.red : COLORS.blue} />
+                  <Ionicons name="camera" size={28} color={errors.image ? COLORS.red: '#007AFF'} />
                   <Text style={[styles.uploadLabel, errors.image ? { color: COLORS.red } : null]}>
                     Add Photo *
                   </Text>
@@ -544,7 +544,7 @@ const COLORS = {
   textSecondary: '#8E8E93',
   placeholder: '#C7C7CC',
   border: 'rgba(60,60,67,0.12)',
-  blue: '#007AFF',
+  blue: '#272a2d',
   green: '#34C759',
   greenDark: '#1A7A35',
   greenBg: '#E8F9EE',
@@ -560,7 +560,7 @@ const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: COLORS.bg },
 
   header: {
-    backgroundColor: COLORS.surface,
+    backgroundColor: COLORS.bg,
     paddingTop: Platform.OS === 'ios' ? 60 : 40,
     paddingHorizontal: 20,
     paddingBottom: 22,
@@ -569,14 +569,14 @@ const styles = StyleSheet.create({
     alignItems: 'flex-end',
     borderBottomLeftRadius: 24,
     borderBottomRightRadius: 24,
-    shadowColor: '#000',
-    shadowOpacity: 0.06,
-    shadowRadius: 10,
+    shadowColor: '#ffffff00',
+    
+    
     elevation: 4,
   },
   headerSub: { fontSize: 11, color: COLORS.textSecondary, fontWeight: '600', textTransform: 'uppercase', letterSpacing: 0.5 },
   headerTitle: { fontSize: 24, fontWeight: '800', color: COLORS.text },
-  addButton: { backgroundColor: COLORS.blue, flexDirection: 'row', paddingHorizontal: 14, paddingVertical: 10, borderRadius: 14, alignItems: 'center', gap: 6 },
+  addButton: { backgroundColor: '#007AFF', flexDirection: 'row', paddingHorizontal: 14, paddingVertical: 10, borderRadius: 14, alignItems: 'center', gap: 6 },
   addButtonText: { color: '#fff', fontWeight: '700', fontSize: 13 },
 
   statsRow: { flexDirection: 'row', gap: 10, paddingHorizontal: 16, paddingTop: 16 },
@@ -623,20 +623,20 @@ const styles = StyleSheet.create({
   emptyText: { fontSize: 14, color: COLORS.textSecondary, fontWeight: '500' },
   errorBox: { alignItems: 'center', padding: 40 },
   errorText: { color: COLORS.red, marginBottom: 12, textAlign: 'center' },
-  retryBtn: { backgroundColor: COLORS.blue, paddingHorizontal: 20, paddingVertical: 10, borderRadius: 12 },
+  retryBtn: { backgroundColor: '#007AFF', paddingHorizontal: 20, paddingVertical: 10, borderRadius: 12 },
   retryText: { color: '#fff', fontWeight: '700' },
 
   overlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.4)', justifyContent: 'flex-end' },
-  sheet: { backgroundColor: COLORS.surface, borderTopLeftRadius: 28, borderTopRightRadius: 28, padding: 20, paddingBottom: Platform.OS === 'ios' ? 40 : 28 },
+  sheet: { backgroundColor: COLORS.surface, borderTopLeftRadius: 28, borderTopRightRadius: 28, padding: 20, paddingBottom: Platform.OS === 'ios' ? 5 : 0.1 },
   dragHandle: { width: 36, height: 4, backgroundColor: COLORS.placeholder, borderRadius: 2, alignSelf: 'center', marginBottom: 16 },
   modalHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 },
   modalTitle: { fontSize: 19, fontWeight: '800', color: COLORS.text },
   closeBtn: { width: 30, height: 30, borderRadius: 15, backgroundColor: COLORS.inputBg, justifyContent: 'center', alignItems: 'center' },
-  uploadCircle: { width: 90, height: 90, borderRadius: 45, borderWidth: 2, borderColor: COLORS.blue, borderStyle: 'dashed', justifyContent: 'center', alignItems: 'center', backgroundColor: '#F0F7FF', alignSelf: 'center', marginBottom: 6, overflow: 'hidden', position: 'relative' },
+  uploadCircle: { width: 90, height: 90, borderRadius: 45, borderWidth: 2, borderColor: '#007AFF', borderStyle: 'dashed', justifyContent: 'center', alignItems: 'center', backgroundColor: '#F0F7FF', alignSelf: 'center', marginBottom: 6, overflow: 'hidden', position: 'relative' },
   uploadCircleError: { borderColor: COLORS.red, backgroundColor: COLORS.redBg },
   uploadPreview: { width: 90, height: 90, borderRadius: 45 },
-  uploadEditBadge: { position: 'absolute', bottom: 4, right: 4, backgroundColor: COLORS.blue, borderRadius: 10, width: 20, height: 20, justifyContent: 'center', alignItems: 'center' },
-  uploadLabel: { fontSize: 11, color: COLORS.blue, fontWeight: '700', marginTop: 4 },
+  uploadEditBadge: { position: 'absolute', bottom: 4, right: 4, backgroundColor: '#007AFF', borderRadius: 10, width: 20, height: 20, justifyContent: 'center', alignItems: 'center' },
+  uploadLabel: { fontSize: 11, color: '#007AFF', fontWeight: '700', marginTop: 4 },
   fieldLabel: { fontSize: 11, color: COLORS.textSecondary, fontWeight: '600', textTransform: 'uppercase', letterSpacing: 0.4, marginBottom: 6 },
   fieldError: { fontSize: 11, color: COLORS.red, fontWeight: '500', marginTop: -10, marginBottom: 10, marginLeft: 2 },
   input: { backgroundColor: COLORS.inputBg, borderRadius: 13, padding: 14, fontSize: 14, color: COLORS.text, borderWidth: 1, borderColor: COLORS.border, marginBottom: 14 },
@@ -645,6 +645,6 @@ const styles = StyleSheet.create({
   segBtn: { flex: 1, paddingVertical: 10, borderRadius: 10, alignItems: 'center', backgroundColor: 'transparent' },
   segBtnActive: { backgroundColor: COLORS.surface, shadowColor: '#000', shadowOpacity: 0.08, shadowRadius: 4, elevation: 2 },
   segText: { fontSize: 13, fontWeight: '600', color: COLORS.textSecondary },
-  saveBtn: { backgroundColor: COLORS.blue, padding: 16, borderRadius: 16, alignItems: 'center' },
+  saveBtn: { backgroundColor: '#007AFF', padding: 16, borderRadius: 16, alignItems: 'center' },
   saveBtnText: { color: '#fff', fontSize: 15, fontWeight: '800' },
 });

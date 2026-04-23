@@ -40,7 +40,7 @@ export default function TabLayout() {
       screenOptions={{
         headerShown: true,
         headerShadowVisible: false,
-        headerStyle: { backgroundColor: WHITE },
+        headerStyle: { backgroundColor: '#ffffffc4' },
         headerTitle: () => <CamGuardHeader />,
         headerRight: () => <LogoutButton onPress={handleLogout} />,
         headerRightContainerStyle: { paddingRight: 16 },
@@ -104,8 +104,7 @@ export default function TabLayout() {
           ),
         }}
       />
-      <Tabs.Screen name="ai-scan" options={{ href: null }} />
-      <Tabs.Screen name="explore" options={{ href: null }} />
+      
     </Tabs>
   );
 }
@@ -152,7 +151,7 @@ const styles = StyleSheet.create({
     width: 32,
     height: 32,
     borderRadius: 50,
-    backgroundColor: '#F2F2F7',
+    backgroundColor: '#ffffff92',
     alignItems: 'center',
     justifyContent: 'center',
   },

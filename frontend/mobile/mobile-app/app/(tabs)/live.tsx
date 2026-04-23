@@ -815,7 +815,7 @@ export default function LiveScreen() {
           dialogTitle: 'Save Snapshot',
         });
       } else {
-        Alert.alert('📸 Snapshot saved', 'Saved to Events.', [
+        Alert.alert(' Snapshot saved', 'Saved to Events.', [
           { text: 'View Events', onPress: () => navigation.navigate('events') },
           { text: 'OK', style: 'cancel' },
         ]);
