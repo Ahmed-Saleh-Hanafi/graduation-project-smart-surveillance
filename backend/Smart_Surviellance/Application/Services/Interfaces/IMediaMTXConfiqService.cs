@@ -4,10 +4,8 @@ using System.Text;
 
 namespace Application.Services.Interfaces
 {
-    public interface IStreamService
+    public interface IMediaMTXConfiqService
     {
-
-        void StartStream(string rtspUrl);
-
+        Task GenerateConfigAsync();
     }
 }

@@ -7,15 +7,18 @@ using System;
 using System.Collections.Generic;
 using System.Text;
 
+
 namespace Application.Services.Implementations
 {
     public class CameraService : ICameraService
     {
         private readonly ICameraRepository _cameraRepository;
+        private readonly IMediaMTXConfiqService _mediaMTXConfigService;
 
-        public CameraService(ICameraRepository cameraRepository)
+        public CameraService(ICameraRepository cameraRepository, IMediaMTXConfiqService mediaMTXConfiqService)
         {
             _cameraRepository = cameraRepository;
+            _mediaMTXConfigService = mediaMTXConfiqService;
         }
 
 
@@ -40,6 +43,9 @@ namespace Application.Services.Implementations
                 Path = createCameraDto.Path
             };
             await _cameraRepository.AddCameraAsync(camera);
+
+            await _mediaMTXConfigService.GenerateConfigAsync();
+
             return ApiResponse<CameraDto>.Success(new CameraDto
             {
                 Id = camera.Id,
@@ -55,9 +61,11 @@ namespace Application.Services.Implementations
             var camera = await _cameraRepository.GetCameraByIdAsync(id);
             if (camera == null)
             {
-                throw new Exception($"Camera with ID {id} not found.");
+                return ApiResponse<bool>.Fail($"Camera with ID {id} not found.");
             }
             await _cameraRepository.DeleteCameraAsync(id);
+
+            await _mediaMTXConfigService.GenerateConfigAsync();
 
             return ApiResponse<bool>.Success(true, "Camera deleted successfully.");
         }
@@ -88,7 +96,7 @@ namespace Application.Services.Implementations
             var camera = await _cameraRepository.GetCameraByIdAsync(id);
             if (camera == null)
             {
-                throw new Exception($"Camera with ID {id} not found.");
+                return ApiResponse<CameraDto>.Fail($"Camera with ID {id} not found.");
             }
             return ApiResponse<CameraDto>.Success(new CameraDto
             {
@@ -106,7 +114,7 @@ namespace Application.Services.Implementations
             var camera = await _cameraRepository.GetCameraByIdAsync(id);
             if (camera == null)
             {
-                throw new Exception($"Camera with ID {id} not found.");
+                return ApiResponse<bool>.Fail($"Camera with ID {id} not found.");
             }
 
             camera.Name = updateCameraDto.Name;
@@ -117,7 +125,33 @@ namespace Application.Services.Implementations
             camera.Path = updateCameraDto.Path;
 
             await _cameraRepository.UpdateCameraAsync(camera);
+
+            await _mediaMTXConfigService.GenerateConfigAsync();
+
             return ApiResponse<bool>.Success(true, "Camera updated successfully.");
         }
+
+
+        public async Task<ApiResponse<WebRTCDto>> GetWebRTCStreamAsync(int id)
+        {
+            var camera = await _cameraRepository.GetCameraByIdAsync(id);
+            if (camera == null)
+            {
+                return ApiResponse<WebRTCDto>.Fail($"Camera with ID {id} not found.");
+                
+            }
+            var path = camera.Path.TrimStart('/');
+            var url = $"http://localhost:8889/{path}";
+            return ApiResponse<WebRTCDto>.Success(new WebRTCDto
+            {
+                Id = id,
+                Name = camera.Name,
+                WebRTCUrl = url
+            }, "WebRTC stream URL retrieved successfully.");
+        }
+
+
+
+
     }
 }

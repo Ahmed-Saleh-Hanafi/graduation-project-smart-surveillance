@@ -76,10 +76,20 @@ builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<ITokenService, TokenService>();
 builder.Services.AddScoped<ISignInService, SignInService>();
 builder.Services.AddScoped<ICameraService, CameraService>();
+builder.Services.AddScoped<IMediaMTXConfiqService, MediaMTXConfigService>();
 
 
 
-
+// ======================
+// 5. Add CORS
+// ======================
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("AllowAll",
+        builder => builder.AllowAnyOrigin()
+                          .AllowAnyMethod()
+                          .AllowAnyHeader());
+});
 
 
 
@@ -108,8 +118,12 @@ using (var scope = app.Services.CreateScope())
 }
 
 
-
 app.UseHttpsRedirection();
+
+app.UseRouting();
+app.UseCors("AllowAll");
+
+
 
 app.UseAuthentication();
 app.UseAuthorization();

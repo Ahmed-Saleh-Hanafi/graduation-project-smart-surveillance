@@ -74,7 +74,17 @@ namespace Smart_Surviellance.Controllers
 
 
 
+        [HttpGet("{id}/webrtc")]
+        public async Task<IActionResult> GetWebRTCStream(int id)
+        {
+            var result = await _cameraService.GetWebRTCStreamAsync(id);
+            if (!result.IsSuccess)
+            {
+                return NotFound(result);
+            }
+            return Ok(result);
 
+        }
 
 
     }

@@ -13,6 +13,8 @@ namespace Application.Services.Interfaces
         Task<ApiResponse<CameraDto>> GetByIdAsync(int id);
         Task<ApiResponse<bool>> UpdateAsync(int id, CreateCameraDto updateCameraDto);
         Task<ApiResponse<bool>> DeleteAsync (int id);
+        
+        Task<ApiResponse<WebRTCDto>> GetWebRTCStreamAsync(int id);
 
 
     }
