@@ -7,6 +7,11 @@ __pycache__/
 .env
 
 
+# .NET build folders
+**/bin/
+**/obj/
+
+
 # IDE/editor folders
 .vscode/
 .idea/
