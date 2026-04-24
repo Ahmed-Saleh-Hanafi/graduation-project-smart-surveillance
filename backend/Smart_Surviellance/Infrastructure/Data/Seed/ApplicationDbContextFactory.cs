@@ -4,6 +4,7 @@ using Microsoft.Extensions.Configuration;
 using System;
 using System.Collections.Generic;
 using System.Text;
+using System.IO;
 
 namespace Infrastructure.Data
 {
@@ -12,12 +13,12 @@ namespace Infrastructure.Data
         
             public ApplicationDbContext CreateDbContext(string[] args)
             {
-                var basePath = Directory.GetCurrentDirectory();
+                var basePath = Path.Combine(Directory.GetCurrentDirectory(), "..", "Smart_Surveillance");
 
                 var configuration = new ConfigurationBuilder()
                     .SetBasePath(basePath)
                     .AddJsonFile("appsettings.json", optional: false)
-                    .Build();
+                    .Build();   
 
                 var optionsBuilder = new DbContextOptionsBuilder<ApplicationDbContext>();
 
@@ -26,6 +27,15 @@ namespace Infrastructure.Data
                 optionsBuilder.UseSqlServer(connectionString);
 
                 return new ApplicationDbContext(optionsBuilder.Options);
+
+
+
+
+
+
+
+
+
             }
         
     }
