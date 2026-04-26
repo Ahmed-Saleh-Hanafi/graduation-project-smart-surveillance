@@ -70,6 +70,8 @@ builder.Services.AddAuthentication(options =>
 // Repositories
 builder.Services.AddScoped<IUserRepository, UserRepository>();
 builder.Services.AddScoped<ICameraRepository, CameraRepository>();
+//builder.Services.AddScoped<IAlertService, AlertService>();
+
 
 // Services
 builder.Services.AddScoped<IAuthService, AuthService>();

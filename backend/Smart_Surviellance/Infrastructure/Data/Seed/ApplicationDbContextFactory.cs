@@ -1,42 +1,39 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Design;
 using Microsoft.Extensions.Configuration;
-using System;
-using System.Collections.Generic;
-using System.Text;
 using System.IO;
 
 namespace Infrastructure.Data
 {
     public class ApplicationDbContextFactory : IDesignTimeDbContextFactory<ApplicationDbContext>
     {
-        
-            public ApplicationDbContext CreateDbContext(string[] args)
+        public ApplicationDbContext CreateDbContext(string[] args)
+        {
+            var currentDirectory = Directory.GetCurrentDirectory();
+
+            // يطلع لفوق لحد ما يلاقي appsettings.json
+            var basePath = currentDirectory;
+
+            while (!File.Exists(Path.Combine(basePath, "appsettings.json")))
             {
-                var basePath = Path.Combine(Directory.GetCurrentDirectory(), "..", "Smart_Surveillance");
+                basePath = Directory.GetParent(basePath)?.FullName;
 
-                var configuration = new ConfigurationBuilder()
-                    .SetBasePath(basePath)
-                    .AddJsonFile("appsettings.json", optional: false)
-                    .Build();   
-
-                var optionsBuilder = new DbContextOptionsBuilder<ApplicationDbContext>();
-
-                var connectionString = configuration.GetConnectionString("DefaultConnection");
-
-                optionsBuilder.UseSqlServer(connectionString);
-
-                return new ApplicationDbContext(optionsBuilder.Options);
-
-
-
-
-
-
-
-
-
+                if (basePath == null)
+                    throw new Exception("appsettings.json not found");
             }
-        
+
+            var configuration = new ConfigurationBuilder()
+                .SetBasePath(basePath)
+                .AddJsonFile("appsettings.json", optional: false)
+                .Build();
+
+            var optionsBuilder = new DbContextOptionsBuilder<ApplicationDbContext>();
+
+            var connectionString = configuration.GetConnectionString("DefaultConnection");
+
+            optionsBuilder.UseSqlServer(connectionString);
+
+            return new ApplicationDbContext(optionsBuilder.Options);
+        }
     }
 }

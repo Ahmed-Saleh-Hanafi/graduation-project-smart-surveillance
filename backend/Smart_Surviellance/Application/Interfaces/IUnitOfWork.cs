@@ -8,6 +8,7 @@ namespace Application.Interfaces
     {
 
         ICameraRepository CameraRepository { get; }
+        IAlertRepository AlertRepository { get; }
 
         Task<int> SaveChangesAsync();
 
