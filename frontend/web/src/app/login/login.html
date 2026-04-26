@@ -108,18 +108,20 @@
                 </div> -->
                 <!-- <div class="h-1 w-16 bg-primary-container mb-8"></div> -->
                 <img src="imgs/logo.png" alt="logo" width="400px">
-                <h2 class="text-2xl font-medium text-white/90 leading-snug mb-4">Securing enterprise infrastructure with cognitive intelligence.</h2>
+                <h2 class="text-2xl font-medium text-white/90 leading-snug mb-4">Securing enterprise infrastructure with
+                    cognitive intelligence.</h2>
                 <p class="text-white/60 text-lg font-light leading-relaxed">
-                 Monitor cameras, detect suspicious behavior, and receive instant alerts through an intelligent & reliable survelliance platform
+                    Monitor cameras, detect suspicious behavior, and receive instant alerts through an intelligent &
+                    reliable survelliance platform
                 </p>
             </div>
             <!-- Trust Indicators -->
             <div class="grid grid-cols-2 gap-8 pt-8 border-t border-white/10">
-             
-                
+
+
             </div>
         </div>
-      
+
     </div>
     <!-- Right Panel: Login Form -->
     <main class="w-full lg:w-1/2 flex flex-col bg-white">
@@ -135,16 +137,16 @@
                 <div class="mb-10">
                     <h3 class="text-2xl font-bold text-on-surface mb-2">System Access</h3>
                 </div>
-                <form class="space-y-6">
+                <form (ngSubmit)="login()" class="space-y-6">
                     <div class="space-y-2">
                         <label class="text-xs font-bold text-on-surface-variant uppercase tracking-wider"
                             for="id">Username / Email</label>
                         <div class="relative group">
                             <span
                                 class="absolute left-3 top-1/2 -translate-y-1/2 material-symbols-outlined text-outline text-lg group-focus-within:text-primary transition-colors">person</span>
-                            <input autocomplete="username"
+                            <input [(ngModel)]="email" name="email" autocomplete="username"
                                 class="w-full pl-10 pr-4 py-3 bg-white border border-outline-variant text-sm transition-all outline-none focus:border-primary focus:ring-1 focus:ring-primary/20 placeholder:text-outline/40"
-                                id="id" name="id" placeholder="name@nexus.ops" required="" type="text" />
+                                id="id" placeholder="name@nexus.ops" required type="text" />
                         </div>
                     </div>
                     <div class="space-y-2">
@@ -157,29 +159,34 @@
                         <div class="relative group">
                             <span
                                 class="absolute left-3 top-1/2 -translate-y-1/2 material-symbols-outlined text-outline text-lg group-focus-within:text-primary transition-colors">lock</span>
-                            <input autocomplete="current-password"
+                            <input [(ngModel)]="password" name="password" autocomplete="current-password"
                                 class="w-full pl-10 pr-4 py-3 bg-white border border-outline-variant text-sm transition-all outline-none focus:border-primary focus:ring-1 focus:ring-primary/20 placeholder:text-outline/40"
-                                id="password" name="password" placeholder="••••••••" required="" type="password" />
+                                id="password" placeholder="••••••••" required type="password" />
                         </div>
                     </div>
                     <div class="flex items-center gap-3 py-2">
-                        
+
                     </div>
                     <button
                         class="w-full bg-primary hover:bg-primary-container text-white font-bold py-4 transition-all duration-200 shadow-md flex items-center justify-center gap-2 group"
                         type="submit">
-                       Log In
+                        Log In
                         <span
                             class="material-symbols-outlined text-sm group-hover:translate-x-1 transition-transform">arrow_forward</span>
                     </button>
+                    <p class="text-center text-sm text-primary mt-4">
+                        {{ message }}
+                    </p>
                 </form>
                 <div class="mt-12 pt-8 border-t border-outline-variant/30 text-center">
-                    <p class="text-xs text-on-surface-variant font-medium mb-3">Secure Monitoring Platform powered By <span class="font-bold">Camguard</span></p>
-                    
+                    <p class="text-xs text-on-surface-variant font-medium mb-3">Secure Monitoring Platform powered By
+                        <span class="font-bold">Camguard</span>
+                    </p>
+
                 </div>
             </div>
         </div>
-     
+
     </main>
 </body>
 
