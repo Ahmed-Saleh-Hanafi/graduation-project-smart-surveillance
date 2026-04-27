@@ -1,15 +1,7 @@
-import { Component } from '@angular/core';
+import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-
-interface Camera {
-  name: string;
-  ip: string;
-  port: string;
-  username: string;
-  password: string;
-  path: string;
-}
+import { CameraService, Camera } from '../services/camera.service';
 
 @Component({
   selector: 'app-camera-configuration',
@@ -18,24 +10,33 @@ interface Camera {
   templateUrl: './camera-configuration.html',
   styleUrl: './camera-configuration.css',
 })
-export class CameraConfiguration {
+export class CameraConfiguration implements OnInit {
 
-  cameras: Camera[] = [
-    {
-      name: 'Lobby Camera',
-      ip: '192.168.1.10',
-      port: '8080',
-      username: 'admin',
-      password: '1234',
-      path: '/stream1'
-    }
-  ];
+  cameras: Camera[] = [];
 
   isModalOpen = false;
   mode: 'create' | 'edit' = 'create';
   selectedIndex: number | null = null;
 
   form: Camera = this.emptyForm();
+
+  constructor(private cameraService: CameraService) {}
+
+  ngOnInit() {
+    this.loadCameras();
+  }
+
+  // تحميل البيانات من الباك
+  loadCameras() {
+    this.cameraService.getAll().subscribe({
+      next: (res: any) => {
+        this.cameras = res.data ?? []; // ✔ حماية لو data فاضية
+      },
+      error: (err) => {
+        console.error('Load cameras error:', err);
+      }
+    });
+  }
 
   // فتح إنشاء
   openCreate() {
@@ -60,18 +61,41 @@ export class CameraConfiguration {
   // حفظ (Create / Edit)
   save() {
     if (this.mode === 'create') {
-      this.cameras.push({ ...this.form });
-    } else if (this.mode === 'edit' && this.selectedIndex !== null) {
-      this.cameras[this.selectedIndex] = { ...this.form };
-    }
 
-    this.closeModal();
+      this.cameraService.create(this.form).subscribe({
+        next: () => {
+          this.loadCameras();
+          this.closeModal();
+        },
+        error: (err) => console.error('Create error:', err)
+      });
+
+    } else if (this.mode === 'edit' && this.selectedIndex !== null) {
+
+      const id = (this.cameras[this.selectedIndex] as any).id;
+
+      this.cameraService.update(id, this.form).subscribe({
+        next: () => {
+          this.loadCameras();
+          this.closeModal();
+        },
+        error: (err) => console.error('Update error:', err)
+      });
+    }
   }
 
   // حذف
   delete(index: number) {
+
+    const id = (this.cameras[index] as any).id;
+
     if (confirm('Are you sure you want to delete this camera?')) {
-      this.cameras.splice(index, 1);
+      this.cameraService.delete(id).subscribe({
+        next: () => {
+          this.loadCameras();
+        },
+        error: (err) => console.error('Delete error:', err)
+      });
     }
   }
 
@@ -79,7 +103,7 @@ export class CameraConfiguration {
   emptyForm(): Camera {
     return {
       name: '',
-      ip: '',
+      IpAddress: '',
       port: '',
       username: '',
       password: '',
