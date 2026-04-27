@@ -40,7 +40,7 @@ if (token) {
 }
 
       // 🔥 تحويل المستخدم لصفحة camera
-      this.router.navigate(['/CameraConfiguration']);
+      this.router.navigate(['/Dashboard']);
     },
 
    error: (err) => {

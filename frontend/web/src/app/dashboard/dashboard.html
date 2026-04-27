@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en">
+
+<head>
+    <meta charset="utf-8" />
+    <meta content="width=device-width, initial-scale=1.0" name="viewport" />
+    <title>Camera Configuration | Operations Command Center</title>
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&amp;display=swap"
+        rel="stylesheet" />
+    <link
+        href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap"
+        rel="stylesheet" />
+    <link
+        href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap"
+        rel="stylesheet" />
+    <script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "inverse-on-surface": "#f0f1f2",
+                        "on-primary-container": "#ffffff",
+                        "on-error": "#ffffff",
+                        "on-tertiary-container": "#0e0200",
+                        "on-primary-fixed-variant": "#004493",
+                        "on-primary": "#ffffff",
+                        "on-surface-variant": "#414754",
+                        "surface-variant": "#e1e3e4",
+                        "on-secondary": "#ffffff",
+                        "primary-fixed": "#d8e2ff",
+                        "on-secondary-fixed-variant": "#3d4854",
+                        "inverse-primary": "#adc7ff",
+                        "tertiary-fixed-dim": "#ffb691",
+                        "surface-container-lowest": "#ffffff",
+                        "on-error-container": "#93000a",
+                        "surface-container-highest": "#e1e3e4",
+                        "on-tertiary-fixed": "#341100",
+                        "on-secondary-fixed": "#121d27",
+                        "surface": "#f8f9fa",
+                        "surface-container-low": "#f3f4f5",
+                        "surface-container-high": "#e7e8e9",
+                        "secondary-container": "#d5e1ef",
+                        "on-tertiary-fixed-variant": "#783100",
+                        "primary": "#005bbf",
+                        "outline-variant": "#c1c6d6",
+                        "secondary-fixed": "#d8e4f2",
+                        "secondary-fixed-dim": "#bcc8d6",
+                        "on-primary-fixed": "#001a41",
+                        "surface-tint": "#005bc0",
+                        "on-background": "#191c1d",
+                        "error-container": "#ffdad6",
+                        "tertiary-container": "#c55500",
+                        "primary-fixed-dim": "#adc7ff",
+                        "primary-container": "#1a73e8",
+                        "outline": "#727785",
+                        "background": "#f8f9fa",
+                        "tertiary-fixed": "#ffdbcb",
+                        "on-surface": "#191c1d",
+                        "surface-dim": "#d9dadb",
+                        "error": "#ba1a1a",
+                        "surface-bright": "#f8f9fa",
+                        "tertiary": "#9e4300",
+                        "on-tertiary": "#ffffff",
+                        "on-secondary-container": "#596470",
+                        "surface-container": "#edeeef",
+                        "inverse-surface": "#2e3132",
+                        "secondary": "#545f6c"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.125rem",
+                        "lg": "0.25rem",
+                        "xl": "0.5rem",
+                        "full": "0.75rem"
+                    },
+                    "fontFamily": {
+                        "headline": ["Inter"],
+                        "body": ["Inter"],
+                        "label": ["Inter"]
+                    }
+                },
+            },
+        }
+    </script>
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+
+        .glass-nav {
+            backdrop-filter: blur(20px);
+        }
+
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+    </style>
+</head>
+
+<body class="bg-surface text-on-surface">
+    <!-- TopNavBar -->
+
+    <header style="padding-top: 7px; padding-bottom: 7px;"
+        class="fixed top-0 w-full z-50 bg-slate-50/80 backdrop-blur-xl border-b border-slate-200/50 shadow-sm">
+
+        <div class="flex justify-between items-center px-6 h-16 w-full max-w-[1920px] mx-auto">
+            <div class="flex items-center gap-8">
+
+                <nav class="hidden md:flex gap-6 text-sm font-sans tracking-tight ">
+
+                    <img src="imgs/logo.png" alt="logo" style="width:150; height: fit-content; margin-left: 20px; ">
+                </nav>
+            </div>
+            <div class="flex items-center gap-4">
+                <button class="p-2 text-slate-500 hover:bg-slate-100/50 transition-all duration-200 active:scale-95">
+                    <span class="material-symbols-outlined" data-icon="notifications">notifications</span>
+                </button>
+                <button class="p-2 text-slate-500 hover:bg-slate-100/50 transition-all duration-200 active:scale-95">
+                    <span class="material-symbols-outlined" data-icon="settings">settings</span>
+                </button>
+                <div class="w-8 h-8 rounded-full overflow-hidden bg-slate-200">
+                    <img alt="Administrator profile"
+                        data-alt="Close up portrait of a senior system administrator in a professional setting with soft office lighting"
+                        src="https://lh3.googleusercontent.com/aida-public/AB6AXuD1gFb8rW8bBh7Q7n-fUYlzdznMbfbtPnfUzbwsieTvqtKz4PzrBkZeG-NOgxEs2mGzSllahsVxyX5XHGOQP04N99JQTXuYU3U00E_uiREUq4utywLgBKlWieiJDDBFhfKgbxelAiCMua6NxbIoGZ2XCwGifXbKKLbrr5qJGKyYhRzfkEh8_oqa51KPa5swXJFpNHRHIfiDcmveSaWjidVNcSlOdYO3PSCsZPo7uwta9WrHTd6W5Cxj4f61V1CcTiAWDWPj8aOngNRx" />
+                </div>
+            </div>
+        </div>
+    </header>
+    <!-- SideNavBar -->
+    <aside style="padding-top: 40px;"
+        class="fixed left-0 top-16 h-[calc(100vh-4rem)] w-64 z-40 bg-slate-50/80 backdrop-blur-xl flex flex-col py-4 px-2 border-r border-slate-200/20">
+
+        <nav class="flex-1 space-y-1">
+
+            <a class="flex items-center gap-3 px-4 py-3 text-sm font-medium bg-blue-50 text-blue-700 border-l-4 border-blue-700 transition-colors duration-150 rounded-r-lg group"
+                href="/Dashboard">
+
+                <span class="material-symbols-outlined text-blue-700">
+                    dashboard
+                </span>
+
+                Dashboard
+            </a>
+            <a class="flex items-center gap-3 px-4 py-3 text-sm font-medium text-slate-600 hover:bg-slate-100 rounded-lg"
+                href="/CameraConfiguration">
+
+                <span class="material-symbols-outlined">videocam</span>
+                Camera Config
+            </a>
+            <a class="flex items-center gap-3 px-4 py-3 text-sm font-medium text-slate-600 hover:bg-slate-100 transition-colors duration-150 rounded-lg group"
+                href="#">
+                <span class="material-symbols-outlined text-slate-400 group-hover:text-blue-700"
+                    data-icon="database">database</span>
+                Storage
+            </a>
+            <a class="flex items-center gap-3 px-4 py-3 text-sm font-medium text-slate-600 hover:bg-slate-100 transition-colors duration-150 rounded-lg group"
+                href="#">
+                <span class="material-symbols-outlined text-slate-400 group-hover:text-blue-700"
+                    data-icon="group">group</span>
+                User Access
+            </a>
+            <a class="flex items-center gap-3 px-4 py-3 text-sm font-medium text-slate-600 hover:bg-slate-100 transition-colors duration-150 rounded-lg group"
+                href="#">
+                <span class="material-symbols-outlined text-slate-400 group-hover:text-blue-700"
+                    data-icon="receipt_long">receipt_long</span>
+                Logs
+            </a>
+        </nav>
+
+    </aside>
+    <!-- Main Content -->
+    <main class="ml-64 mt-16 p-8 min-h-screen bg-surface">
+
+        <!-- Top Live Camera -->
+         <div class="bg-black rounded-2xl overflow-hidden relative mb-8">
+
+        <img *ngIf="!videoUrl"
+             src="imgs/placeholder.jpg"
+             class="w-full h-64 object-cover opacity-80" />
+
+        <video *ngIf="videoUrl"
+               [src]="videoUrl"
+               controls
+               autoplay
+               muted
+               class="w-full h-64 object-cover">
+        </video>
+<div class="mt-4 flex gap-2">
+  <button 
+    *ngFor="let cam of cameras"
+    (click)="selectCamera(cam.id)"
+    class="px-3 py-1 bg-blue-500 text-white rounded">
+    {{ cam.name }}
+  </button>
+</div>
+        <div class="absolute top-4 left-4 text-white">
+            <span class="bg-white/20 px-2 py-1 rounded text-xs">IDLE</span>
+            <h2 class="text-xl font-bold mt-2">Parking Lot</h2>
+            <p class="text-sm opacity-70">North parking · 720p</p>
+        </div>
+
+    </div>
+
+        <!-- Sensors Section -->
+        <div>
+            <div class="flex justify-between items-center mb-4">
+                <h2 class="text-lg font-bold">Sensors</h2>
+                <span class="text-sm text-gray-400">Tap for details</span>
+            </div>
+
+            <div class="grid grid-cols-2 gap-4">
+
+                <!-- Smoke -->
+                <div class="bg-white p-4 rounded-xl shadow">
+                    <p class="text-sm text-gray-400">Smoke</p>
+                    <h3 class="text-2xl font-bold">0 PPM</h3>
+                    <p class="text-green-500 text-sm">Normal</p>
+                </div>
+
+                <!-- Temperature -->
+                <div class="bg-white p-4 rounded-xl shadow">
+                    <p class="text-sm text-gray-400">Temperature</p>
+                    <h3 class="text-2xl font-bold">27°C</h3>
+                    <p class="text-orange-500 text-sm">High</p>
+                </div>
+
+                <!-- Humidity -->
+                <div class="bg-white p-4 rounded-xl shadow">
+                    <p class="text-sm text-gray-400">Humidity</p>
+                    <h3 class="text-2xl font-bold">57%</h3>
+                    <p class="text-blue-500 text-sm">Good</p>
+                </div>
+
+                <!-- Motion -->
+                <div class="bg-white p-4 rounded-xl shadow">
+                    <p class="text-sm text-gray-400">Motion</p>
+                    <h3 class="text-2xl font-bold">3 events</h3>
+                    <p class="text-red-500 text-sm">Active</p>
+                </div>
+
+            </div>
+        </div>
+
+
+    </main>
+</body>
+
+</html>

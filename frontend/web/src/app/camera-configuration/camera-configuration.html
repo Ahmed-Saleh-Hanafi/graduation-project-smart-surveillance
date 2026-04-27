@@ -87,7 +87,7 @@
 </head>
 <body class="bg-surface text-on-surface">
 <!-- TopNavBar -->
-<header class="fixed top-0 w-full z-50 bg-slate-50/80 backdrop-blur-xl border-b border-slate-200/50 shadow-sm">
+<header style="padding-top: 7px; padding-bottom: 7px;" class="fixed top-0 w-full z-50 bg-slate-50/80 backdrop-blur-xl border-b border-slate-200/50 shadow-sm">
 <div class="flex justify-between items-center px-6 h-50 w-full max-w-[1920px] mx-auto">
 <div class="flex items-center gap-8">
 <img src="imgs/logo.png" alt="logo" style="width:150; height: fit-content; margin-left: 20px;">
@@ -97,8 +97,15 @@
 </nav>
 </div>
 <div class="flex items-center gap-4">
-
-
+<button class="p-2 text-slate-500 hover:bg-slate-100/50 transition-all duration-200 active:scale-95">
+<span class="material-symbols-outlined" data-icon="notifications">notifications</span>
+</button>
+<button class="p-2 text-slate-500 hover:bg-slate-100/50 transition-all duration-200 active:scale-95">
+<span class="material-symbols-outlined" data-icon="settings">settings</span>
+</button>
+<div class="w-8 h-8 rounded-full overflow-hidden bg-slate-200">
+<img alt="Administrator profile" data-alt="Close up portrait of a senior system administrator in a professional setting with soft office lighting" src="https://lh3.googleusercontent.com/aida-public/AB6AXuD1gFb8rW8bBh7Q7n-fUYlzdznMbfbtPnfUzbwsieTvqtKz4PzrBkZeG-NOgxEs2mGzSllahsVxyX5XHGOQP04N99JQTXuYU3U00E_uiREUq4utywLgBKlWieiJDDBFhfKgbxelAiCMua6NxbIoGZ2XCwGifXbKKLbrr5qJGKyYhRzfkEh8_oqa51KPa5swXJFpNHRHIfiDcmveSaWjidVNcSlOdYO3PSCsZPo7uwta9WrHTd6W5Cxj4f61V1CcTiAWDWPj8aOngNRx"/>
+</div>
 </div>
 </div>
 </header>
@@ -111,11 +118,11 @@
 </div>
 </div>
 <nav class="flex-1 space-y-1">
-<a class="flex items-center gap-3 px-4 py-3 text-sm font-medium text-slate-600 hover:bg-slate-100 transition-colors duration-150 rounded-lg group" href="#">
+<a class="flex items-center gap-3 px-4 py-3 text-sm font-medium text-slate-600 hover:bg-slate-100 transition-colors duration-150 rounded-lg group" href="/Dashboard">
 <span class="material-symbols-outlined text-slate-400 group-hover:text-blue-700" data-icon="dashboard">dashboard</span>
                 Dashboard
             </a>
-<a class="flex items-center gap-3 px-4 py-3 text-sm font-medium bg-blue-50 text-blue-700 border-l-4 border-blue-700 transition-colors duration-150 rounded-r-lg group" href="#">
+<a class="flex items-center gap-3 px-4 py-3 text-sm font-medium bg-blue-50 text-blue-700 border-l-4 border-blue-700 transition-colors duration-150 rounded-r-lg group" href="/CameraConfiguration">
 <span class="material-symbols-outlined text-blue-700" data-icon="videocam" style="font-variation-settings: 'FILL' 1;">videocam</span>
                 Camera Config
             </a>
@@ -169,7 +176,7 @@
   <thead class="bg-slate-100 text-xs uppercase">
     <tr>
       <th class="p-3 text-left">Name</th>
-      <th>IP</th>
+      <th>IpAddress</th>
       <th>Port</th>
       <th>Username</th>
       <th>Path</th>
@@ -181,7 +188,7 @@
     <tr *ngFor="let cam of cameras; let i = index" class="border-t">
 
       <td class="p-3">{{ cam.name }}</td>
-      <td>{{ cam.ip }}</td>
+      <td>{{ cam.IpAddress }}</td>
       <td>{{ cam.port }}</td>
       <td>{{ cam.username }}</td>
       <td>{{ cam.path }}</td>
@@ -222,7 +229,7 @@
     <div class="space-y-3">
 
       <input [(ngModel)]="form.name" placeholder="Name" class="w-full p-2 border rounded" />
-      <input [(ngModel)]="form.ip" placeholder="IP Address" class="w-full p-2 border rounded" />
+      <input [(ngModel)]="form.IpAddress" placeholder="IP Address" class="w-full p-2 border rounded" />
       <input [(ngModel)]="form.port" placeholder="Port" class="w-full p-2 border rounded" />
       <input [(ngModel)]="form.username" placeholder="Username" class="w-full p-2 border rounded" />
       <input [(ngModel)]="form.password" type="password" placeholder="Password" class="w-full p-2 border rounded" />
