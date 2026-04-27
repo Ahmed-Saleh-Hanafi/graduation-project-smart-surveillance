@@ -38,9 +38,11 @@ namespace Infrastructure.Repositories
             return await _context.Alerts.FindAsync(id);
         }
 
-        public async Task<IEnumerable<Alert>> GetByTypeAsync(Type type)
+        
+
+        public Task<IEnumerable<Alert>> GetByTypeAsync(string type)
         {
-            return await _context.Alerts.Where(a => a.Type == type.ToString()).OrderByDescending(a => a.CreatedAt).ToListAsync();
+           return _context.Alerts.Where(a => a.Type == type).OrderByDescending(a => a.CreatedAt).ToListAsync().ContinueWith(t => (IEnumerable<Alert>)t.Result);
         }
 
         public async Task MarkAsResolvedAsync(int id)

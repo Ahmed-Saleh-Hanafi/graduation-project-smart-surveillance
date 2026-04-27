@@ -36,6 +36,12 @@ namespace Application.Services.Implementations
         public async Task ResolveAlertAsync(int alertId)
         {
             await _alertRepository.MarkAsResolvedAsync(alertId);
+
+            var alert = await _alertRepository.GetByIdAsync(alertId);
+            if (alert != null)
+            {
+                await _alertNotifier.SendAsync(alert);
+            }
         }
     }
 }

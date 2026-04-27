@@ -12,7 +12,7 @@ namespace Domain.Entities
         public string Description { get; set; }
         public bool IsResolved { get; set; } = false;
         public DateTime Timestamp { get; set; }
-        public DateTime CreatedAt { get; set; }
+        public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
 
 

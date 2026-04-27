@@ -40,24 +40,9 @@
     "Order": 0,
     "Parameters": [
       {
-        "Name": "CameraId",
-        "Type": "System.Int32",
-        "IsRequired": false
-      },
-      {
-        "Name": "Type",
-        "Type": "System.String",
-        "IsRequired": false
-      },
-      {
-        "Name": "Description",
-        "Type": "System.String",
-        "IsRequired": false
-      },
-      {
-        "Name": "Timestamp",
-        "Type": "System.DateTime",
-        "IsRequired": false
+        "Name": "createAlertDto",
+        "Type": "Application.Dto.CreateAlertDto",
+        "IsRequired": true
       }
     ],
     "ReturnTypes": []

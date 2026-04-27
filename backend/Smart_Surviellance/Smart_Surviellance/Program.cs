@@ -95,9 +95,10 @@ builder.Services.AddScoped<IAlertNotifier, AlertNotifier>();
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowAll",
-        builder => builder.AllowAnyOrigin()
+        builder => builder.SetIsOriginAllowed(_ => true)                         
                           .AllowAnyMethod()
-                          .AllowAnyHeader());
+                          .AllowAnyHeader()
+                          .AllowCredentials());
 });
 
 

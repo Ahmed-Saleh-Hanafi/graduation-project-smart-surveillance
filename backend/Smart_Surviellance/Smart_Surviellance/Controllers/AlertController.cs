@@ -4,6 +4,8 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace Smart_Surviellance.Controllers
 {
+    [ApiController]
+    [Route("api/alerts")]
     public class AlertController : Controller
     {
         private readonly IAlertService _alertService;
@@ -13,14 +15,14 @@ namespace Smart_Surviellance.Controllers
             _alertService = alertService;
         }
 
-        [HttpPost("api/alerts")]
+        [HttpPost]
         public async Task<IActionResult> CreateAlert(CreateAlertDto createAlertDto)
         {
             await _alertService.CreateAlertAsync(createAlertDto);
             return Ok();
         }
 
-        [HttpPut("api/alerts/{alertId}/resolve")]
+        [HttpPut("{alertId}/resolve")]
         public async Task<IActionResult> ResolveAlert(int alertId)
         {
             await _alertService.ResolveAlertAsync(alertId);

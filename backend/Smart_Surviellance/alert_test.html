@@ -1,0 +1,656 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>CamGuard — Alert System Tester</title>
+  <script src="https://cdn.jsdelivr.net/npm/@microsoft/signalr@8.0.0/dist/browser/signalr.min.js"></script>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:        #0d0f14;
+      --surface:   #151820;
+      --surface2:  #1c2030;
+      --border:    rgba(255,255,255,0.07);
+      --accent:    #6c63ff;
+      --accent2:   #00d4aa;
+      --danger:    #ff4f6a;
+      --warning:   #ffb300;
+      --text:      #e4e6f0;
+      --muted:     #6b7280;
+      --radius:    14px;
+    }
+
+    body {
+      font-family: 'Inter', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      padding: 24px;
+    }
+
+    /* ── Header ── */
+    header {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      margin-bottom: 32px;
+    }
+    .logo {
+      width: 44px; height: 44px;
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      border-radius: 12px;
+      display: grid; place-items: center;
+      font-size: 22px;
+    }
+    header h1 { font-size: 1.4rem; font-weight: 700; letter-spacing: -0.5px; }
+    header p  { font-size: 0.8rem; color: var(--muted); }
+
+    /* ── Grid Layout ── */
+    .grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      grid-template-rows: auto auto;
+      gap: 20px;
+    }
+    @media (max-width: 860px) { .grid { grid-template-columns: 1fr; } }
+
+    /* ── Card ── */
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 24px;
+    }
+    .card-title {
+      font-size: 0.75rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      color: var(--muted);
+      margin-bottom: 18px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .card-title .dot {
+      width: 8px; height: 8px;
+      border-radius: 50%;
+      background: var(--accent);
+      animation: pulse 2s infinite;
+    }
+    .dot.green  { background: var(--accent2); }
+    .dot.red    { background: var(--danger); }
+    .dot.yellow { background: var(--warning); }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50%       { opacity: 0.5; transform: scale(0.85); }
+    }
+
+    /* ── Config bar ── */
+    .config-bar {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 14px 18px;
+      margin-bottom: 20px;
+    }
+    .config-bar label { font-size: 0.78rem; color: var(--muted); white-space: nowrap; }
+    .config-bar input {
+      flex: 1;
+      background: transparent;
+      border: none;
+      outline: none;
+      color: var(--text);
+      font-size: 0.9rem;
+      font-family: 'Inter', monospace;
+    }
+
+    /* ── Connection Status ── */
+    #conn-status {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 0.78rem;
+      font-weight: 500;
+      padding: 4px 12px;
+      border-radius: 99px;
+      background: rgba(255,255,255,0.05);
+      border: 1px solid var(--border);
+    }
+    #conn-status .indicator {
+      width: 7px; height: 7px;
+      border-radius: 50%;
+      background: var(--muted);
+      transition: background 0.3s;
+    }
+    #conn-status.connected   .indicator { background: var(--accent2); }
+    #conn-status.disconnected .indicator { background: var(--danger); }
+    #conn-status.connecting  .indicator { background: var(--warning); animation: pulse 1s infinite; }
+
+    /* ── Form ── */
+    .form-group { margin-bottom: 14px; }
+    .form-group label {
+      display: block;
+      font-size: 0.75rem;
+      color: var(--muted);
+      margin-bottom: 6px;
+      font-weight: 500;
+    }
+    .form-group input,
+    .form-group select,
+    .form-group textarea {
+      width: 100%;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 10px 14px;
+      color: var(--text);
+      font-size: 0.88rem;
+      font-family: 'Inter', sans-serif;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+    .form-group input:focus,
+    .form-group select:focus,
+    .form-group textarea:focus {
+      border-color: var(--accent);
+    }
+    .form-group textarea { resize: vertical; min-height: 70px; }
+    .form-group select option { background: var(--surface2); }
+
+    /* ── Buttons ── */
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      padding: 10px 20px;
+      border-radius: 8px;
+      font-size: 0.85rem;
+      font-weight: 600;
+      border: none;
+      cursor: pointer;
+      transition: opacity 0.2s, transform 0.1s;
+      width: 100%;
+      margin-top: 4px;
+    }
+    .btn:active { transform: scale(0.97); }
+    .btn:disabled { opacity: 0.4; cursor: not-allowed; }
+    .btn-primary  { background: linear-gradient(135deg, var(--accent), #8b85ff); color: #fff; }
+    .btn-success  { background: linear-gradient(135deg, var(--accent2), #00b894); color: #fff; }
+    .btn-danger   { background: linear-gradient(135deg, var(--danger), #ff6b6b); color: #fff; }
+    .btn-connect  { background: linear-gradient(135deg, #2d3748, #4a5568); color: #fff; }
+
+    .btn-row { display: flex; gap: 10px; }
+    .btn-row .btn { flex: 1; }
+
+    /* ── Live Feed ── */
+    .live-feed {
+      grid-column: 1 / -1;
+    }
+    #feed {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 14px;
+      min-height: 240px;
+      max-height: 380px;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    #feed::-webkit-scrollbar { width: 4px; }
+    #feed::-webkit-scrollbar-track { background: transparent; }
+    #feed::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+
+    .feed-empty {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      color: var(--muted);
+      font-size: 0.82rem;
+      gap: 8px;
+    }
+    .feed-empty .icon { font-size: 2rem; opacity: 0.4; }
+
+    /* ── Alert Card in Feed ── */
+    .alert-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 12px 16px;
+      animation: slideIn 0.3s ease;
+      display: grid;
+      grid-template-columns: auto 1fr auto;
+      gap: 10px;
+      align-items: start;
+    }
+    @keyframes slideIn {
+      from { opacity: 0; transform: translateY(-8px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+    .alert-card.resolved {
+      border-color: rgba(0, 212, 170, 0.25);
+      background: rgba(0, 212, 170, 0.04);
+    }
+    .alert-type-badge {
+      padding: 3px 10px;
+      border-radius: 6px;
+      font-size: 0.7rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      white-space: nowrap;
+    }
+    .badge-motion     { background: rgba(108,99,255,0.2); color: #a29bff; }
+    .badge-intrusion  { background: rgba(255,79,106,0.2); color: #ff6b8a; }
+    .badge-fire       { background: rgba(255,179,0,0.2);  color: #ffd43b; }
+    .badge-default    { background: rgba(255,255,255,0.1); color: var(--muted); }
+
+    .alert-body { min-width: 0; }
+    .alert-body .desc {
+      font-size: 0.85rem;
+      font-weight: 500;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .alert-body .meta {
+      font-size: 0.72rem;
+      color: var(--muted);
+      margin-top: 3px;
+    }
+    .resolved-badge {
+      font-size: 0.68rem;
+      font-weight: 700;
+      padding: 2px 8px;
+      border-radius: 6px;
+      background: rgba(0,212,170,0.15);
+      color: var(--accent2);
+      white-space: nowrap;
+    }
+    .new-badge {
+      font-size: 0.68rem;
+      font-weight: 700;
+      padding: 2px 8px;
+      border-radius: 6px;
+      background: rgba(255,79,106,0.15);
+      color: var(--danger);
+      white-space: nowrap;
+    }
+
+    /* ── Log ── */
+    #log {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 12px 14px;
+      min-height: 90px;
+      max-height: 140px;
+      overflow-y: auto;
+      font-family: 'Courier New', monospace;
+      font-size: 0.75rem;
+    }
+    #log::-webkit-scrollbar { width: 4px; }
+    #log::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+    .log-line { padding: 2px 0; }
+    .log-info    { color: var(--accent2); }
+    .log-error   { color: var(--danger); }
+    .log-warn    { color: var(--warning); }
+    .log-success { color: #a8ff78; }
+
+    /* ── Stats bar ── */
+    .stats {
+      display: flex;
+      gap: 12px;
+      margin-bottom: 14px;
+    }
+    .stat {
+      flex: 1;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 12px;
+      text-align: center;
+    }
+    .stat-num  { font-size: 1.6rem; font-weight: 700; line-height: 1; }
+    .stat-label { font-size: 0.68rem; color: var(--muted); margin-top: 4px; text-transform: uppercase; letter-spacing: 0.5px; }
+    .num-purple { color: var(--accent); }
+    .num-green  { color: var(--accent2); }
+    .num-red    { color: var(--danger); }
+  </style>
+</head>
+<body>
+
+  <!-- Header -->
+  <header>
+    <div class="logo">🛡️</div>
+    <div>
+      <h1>CamGuard — Alert System Tester</h1>
+      <p>Real-time test panel for alerts API + SignalR hub</p>
+    </div>
+  </header>
+
+  <!-- Config Bar -->
+  <div class="config-bar">
+    <label>🔌 Backend URL</label>
+    <input id="base-url" value="https://localhost:7274" />
+    <div id="conn-status" class="disconnected">
+      <span class="indicator"></span>
+      <span id="conn-label">Disconnected</span>
+    </div>
+  </div>
+
+  <!-- Stats -->
+  <div class="stats">
+    <div class="stat">
+      <div class="stat-num num-purple" id="stat-total">0</div>
+      <div class="stat-label">Total Received</div>
+    </div>
+    <div class="stat">
+      <div class="stat-num num-red" id="stat-new">0</div>
+      <div class="stat-label">New Alerts</div>
+    </div>
+    <div class="stat">
+      <div class="stat-num num-green" id="stat-resolved">0</div>
+      <div class="stat-label">Resolved</div>
+    </div>
+  </div>
+
+  <div class="grid">
+
+    <!-- Create Alert -->
+    <div class="card">
+      <div class="card-title"><span class="dot red"></span> Create Alert</div>
+
+      <div class="form-group">
+        <label>Camera ID</label>
+        <input id="camera-id" type="number" value="1" min="1" />
+      </div>
+      <div class="form-group">
+        <label>Type</label>
+        <select id="alert-type">
+          <option value="Motion">Motion</option>
+          <option value="Intrusion">Intrusion</option>
+          <option value="Fire">Fire</option>
+          <option value="Loitering">Loitering</option>
+          <option value="FaceDetected">FaceDetected</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Description</label>
+        <textarea id="alert-desc" placeholder="e.g. Person detected near entrance"></textarea>
+      </div>
+      <div class="form-group">
+        <label>Timestamp</label>
+        <input id="alert-ts" type="datetime-local" />
+      </div>
+
+      <button class="btn btn-danger" id="btn-create" onclick="createAlert()">
+        🚨 Send Alert
+      </button>
+    </div>
+
+    <!-- Resolve Alert -->
+    <div class="card">
+      <div class="card-title"><span class="dot green"></span> Resolve Alert</div>
+
+      <div class="form-group">
+        <label>Alert ID to Resolve</label>
+        <input id="resolve-id" type="number" value="1" min="1" placeholder="Enter alert ID" />
+      </div>
+
+      <button class="btn btn-success" id="btn-resolve" onclick="resolveAlert()" style="margin-top: 8px;">
+        ✅ Mark as Resolved
+      </button>
+
+      <hr style="border-color: var(--border); margin: 24px 0;" />
+
+      <div class="card-title"><span class="dot yellow"></span> SignalR Connection</div>
+      <div class="btn-row">
+        <button class="btn btn-connect" onclick="connectSignalR()">🔗 Connect</button>
+        <button class="btn btn-danger"  onclick="disconnectSignalR()">⛔ Disconnect</button>
+      </div>
+
+      <div style="margin-top: 20px;">
+        <div class="card-title" style="margin-bottom: 10px;">📋 Console Log</div>
+        <div id="log"><span class="log-line log-info">> Ready. Connect to the hub and start testing.</span></div>
+      </div>
+    </div>
+
+    <!-- Live Feed -->
+    <div class="card live-feed">
+      <div class="card-title" style="justify-content: space-between;">
+        <span style="display:flex;align-items:center;gap:8px;">
+          <span class="dot"></span> Live SignalR Feed — <code style="font-size:0.7rem;color:var(--accent);">ReceiveAlert</code>
+        </span>
+        <button onclick="clearFeed()" style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:0.75rem;">Clear</button>
+      </div>
+      <div id="feed">
+        <div class="feed-empty" id="feed-empty">
+          <div class="icon">📡</div>
+          <div>Waiting for SignalR events…</div>
+          <div style="font-size:0.7rem;">Connect to the hub then create or resolve an alert</div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <script>
+    // ── State ──────────────────────────────────────────────────
+    let connection = null;
+    let stats = { total: 0, newAlerts: 0, resolved: 0 };
+
+    // ── Set default timestamp to now ──────────────────────────
+    const tsInput = document.getElementById('alert-ts');
+    const now = new Date();
+    now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
+    tsInput.value = now.toISOString().slice(0, 16);
+
+    // ── Logging ───────────────────────────────────────────────
+    function log(msg, type = 'info') {
+      const el = document.getElementById('log');
+      const line = document.createElement('div');
+      line.className = `log-line log-${type}`;
+      const time = new Date().toLocaleTimeString();
+      line.textContent = `[${time}] ${msg}`;
+      el.appendChild(line);
+      el.scrollTop = el.scrollHeight;
+    }
+
+    // ── Stats ─────────────────────────────────────────────────
+    function updateStats() {
+      document.getElementById('stat-total').textContent    = stats.total;
+      document.getElementById('stat-new').textContent      = stats.newAlerts;
+      document.getElementById('stat-resolved').textContent = stats.resolved;
+    }
+
+    // ── Connection Status ─────────────────────────────────────
+    function setStatus(state, label) {
+      const el = document.getElementById('conn-status');
+      el.className = state;
+      document.getElementById('conn-label').textContent = label;
+    }
+
+    // ── SignalR ───────────────────────────────────────────────
+    async function connectSignalR() {
+      const url = document.getElementById('base-url').value.trim();
+      if (connection) {
+        log('Already connected. Disconnect first.', 'warn');
+        return;
+      }
+
+      setStatus('connecting', 'Connecting…');
+      log(`Connecting to ${url}/hub/alerts …`, 'info');
+
+      connection = new signalR.HubConnectionBuilder()
+        .withUrl(`${url}/hub/alerts`)
+        .withAutomaticReconnect()
+        .configureLogging(signalR.LogLevel.Warning)
+        .build();
+
+      connection.on('ReceiveAlert', (alert) => {
+        log(`ReceiveAlert → id:${alert.id} type:${alert.type} resolved:${alert.isResolved}`, 'success');
+        renderAlert(alert);
+        stats.total++;
+        if (alert.isResolved) stats.resolved++;
+        else stats.newAlerts++;
+        updateStats();
+      });
+
+      connection.onreconnecting(() => {
+        setStatus('connecting', 'Reconnecting…');
+        log('Reconnecting to SignalR…', 'warn');
+      });
+
+      connection.onreconnected(() => {
+        setStatus('connected', 'Connected');
+        log('Reconnected!', 'success');
+      });
+
+      connection.onclose(() => {
+        setStatus('disconnected', 'Disconnected');
+        connection = null;
+        log('Connection closed.', 'error');
+      });
+
+      try {
+        await connection.start();
+        setStatus('connected', 'Connected');
+        log('✅ SignalR connected!', 'success');
+      } catch (e) {
+        setStatus('disconnected', 'Failed');
+        log(`❌ Connection failed: ${e.message}`, 'error');
+        connection = null;
+      }
+    }
+
+    async function disconnectSignalR() {
+      if (!connection) { log('Not connected.', 'warn'); return; }
+      await connection.stop();
+    }
+
+    // ── Create Alert API ──────────────────────────────────────
+    async function createAlert() {
+      const url   = document.getElementById('base-url').value.trim();
+      const camId = parseInt(document.getElementById('camera-id').value);
+      const type  = document.getElementById('alert-type').value;
+      const desc  = document.getElementById('alert-desc').value.trim() || 'Test alert from HTML tester';
+      const ts    = document.getElementById('alert-ts').value;
+
+      if (!camId || !type) { log('Fill in Camera ID and Type.', 'warn'); return; }
+
+      const body = {
+        cameraId:    camId,
+        type:        type,
+        description: desc,
+        timestamp:   new Date(ts).toISOString()
+      };
+
+      log(`POST /api/alerts → ${JSON.stringify(body)}`, 'info');
+
+      try {
+        const res = await fetch(`${url}/api/alerts`, {
+          method:  'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body:    JSON.stringify(body)
+        });
+
+        if (res.ok) {
+          log(`✅ Alert created! Status: ${res.status}`, 'success');
+        } else {
+          const text = await res.text();
+          log(`❌ Error ${res.status}: ${text}`, 'error');
+        }
+      } catch (e) {
+        log(`❌ Network error: ${e.message}`, 'error');
+      }
+    }
+
+    // ── Resolve Alert API ─────────────────────────────────────
+    async function resolveAlert() {
+      const url = document.getElementById('base-url').value.trim();
+      const id  = parseInt(document.getElementById('resolve-id').value);
+
+      if (!id) { log('Enter a valid Alert ID.', 'warn'); return; }
+
+      log(`PUT /api/alerts/${id}/resolve`, 'info');
+
+      try {
+        const res = await fetch(`${url}/api/alerts/${id}/resolve`, {
+          method:  'PUT',
+          headers: { 'Content-Type': 'application/json' }
+        });
+
+        if (res.ok) {
+          log(`✅ Alert ${id} resolved! Status: ${res.status}`, 'success');
+        } else {
+          const text = await res.text();
+          log(`❌ Error ${res.status}: ${text}`, 'error');
+        }
+      } catch (e) {
+        log(`❌ Network error: ${e.message}`, 'error');
+      }
+    }
+
+    // ── Render Alert in Feed ──────────────────────────────────
+    function renderAlert(alert) {
+      const feed = document.getElementById('feed');
+      const empty = document.getElementById('feed-empty');
+      if (empty) empty.remove();
+
+      const typeKey = (alert.type || '').toLowerCase();
+      let badgeClass = 'badge-default';
+      if (typeKey === 'motion')    badgeClass = 'badge-motion';
+      if (typeKey === 'intrusion') badgeClass = 'badge-intrusion';
+      if (typeKey === 'fire')      badgeClass = 'badge-fire';
+
+      const card = document.createElement('div');
+      card.className = `alert-card ${alert.isResolved ? 'resolved' : ''}`;
+
+      const ts = alert.createdAt
+        ? new Date(alert.createdAt).toLocaleTimeString()
+        : new Date().toLocaleTimeString();
+
+      card.innerHTML = `
+        <span class="alert-type-badge ${badgeClass}">${alert.type || 'Unknown'}</span>
+        <div class="alert-body">
+          <div class="desc">${alert.description || '—'}</div>
+          <div class="meta">Camera #${alert.cameraId} &nbsp;·&nbsp; ID: ${alert.id ?? '—'} &nbsp;·&nbsp; ${ts}</div>
+        </div>
+        ${alert.isResolved
+          ? `<span class="resolved-badge">✔ Resolved</span>`
+          : `<span class="new-badge">● New</span>`}
+      `;
+
+      // Insert newest at top
+      feed.insertBefore(card, feed.firstChild);
+    }
+
+    // ── Clear Feed ────────────────────────────────────────────
+    function clearFeed() {
+      const feed = document.getElementById('feed');
+      feed.innerHTML = `
+        <div class="feed-empty" id="feed-empty">
+          <div class="icon">📡</div>
+          <div>Waiting for SignalR events…</div>
+          <div style="font-size:0.7rem;">Connect to the hub then create or resolve an alert</div>
+        </div>`;
+      stats = { total: 0, newAlerts: 0, resolved: 0 };
+      updateStats();
+    }
+  </script>
+</body>
+</html>

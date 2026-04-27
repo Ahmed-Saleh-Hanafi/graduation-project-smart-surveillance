@@ -11,7 +11,7 @@ namespace Application.Interfaces
         Task<Alert?> GetByIdAsync(int id);
         Task<IEnumerable<Alert>> GetAllAsync();    
         Task<IEnumerable<Alert>> GetByCameraIdAsync(int cameraId);
-        Task<IEnumerable<Alert>> GetByTypeAsync(Type type);
+        Task<IEnumerable<Alert>> GetByTypeAsync(string type);
         Task MarkAsResolvedAsync(int id);
 
     }
