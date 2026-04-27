@@ -67,6 +67,73 @@
         }
       }
     },
+    "/api/alerts": {
+      "post": {
+        "tags": [
+          "Alert"
+        ],
+        "parameters": [
+          {
+            "name": "CameraId",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          {
+            "name": "Type",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "Description",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "Timestamp",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/alerts/{alertId}/resolve": {
+      "put": {
+        "tags": [
+          "Alert"
+        ],
+        "parameters": [
+          {
+            "name": "alertId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
     "/api/Camera": {
       "post": {
         "tags": [
@@ -301,6 +368,9 @@
   "tags": [
     {
       "name": "Account"
+    },
+    {
+      "name": "Alert"
     },
     {
       "name": "Camera"

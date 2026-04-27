@@ -6,6 +6,7 @@ using Infrastructure.Data;
 using Infrastructure.Data.Seed;
 using Infrastructure.Repositories;
 using Infrastructure.Services;
+using Infrastructure.SignalR;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
@@ -67,10 +68,12 @@ builder.Services.AddAuthentication(options =>
 // 4. Dependency Injection
 // ======================
 
+builder.Services.AddSignalR();
+
 // Repositories
 builder.Services.AddScoped<IUserRepository, UserRepository>();
 builder.Services.AddScoped<ICameraRepository, CameraRepository>();
-//builder.Services.AddScoped<IAlertService, AlertService>();
+builder.Services.AddScoped<IAlertRepository, AlertRepository>();
 
 
 // Services
@@ -79,6 +82,10 @@ builder.Services.AddScoped<ITokenService, TokenService>();
 builder.Services.AddScoped<ISignInService, SignInService>();
 builder.Services.AddScoped<ICameraService, CameraService>();
 builder.Services.AddScoped<IMediaMTXConfiqService, MediaMTXConfigService>();
+builder.Services.AddScoped<IAlertService, AlertService>();
+builder.Services.AddScoped<IAlertNotifier, AlertNotifier>();
+
+
 
 
 
@@ -106,6 +113,8 @@ if (app.Environment.IsDevelopment())
     app.UseSwagger();
     app.UseSwaggerUI();
 }
+
+app.MapHub<AlertHub>("/hub/alerts");
 
 
 
