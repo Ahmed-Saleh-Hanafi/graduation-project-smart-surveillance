@@ -1,6 +1,6 @@
 {
   "version": 2,
-  "dgSpecHash": "HiC8UDaLcj4=",
+  "dgSpecHash": "DghTBrNl0H4=",
   "success": true,
   "projectFilePath": "E:\\CamGuard\\graduation-project-smart-surveillance\\backend\\Smart_Surviellance\\Infrastructure\\Infrastructure.csproj",
   "expectedPackageFiles": [
@@ -11,6 +11,8 @@
     "C:\\Users\\bodya\\.nuget\\packages\\microsoft.aspnetcore.authentication.abstractions\\2.3.0\\microsoft.aspnetcore.authentication.abstractions.2.3.0.nupkg.sha512",
     "C:\\Users\\bodya\\.nuget\\packages\\microsoft.aspnetcore.authentication.cookies\\2.3.0\\microsoft.aspnetcore.authentication.cookies.2.3.0.nupkg.sha512",
     "C:\\Users\\bodya\\.nuget\\packages\\microsoft.aspnetcore.authentication.core\\2.3.0\\microsoft.aspnetcore.authentication.core.2.3.0.nupkg.sha512",
+    "C:\\Users\\bodya\\.nuget\\packages\\microsoft.aspnetcore.authorization\\2.3.0\\microsoft.aspnetcore.authorization.2.3.0.nupkg.sha512",
+    "C:\\Users\\bodya\\.nuget\\packages\\microsoft.aspnetcore.connections.abstractions\\2.3.0\\microsoft.aspnetcore.connections.abstractions.2.3.0.nupkg.sha512",
     "C:\\Users\\bodya\\.nuget\\packages\\microsoft.aspnetcore.cryptography.internal\\10.0.5\\microsoft.aspnetcore.cryptography.internal.10.0.5.nupkg.sha512",
     "C:\\Users\\bodya\\.nuget\\packages\\microsoft.aspnetcore.cryptography.keyderivation\\10.0.5\\microsoft.aspnetcore.cryptography.keyderivation.10.0.5.nupkg.sha512",
     "C:\\Users\\bodya\\.nuget\\packages\\microsoft.aspnetcore.dataprotection\\2.3.0\\microsoft.aspnetcore.dataprotection.2.3.0.nupkg.sha512",
@@ -23,6 +25,9 @@
     "C:\\Users\\bodya\\.nuget\\packages\\microsoft.aspnetcore.http.features\\2.3.0\\microsoft.aspnetcore.http.features.2.3.0.nupkg.sha512",
     "C:\\Users\\bodya\\.nuget\\packages\\microsoft.aspnetcore.identity\\2.3.9\\microsoft.aspnetcore.identity.2.3.9.nupkg.sha512",
     "C:\\Users\\bodya\\.nuget\\packages\\microsoft.aspnetcore.identity.entityframeworkcore\\10.0.5\\microsoft.aspnetcore.identity.entityframeworkcore.10.0.5.nupkg.sha512",
+    "C:\\Users\\bodya\\.nuget\\packages\\microsoft.aspnetcore.signalr.common\\1.2.0\\microsoft.aspnetcore.signalr.common.1.2.0.nupkg.sha512",
+    "C:\\Users\\bodya\\.nuget\\packages\\microsoft.aspnetcore.signalr.core\\1.2.9\\microsoft.aspnetcore.signalr.core.1.2.9.nupkg.sha512",
+    "C:\\Users\\bodya\\.nuget\\packages\\microsoft.aspnetcore.signalr.protocols.json\\1.2.0\\microsoft.aspnetcore.signalr.protocols.json.1.2.0.nupkg.sha512",
     "C:\\Users\\bodya\\.nuget\\packages\\microsoft.aspnetcore.webutilities\\2.3.0\\microsoft.aspnetcore.webutilities.2.3.0.nupkg.sha512",
     "C:\\Users\\bodya\\.nuget\\packages\\microsoft.bcl.asyncinterfaces\\8.0.0\\microsoft.bcl.asyncinterfaces.8.0.0.nupkg.sha512",
     "C:\\Users\\bodya\\.nuget\\packages\\microsoft.bcl.cryptography\\9.0.4\\microsoft.bcl.cryptography.9.0.4.nupkg.sha512",

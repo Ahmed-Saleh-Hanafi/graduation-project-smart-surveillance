@@ -67,6 +67,60 @@
         }
       }
     },
+    "/api/alerts": {
+      "post": {
+        "tags": [
+          "Alert"
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateAlertDto"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateAlertDto"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateAlertDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/alerts/{alertId}/resolve": {
+      "put": {
+        "tags": [
+          "Alert"
+        ],
+        "parameters": [
+          {
+            "name": "alertId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
     "/api/Camera": {
       "post": {
         "tags": [
@@ -218,6 +272,28 @@
   },
   "components": {
     "schemas": {
+      "CreateAlertDto": {
+        "type": "object",
+        "properties": {
+          "cameraId": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "type": {
+            "type": "string",
+            "nullable": true
+          },
+          "description": {
+            "type": "string",
+            "nullable": true
+          },
+          "timestamp": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "additionalProperties": false
+      },
       "CreateCameraDto": {
         "type": "object",
         "properties": {
@@ -301,6 +377,9 @@
   "tags": [
     {
       "name": "Account"
+    },
+    {
+      "name": "Alert"
     },
     {
       "name": "Camera"

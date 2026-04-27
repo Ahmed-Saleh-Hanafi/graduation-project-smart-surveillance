@@ -14,6 +14,7 @@ namespace Infrastructure.Repositories
         private bool _disposed;
 
         private ICameraRepository? _cameraRepository;
+        private IAlertRepository? _alertRepository;
 
         public UnitOfWork(ApplicationDbContext context)
         {
@@ -25,7 +26,7 @@ namespace Infrastructure.Repositories
 
         public ICameraRepository CameraRepository => _cameraRepository ??= new CameraRepository(_context);
 
-
+        public IAlertRepository AlertRepository => _alertRepository ??= new AlertRepository(_context);
         public void Dispose()
         {
             Dispose(true);

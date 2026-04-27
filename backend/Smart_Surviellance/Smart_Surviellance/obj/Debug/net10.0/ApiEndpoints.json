@@ -32,6 +32,38 @@
     "ReturnTypes": []
   },
   {
+    "ContainingType": "Smart_Surviellance.Controllers.AlertController",
+    "Method": "CreateAlert",
+    "RelativePath": "api/alerts",
+    "HttpMethod": "POST",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "createAlertDto",
+        "Type": "Application.Dto.CreateAlertDto",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "Smart_Surviellance.Controllers.AlertController",
+    "Method": "ResolveAlert",
+    "RelativePath": "api/alerts/{alertId}/resolve",
+    "HttpMethod": "PUT",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "alertId",
+        "Type": "System.Int32",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
     "ContainingType": "Smart_Surviellance.Controllers.CameraController",
     "Method": "CreateCamera",
     "RelativePath": "api/Camera",

@@ -10,6 +10,7 @@
         "dependencies": {
           "Application": "1.0.0",
           "Microsoft.AspNetCore.Identity.EntityFrameworkCore": "10.0.5",
+          "Microsoft.AspNetCore.SignalR.Core": "1.2.9",
           "Microsoft.EntityFrameworkCore.Design": "10.0.5",
           "Microsoft.EntityFrameworkCore.SqlServer": "10.0.5",
           "Microsoft.Extensions.Configuration.FileExtensions": "10.0.7",
@@ -102,6 +103,29 @@
         },
         "runtime": {
           "lib/netstandard2.0/Microsoft.AspNetCore.Authentication.Core.dll": {
+            "assemblyVersion": "2.3.0.0",
+            "fileVersion": "2.3.0.25014"
+          }
+        }
+      },
+      "Microsoft.AspNetCore.Authorization/2.3.0": {
+        "dependencies": {
+          "Microsoft.Extensions.Logging.Abstractions": "10.0.5",
+          "Microsoft.Extensions.Options": "10.0.5"
+        },
+        "runtime": {
+          "lib/netstandard2.0/Microsoft.AspNetCore.Authorization.dll": {
+            "assemblyVersion": "2.3.0.0",
+            "fileVersion": "2.3.0.25014"
+          }
+        }
+      },
+      "Microsoft.AspNetCore.Connections.Abstractions/2.3.0": {
+        "dependencies": {
+          "Microsoft.AspNetCore.Http.Features": "2.3.0"
+        },
+        "runtime": {
+          "lib/netstandard2.0/Microsoft.AspNetCore.Connections.Abstractions.dll": {
             "assemblyVersion": "2.3.0.0",
             "fileVersion": "2.3.0.25014"
           }
@@ -249,6 +273,46 @@
           "lib/net10.0/Microsoft.AspNetCore.Identity.EntityFrameworkCore.dll": {
             "assemblyVersion": "10.0.5.0",
             "fileVersion": "10.0.526.15411"
+          }
+        }
+      },
+      "Microsoft.AspNetCore.SignalR.Common/1.2.0": {
+        "dependencies": {
+          "Microsoft.AspNetCore.Connections.Abstractions": "2.3.0",
+          "Microsoft.Extensions.Options": "10.0.5",
+          "Newtonsoft.Json": "13.0.3"
+        },
+        "runtime": {
+          "lib/netstandard2.0/Microsoft.AspNetCore.SignalR.Common.dll": {
+            "assemblyVersion": "1.2.0.0",
+            "fileVersion": "1.2.0.25014"
+          }
+        }
+      },
+      "Microsoft.AspNetCore.SignalR.Core/1.2.9": {
+        "dependencies": {
+          "Microsoft.AspNetCore.Authorization": "2.3.0",
+          "Microsoft.AspNetCore.SignalR.Common": "1.2.0",
+          "Microsoft.AspNetCore.SignalR.Protocols.Json": "1.2.0",
+          "Microsoft.Extensions.DependencyInjection.Abstractions": "10.0.5",
+          "Microsoft.Extensions.Logging.Abstractions": "10.0.5"
+        },
+        "runtime": {
+          "lib/netstandard2.0/Microsoft.AspNetCore.SignalR.Core.dll": {
+            "assemblyVersion": "1.2.9.0",
+            "fileVersion": "1.2.9.26007"
+          }
+        }
+      },
+      "Microsoft.AspNetCore.SignalR.Protocols.Json/1.2.0": {
+        "dependencies": {
+          "Microsoft.AspNetCore.SignalR.Common": "1.2.0",
+          "Newtonsoft.Json": "13.0.3"
+        },
+        "runtime": {
+          "lib/netstandard2.0/Microsoft.AspNetCore.SignalR.Protocols.Json.dll": {
+            "assemblyVersion": "1.2.0.0",
+            "fileVersion": "1.2.0.25014"
           }
         }
       },
@@ -1409,6 +1473,20 @@
       "path": "microsoft.aspnetcore.authentication.core/2.3.0",
       "hashPath": "microsoft.aspnetcore.authentication.core.2.3.0.nupkg.sha512"
     },
+    "Microsoft.AspNetCore.Authorization/2.3.0": {
+      "type": "package",
+      "serviceable": true,
+      "sha512": "sha512-2/aBgLqBXva/+w8pzRNY8ET43Gi+dr1gv/7ySfbsh23lTK6IAgID5MGUEa1hreNIF+0XpW4tX7QwVe70+YvaPg==",
+      "path": "microsoft.aspnetcore.authorization/2.3.0",
+      "hashPath": "microsoft.aspnetcore.authorization.2.3.0.nupkg.sha512"
+    },
+    "Microsoft.AspNetCore.Connections.Abstractions/2.3.0": {
+      "type": "package",
+      "serviceable": true,
+      "sha512": "sha512-ULFSa+/L+WiAHVlIFHyg0OmHChU9Hx+K+xnt0hbIU5XmT1EGy0pNDx23QAzDtAy9jxQrTG6MX0MdvMeU4D4c7w==",
+      "path": "microsoft.aspnetcore.connections.abstractions/2.3.0",
+      "hashPath": "microsoft.aspnetcore.connections.abstractions.2.3.0.nupkg.sha512"
+    },
     "Microsoft.AspNetCore.Cryptography.Internal/10.0.5": {
       "type": "package",
       "serviceable": true,
@@ -1492,6 +1570,27 @@
       "sha512": "sha512-oo1uauTwgcnhYgituZ2nI3wJ8XN9z76ggu2zkOJu1BCfOOsqr+g08Kr4MOiMuXEhwySkpIV+MVoC25hC1288NA==",
       "path": "microsoft.aspnetcore.identity.entityframeworkcore/10.0.5",
       "hashPath": "microsoft.aspnetcore.identity.entityframeworkcore.10.0.5.nupkg.sha512"
+    },
+    "Microsoft.AspNetCore.SignalR.Common/1.2.0": {
+      "type": "package",
+      "serviceable": true,
+      "sha512": "sha512-FZeXIaoWqe145ZPdfiptwkw/sP1BX1UD0706GNBwwoaFiKsNbLEl/Trhj2+idlp3qbX1BEwkQesKNxkopVY5Xg==",
+      "path": "microsoft.aspnetcore.signalr.common/1.2.0",
+      "hashPath": "microsoft.aspnetcore.signalr.common.1.2.0.nupkg.sha512"
+    },
+    "Microsoft.AspNetCore.SignalR.Core/1.2.9": {
+      "type": "package",
+      "serviceable": true,
+      "sha512": "sha512-abZMiK7Cmiitz76S9enL86j7sQ6GUC3lKAggFbiT3njvDoGClvPZCloVZgYbLW9AzhdVRTf7JYUeiJgYAYQS8Q==",
+      "path": "microsoft.aspnetcore.signalr.core/1.2.9",
+      "hashPath": "microsoft.aspnetcore.signalr.core.1.2.9.nupkg.sha512"
+    },
+    "Microsoft.AspNetCore.SignalR.Protocols.Json/1.2.0": {
+      "type": "package",
+      "serviceable": true,
+      "sha512": "sha512-hNvZ7kQxp5Udqd/IFWViU35bUJvi4xnNzjkF28HRvrdrS7JNsIASTvMqArP6HLQUc3j6nlUOeShNhVmgI1wzHg==",
+      "path": "microsoft.aspnetcore.signalr.protocols.json/1.2.0",
+      "hashPath": "microsoft.aspnetcore.signalr.protocols.json.1.2.0.nupkg.sha512"
     },
     "Microsoft.AspNetCore.WebUtilities/2.3.0": {
       "type": "package",
