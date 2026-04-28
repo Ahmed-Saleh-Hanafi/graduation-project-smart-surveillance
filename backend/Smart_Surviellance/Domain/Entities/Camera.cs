@@ -20,5 +20,8 @@ namespace Domain.Entities
 
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
+
+        public ICollection<CameraPersonList> CameraPersonLists { get; set; }
+
     }
 }
