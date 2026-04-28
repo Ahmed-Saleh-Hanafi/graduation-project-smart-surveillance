@@ -49,6 +49,16 @@
   },
   {
     "ContainingType": "Smart_Surviellance.Controllers.AlertController",
+    "Method": "GetAllAlerts",
+    "RelativePath": "api/alerts",
+    "HttpMethod": "GET",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "Smart_Surviellance.Controllers.AlertController",
     "Method": "ResolveAlert",
     "RelativePath": "api/alerts/{alertId}/resolve",
     "HttpMethod": "PUT",
@@ -156,6 +166,95 @@
         "IsRequired": true
       }
     ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "Smart_Surviellance.Controllers.DetectionController",
+    "Method": "GetAllDetections",
+    "RelativePath": "api/Detection",
+    "HttpMethod": "GET",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "Smart_Surviellance.Controllers.DetectionController",
+    "Method": "GetDetectionsByCamera",
+    "RelativePath": "api/Detection/camera/{cameraId}",
+    "HttpMethod": "GET",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "cameraId",
+        "Type": "System.Int32",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "Smart_Surviellance.Controllers.DetectionController",
+    "Method": "GetDetectionsByPersonAndCameraAsync",
+    "RelativePath": "api/Detection/CameraPerson/{personId}/{cameraId}",
+    "HttpMethod": "GET",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "personId",
+        "Type": "System.Int32",
+        "IsRequired": true
+      },
+      {
+        "Name": "cameraId",
+        "Type": "System.Int32",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "Smart_Surviellance.Controllers.DetectionController",
+    "Method": "GetDetectionsByDayAsync",
+    "RelativePath": "api/Detection/day/{date}",
+    "HttpMethod": "GET",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "date",
+        "Type": "System.DateTime",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "Smart_Surviellance.Controllers.DetectionController",
+    "Method": "GetDetectionsByPersonAsync",
+    "RelativePath": "api/Detection/person/{personId}",
+    "HttpMethod": "GET",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "personId",
+        "Type": "System.Int32",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "Smart_Surviellance.Controllers.PersonController",
+    "Method": "GetAllPersons",
+    "RelativePath": "api/Person",
+    "HttpMethod": "GET",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [],
     "ReturnTypes": []
   }
 ]

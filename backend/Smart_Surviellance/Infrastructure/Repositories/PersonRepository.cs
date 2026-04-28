@@ -30,5 +30,16 @@ namespace Infrastructure.Repositories
         {
             return await _context.Persons.ToListAsync();
         }
+
+        public async Task<Person> GetPersonByIdAsync(int id)
+        {
+            return await _context.Persons.FindAsync(id);
+        }
+
+        public async Task UpdateAsync(Person person)
+        {
+            _context.Persons.Update(person);
+            await _context.SaveChangesAsync();
+        }
     }
 }

@@ -11,7 +11,6 @@ namespace Application.Interfaces
         Task AssignAsync(CameraPersonList cameraPersonList);
         Task<List<Person>> GetByCameraAsync(int cameraId);
         Task UpdateAsync(CameraPersonList cameraPersonList);
-
         Task<CameraPersonList> GetCameraPersonAsync(int cameraId , int personId);
     }
 }

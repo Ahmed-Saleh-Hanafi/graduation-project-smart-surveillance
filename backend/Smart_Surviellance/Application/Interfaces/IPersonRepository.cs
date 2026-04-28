@@ -10,5 +10,10 @@ namespace Application.Interfaces
     {
         Task CreateAsync(Person person);
         Task<List<Person>> GetAllAsync();
+
+        Task<Person> GetPersonByIdAsync(int id);
+
+        Task UpdateAsync(Person person);
+
     }
 }

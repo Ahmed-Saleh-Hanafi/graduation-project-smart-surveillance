@@ -1,7 +1,11 @@
-﻿using Application.Dto;
+//(note)
+//             return person ID to the ai
+//
+using Application.Dto;
 using Application.Interfaces;
 using Application.Services.Implementations;
 using Application.Services.Interfaces;
+using Domain.Entities;
 using Domain.Enums;
 using System;
 using System.Collections.Generic;
@@ -13,14 +17,21 @@ namespace Application.Services.Implementations
     {
 
         private readonly ICameraPersonRepository _cameraPersonRepository;
+        private readonly IPersonRepository _personRepository;
+        private readonly IDetectionRepository _detectionRepository;
+
         private readonly IAlertNotifier _alertNotifier;
 
         public FaceProcessingService(
             ICameraPersonRepository cameraPersonRepository,
-            IAlertNotifier alertNotifier)
+            IAlertNotifier alertNotifier,
+            IPersonRepository personRepository,
+            IDetectionRepository detectionRepository)
         {
             _cameraPersonRepository = cameraPersonRepository;
             _alertNotifier = alertNotifier;
+            _personRepository = personRepository;
+            _detectionRepository = detectionRepository;
         }   
         public async Task HandleDetectionAsync(int cameraId, FaceResultDto result)
         {
@@ -39,6 +50,28 @@ namespace Application.Services.Implementations
                     Message = "🚨 Unknown person detected"
                 });
 
+                var Person = new Person
+                {
+                    Name = "Unknown",
+                    Url =result.SnapShotUrl
+                };
+
+                await _personRepository.CreateAsync(Person);
+                await _cameraPersonRepository.AssignAsync(new CameraPersonList
+                {
+                    CameraId = cameraId,
+                    PersonId = Person.Id,
+                    Type = ListType.Unknown
+                });
+                await _detectionRepository.AddDetectionAsync(new Detection
+                {
+                    CameraId = cameraId,
+                    PersonId = Person.Id,
+                    SnapShotUrl = result.SnapShotUrl,
+                    DetectedAt = DateTime.UtcNow
+                });
+
+                // return the new person ID
                 return;
 
             }
@@ -56,6 +89,24 @@ namespace Application.Services.Implementations
                     CreatedAt = DateTime.UtcNow,
                     Message = "🚨 Unknown person detected"
                 });
+
+
+                await _cameraPersonRepository.AssignAsync(new CameraPersonList
+                {
+                    CameraId = cameraId,
+                    PersonId = (int)result.Id,
+                    Type = ListType.Unknown
+                });
+                await _detectionRepository.AddDetectionAsync(new Detection
+                {
+                    CameraId = cameraId,
+                    PersonId = result.Id,
+                    SnapShotUrl = result.SnapShotUrl,
+                    DetectedAt = DateTime.UtcNow
+                });
+
+
+
                 return;
             }
 
@@ -70,6 +121,15 @@ namespace Application.Services.Implementations
                     CreatedAt = DateTime.UtcNow,
                     Message = "🚨 Blacklisted person detected"
                 });
+
+                await _detectionRepository.AddDetectionAsync(new Detection
+                {
+                    CameraId = cameraId,
+                    PersonId = result.Id,
+                    SnapShotUrl = result.SnapShotUrl,
+                    DetectedAt = DateTime.UtcNow
+                });
+
                 return;
             }
             

@@ -5,7 +5,7 @@ using System.Reflection.Emit;
 
 namespace Infrastructure.Data
 {
-    public class ApplicationDbContext : IdentityDbContext
+    public class ApplicationDbContext : IdentityDbContext<User>
     {
         public ApplicationDbContext(DbContextOptions<ApplicationDbContext> options)
             : base(options)
@@ -40,6 +40,18 @@ namespace Infrastructure.Data
                 .HasOne(x => x.Person)
                 .WithMany(p => p.CameraPersonLists)
                 .HasForeignKey(x => x.PersonId);
+
+            builder.Entity<Detection>()
+                .HasOne(d => d.Camera)
+                .WithMany(c => c.Detections)
+                .HasForeignKey(d => d.CameraId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            builder.Entity<Detection>()
+                .HasOne(d => d.Person)
+                .WithMany(p => p.Detections)
+                .HasForeignKey(d => d.PersonId)
+                .OnDelete(DeleteBehavior.Restrict);
 
 
 

@@ -12,6 +12,7 @@ namespace Domain.Entities
         public string? Url { get; set; }
 
         public ICollection<CameraPersonList> CameraPersonLists { get; set; }
+        public ICollection<Detection> Detections { get; set; }
 
 
 

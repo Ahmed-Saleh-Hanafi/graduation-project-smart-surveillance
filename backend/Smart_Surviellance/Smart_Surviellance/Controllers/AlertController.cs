@@ -29,8 +29,19 @@ namespace Smart_Surviellance.Controllers
             return Ok(new { message = "Alert resolved" });
         }
 
+        [HttpGet]
+        public async Task<IActionResult> GetAllAlerts()
+        {
+            var response = await _alertService.GetAllAsync();
+            if (response.IsSuccess)
+            {
+                return Ok(response);
+            }
+            return BadRequest(response);
 
 
+
+        }
 
     }
 }
