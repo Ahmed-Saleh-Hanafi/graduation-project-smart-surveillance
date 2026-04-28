@@ -150,8 +150,23 @@ namespace Application.Services.Implementations
             }, "WebRTC stream URL retrieved successfully.");
         }
 
-
-
-
+        public async Task<ApiResponse<GetCameraDto>> GetCameraByIdAsync(int id)
+        {
+            var camera = await _cameraRepository.GetCameraByIdAsync(id);
+            if (camera == null)
+            {
+                return ApiResponse<GetCameraDto>.Fail($"Camera with ID {id} not found.");
+            }
+            return ApiResponse<GetCameraDto>.Success(new GetCameraDto
+            {
+                Id = camera.Id,
+                Name = camera.Name,
+                IpAddress = camera.IpAddress,
+                Port = camera.Port,
+                Path = camera.Path,
+                Username = camera.Username,
+                Password = camera.Password
+            }, "Camera retrieved successfully.");
+        }
     }
 }

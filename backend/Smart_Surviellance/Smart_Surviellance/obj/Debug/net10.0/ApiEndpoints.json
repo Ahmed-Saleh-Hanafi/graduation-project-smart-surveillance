@@ -169,6 +169,22 @@
     "ReturnTypes": []
   },
   {
+    "ContainingType": "Smart_Surviellance.Controllers.CameraController",
+    "Method": "GetCameraByIdAsync",
+    "RelativePath": "api/Camera/byid/{id}",
+    "HttpMethod": "GET",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "id",
+        "Type": "System.Int32",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
     "ContainingType": "Smart_Surviellance.Controllers.DetectionController",
     "Method": "GetAllDetections",
     "RelativePath": "api/Detection",

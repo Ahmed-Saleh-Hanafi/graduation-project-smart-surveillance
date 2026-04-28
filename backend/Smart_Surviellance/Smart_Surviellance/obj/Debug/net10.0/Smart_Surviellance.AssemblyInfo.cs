@@ -14,7 +14,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("Smart_Surviellance")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+b92628667ca0e162eccaea1ee231080c7447e180")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+c5180b379e0df7dd962335b4ae87ab76ba9fdc85")]
 [assembly: System.Reflection.AssemblyProductAttribute("Smart_Surviellance")]
 [assembly: System.Reflection.AssemblyTitleAttribute("Smart_Surviellance")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]
