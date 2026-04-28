@@ -24,7 +24,15 @@ namespace Infrastructure.Repositories
             await _context.SaveChangesAsync();
         }
 
-        
+        public async Task<int?> CreateIDAsync(Person person)
+        {
+            await _context.AddAsync(person);
+            await _context.SaveChangesAsync();
+            return person.Id;
+        }
+
+
+
 
         public async Task<List<Person>> GetAllAsync()
         {

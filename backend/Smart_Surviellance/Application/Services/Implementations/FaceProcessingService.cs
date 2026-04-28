@@ -1,6 +1,7 @@
 //(note)
 //             return person ID to the ai
 //
+using Application.Common;
 using Application.Dto;
 using Application.Interfaces;
 using Application.Services.Implementations;
@@ -33,46 +34,49 @@ namespace Application.Services.Implementations
             _personRepository = personRepository;
             _detectionRepository = detectionRepository;
         }   
-        public async Task HandleDetectionAsync(int cameraId, FaceResultDto result)
+        public async Task<ApiResponse<int?>> HandleDetectionAsync(int cameraId, FaceResultDto result)
         {
             
             //Unknown Person
 
             if (result.Id == null)
             {
+                var Person = new Person
+                {
+                    Name = "Unknown",
+                    Url = result.SnapShotUrl
+                };
+
+                var personId = await _personRepository.CreateIDAsync(Person);
+
+
                 await _alertNotifier.SendFaceAlertAsync(new FaceAlertDto
                 {
                     CameraId = cameraId,
-                    PersonId = result.Id,
+                    PersonId = (int)personId,
                     Confidence = result.Confidence,
                     SnapShotUrl = result.SnapShotUrl,
                     CreatedAt = DateTime.UtcNow,
                     Message = "🚨 Unknown person detected"
                 });
 
-                var Person = new Person
-                {
-                    Name = "Unknown",
-                    Url =result.SnapShotUrl
-                };
-
-                await _personRepository.CreateAsync(Person);
+                
                 await _cameraPersonRepository.AssignAsync(new CameraPersonList
                 {
                     CameraId = cameraId,
-                    PersonId = Person.Id,
+                    PersonId = (int)personId,
                     Type = ListType.Unknown
                 });
                 await _detectionRepository.AddDetectionAsync(new Detection
                 {
                     CameraId = cameraId,
-                    PersonId = Person.Id,
+                    PersonId = (int)personId,
                     SnapShotUrl = result.SnapShotUrl,
                     DetectedAt = DateTime.UtcNow
                 });
 
                 // return the new person ID
-                return;
+                return ApiResponse<int?>.Success(personId, "Unknown person created successfully");
 
             }
 
@@ -100,14 +104,14 @@ namespace Application.Services.Implementations
                 await _detectionRepository.AddDetectionAsync(new Detection
                 {
                     CameraId = cameraId,
-                    PersonId = result.Id,
+                    PersonId = (int)result.Id,
                     SnapShotUrl = result.SnapShotUrl,
                     DetectedAt = DateTime.UtcNow
                 });
 
 
 
-                return;
+                return ApiResponse<int?>.Success(null, "Person detected");
             }
 
             if (existingCameraPerson.Type == ListType.Blacklist)
@@ -130,12 +134,12 @@ namespace Application.Services.Implementations
                     DetectedAt = DateTime.UtcNow
                 });
 
-                return;
+                return ApiResponse<int?>.Success(null, "Blacklisted person detected");
             }
             
 
 
-            return;
+            return ApiResponse<int?>.Success(null, "Person detected");
 
         }
     

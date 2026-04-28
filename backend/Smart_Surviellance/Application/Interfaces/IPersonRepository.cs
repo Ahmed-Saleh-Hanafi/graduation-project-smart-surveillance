@@ -13,6 +13,8 @@ namespace Application.Interfaces
 
         Task<Person> GetPersonByIdAsync(int id);
 
+        Task<int?> CreateIDAsync(Person person);
+
         Task UpdateAsync(Person person);
 
     }

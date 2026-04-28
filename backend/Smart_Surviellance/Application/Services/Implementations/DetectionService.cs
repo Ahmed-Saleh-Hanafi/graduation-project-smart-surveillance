@@ -22,7 +22,7 @@ namespace Application.Services.Implementations
             _personRepository = personRepository;
         }
 
-
+        
 
         public async Task<ApiResponse<List<DetectionDto>>> GetAllDetectionsAsync()
         {

@@ -37,6 +37,12 @@ namespace Application.Services.Implementations
         public async Task<ApiResponse<IEnumerable<AlertDto>>> GetAllAsync()
         {
             var alerts = await _alertRepository.GetAllAsync();
+
+            if (alerts == null)
+            {
+                return ApiResponse<IEnumerable<AlertDto>>.Fail("No alerts found");
+            }
+
             var alertDtos = alerts.Select(alert => new AlertDto
             {
                 Id = alert.Id,
@@ -48,10 +54,7 @@ namespace Application.Services.Implementations
                 CreatedAt = alert.CreatedAt
             });
 
-            if (alerts==null)
-            {
-                return ApiResponse<IEnumerable<AlertDto>>.Fail("No alerts found");
-            }
+            
 
             return ApiResponse<IEnumerable<AlertDto>>.Success(alertDtos, "All alerts retrieved successfully");
         }

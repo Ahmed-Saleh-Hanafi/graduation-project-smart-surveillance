@@ -233,6 +233,27 @@
   },
   {
     "ContainingType": "Smart_Surviellance.Controllers.DetectionController",
+    "Method": "ProcessDetectionAsync",
+    "RelativePath": "api/Detection/face/{cameraId}",
+    "HttpMethod": "POST",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "cameraId",
+        "Type": "System.Int32",
+        "IsRequired": true
+      },
+      {
+        "Name": "result",
+        "Type": "Application.Dto.FaceResultDto",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "Smart_Surviellance.Controllers.DetectionController",
     "Method": "GetDetectionsByPersonAsync",
     "RelativePath": "api/Detection/person/{personId}",
     "HttpMethod": "GET",
@@ -242,6 +263,22 @@
       {
         "Name": "personId",
         "Type": "System.Int32",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "Smart_Surviellance.Controllers.PersonController",
+    "Method": "CreatePerson",
+    "RelativePath": "api/Person",
+    "HttpMethod": "POST",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "personDto",
+        "Type": "Application.Dto.CreatePersonDto",
         "IsRequired": true
       }
     ],

@@ -17,16 +17,16 @@ namespace Smart_Surviellance.Controllers
             _personService = personService;
         }
 
-        //[HttpPost]
-        //public async Task<IActionResult> CreatePerson(CreatePersonDto personDto)
-        //{
-        //    var response = await _personService.CreatePersonAsync(personDto);
-        //    if (response.IsSuccess)
-        //    {
-        //        return Ok(response);
-        //    }
-        //    return BadRequest(response);
-        //}
+        [HttpPost]
+        public async Task<IActionResult> CreatePerson(CreatePersonDto personDto)
+        {
+            var response = await _personService.CreatePersonAsync(personDto);
+            if (response.IsSuccess)
+            {
+                return Ok(response);
+            }
+            return BadRequest(response);
+        }
 
         [HttpGet]
         public async Task<IActionResult> GetAllPersons()

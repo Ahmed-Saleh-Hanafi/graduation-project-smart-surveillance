@@ -1,3 +1,4 @@
+using Application.Common;
 using Application.Dto;
 using System;
 using System.Collections.Generic;
@@ -7,6 +8,6 @@ namespace Application.Services.Interfaces
 {
     public interface IFaceProcessingService
     {
-        Task HandleDetectionAsync(int cameraId, FaceResultDto result);
+        Task<ApiResponse<int?>> HandleDetectionAsync(int cameraId, FaceResultDto result);
     }
 }

@@ -8,6 +8,7 @@ namespace Application.Services.Interfaces
 {
     public interface IDetectionService
     {
+
         
         Task<ApiResponse<List<DetectionDto>>> GetAllDetectionsAsync();
         Task<ApiResponse<List<DetectionDto>>> GetDetectionsByCameraAsync(int cameraId);

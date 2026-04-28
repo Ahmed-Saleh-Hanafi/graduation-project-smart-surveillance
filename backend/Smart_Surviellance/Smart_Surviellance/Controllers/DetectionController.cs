@@ -1,3 +1,4 @@
+using Application.Dto;
 using Application.Services.Interfaces;
 using Microsoft.AspNetCore.Mvc;
 
@@ -8,11 +9,27 @@ namespace Smart_Surviellance.Controllers
     public class DetectionController : ControllerBase
     {
         private readonly IDetectionService _detectionService;
+        private readonly IFaceProcessingService _faceProcessingService;
 
-        public DetectionController(IDetectionService detectionService)
+        public DetectionController(IDetectionService detectionService, IFaceProcessingService faceProcessingService)
         {
             _detectionService = detectionService;
+            _faceProcessingService = faceProcessingService;
         }
+
+        [HttpPost("face/{cameraId}")]
+        public async Task<IActionResult> ProcessDetectionAsync(int cameraId, [FromBody] FaceResultDto result)
+        {
+            var response = await _faceProcessingService.HandleDetectionAsync(cameraId, result);
+            if (response.IsSuccess)
+            {
+                return Ok(response);
+            }
+            return BadRequest(response);
+        }
+
+
+
 
         [HttpGet]
         public async Task<IActionResult> GetAllDetections()
