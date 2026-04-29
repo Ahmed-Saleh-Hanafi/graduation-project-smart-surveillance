@@ -5,7 +5,7 @@
 <head>
     <meta charset="utf-8" />
     <meta content="width=device-width, initial-scale=1.0" name="viewport" />
-    <title>Camera Configuration | Operations Command Center</title>
+    <title>Dashboard</title>
     <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&amp;display=swap"
         rel="stylesheet" />
@@ -174,34 +174,26 @@
     <main class="ml-64 mt-16 p-8 min-h-screen bg-surface">
 
         <!-- Top Live Camera -->
-         <div class="bg-black rounded-2xl overflow-hidden relative mb-8">
+        <div class="bg-black rounded-2xl overflow-hidden relative mb-8">
 
-        <img *ngIf="!videoUrl"
-             src="imgs/placeholder.jpg"
-             class="w-full h-64 object-cover opacity-80" />
+            <img *ngIf="!videoUrl" src="imgs/placeholder.jpg" class="w-full h-64 object-cover opacity-80" />
 
-        <video *ngIf="videoUrl"
-               [src]="videoUrl"
-               controls
-               autoplay
-               muted
-               class="w-full h-64 object-cover">
-        </video>
-<div class="mt-4 flex gap-2">
-  <button 
-    *ngFor="let cam of cameras"
-    (click)="selectCamera(cam.id)"
-    class="px-3 py-1 bg-blue-500 text-white rounded">
-    {{ cam.name }}
-  </button>
-</div>
-        <div class="absolute top-4 left-4 text-white">
-            <span class="bg-white/20 px-2 py-1 rounded text-xs">IDLE</span>
-            <h2 class="text-xl font-bold mt-2">Parking Lot</h2>
-            <p class="text-sm opacity-70">North parking · 720p</p>
+            <video *ngIf="videoUrl" [src]="videoUrl" controls autoplay muted class="w-full h-64 object-cover">
+            </video>
+
+            <div class="mt-4 flex gap-2">
+                <button *ngFor="let cam of cameras" (click)="selectCamera(cam.id)"
+                    class="px-3 py-1 bg-blue-500 text-white rounded">
+                    choose {{ cam.name }}
+                </button>
+            </div>
+            <div class="absolute top-4 left-4 text-white">
+                <span class="bg-white/20 px-2 py-1 rounded text-xs">IDLE</span>
+                <h2 class="text-xl font-bold mt-2">Parking Lot</h2>
+                <p class="text-sm opacity-70">North parking · 720p</p>
+            </div>
+
         </div>
-
-    </div>
 
         <!-- Sensors Section -->
         <div>
