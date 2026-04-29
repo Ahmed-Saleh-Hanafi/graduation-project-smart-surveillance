@@ -5,16 +5,25 @@ import { Observable } from 'rxjs';
 export interface Camera {
   id?: number;
   name: string;
-  IpAddress: string;
-  port: string;
+  ipAddress: string;
+  port: number;
   username: string;
   password: string;
   path: string;
+  
+}
+export interface CameraView {
+  id: number;
+  name: string;
+  ipAddress: string;
+  port: number;
+  streamUrl: string;
 }
 
 @Injectable({
   providedIn: 'root'
 })
+
 export class CameraService {
 
   private baseUrl = 'http://localhost:5198/api/Camera';
@@ -22,8 +31,8 @@ export class CameraService {
   constructor(private http: HttpClient) {}
 
   getAll(): Observable<any> {
-    return this.http.get(this.baseUrl);
-  }
+  return this.http.get(this.baseUrl);
+}
 
   getById(id: number): Observable<any> {
     return this.http.get(`${this.baseUrl}/${id}`);

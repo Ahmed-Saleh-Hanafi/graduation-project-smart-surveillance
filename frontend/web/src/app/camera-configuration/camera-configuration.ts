@@ -1,7 +1,9 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { CameraService, Camera } from '../services/camera.service';
+import { CameraService, Camera,CameraView } from '../services/camera.service';
+import { ChangeDetectorRef } from '@angular/core';
+import { ShowCameraDataService } from '../services/show-camera-data.service';
 
 @Component({
   selector: 'app-camera-configuration',
@@ -13,30 +15,42 @@ import { CameraService, Camera } from '../services/camera.service';
 export class CameraConfiguration implements OnInit {
 
   cameras: Camera[] = [];
-
+s: CameraView[]=[];
   isModalOpen = false;
   mode: 'create' | 'edit' = 'create';
   selectedIndex: number | null = null;
 
   form: Camera = this.emptyForm();
 
-  constructor(private cameraService: CameraService) {}
+constructor(
+  private cameraService: CameraService,
+  private cdr: ChangeDetectorRef,
+  private showcameradata: ShowCameraDataService
+) {}
 
   ngOnInit() {
-    this.loadCameras();
-  }
-
+  console.log("Component Loaded");
+  this.veiwCameras();
+}
+veiwCameras() {
+  this.showcameradata.getAll().subscribe({
+    next: (res: any) => {
+this.s = res.data;      // 🔥 أجبر Angular يعمل refresh للـ UI
+      this.cdr.detectChanges();
+    },
+    error: (err) => console.error(err)
+  });
+}
   // تحميل البيانات من الباك
-  loadCameras() {
-    this.cameraService.getAll().subscribe({
-      next: (res: any) => {
-        this.cameras = res.data ?? []; // ✔ حماية لو data فاضية
-      },
-      error: (err) => {
-        console.error('Load cameras error:', err);
-      }
-    });
-  }
+loadCameras() {
+  this.cameraService.getAll().subscribe({
+    next: (res: any) => {
+this.cameras = res.data;      // 🔥 أجبر Angular يعمل refresh للـ UI
+      this.cdr.detectChanges();
+    },
+    error: (err) => console.error(err)
+  });
+}
 
   // فتح إنشاء
   openCreate() {
@@ -47,6 +61,7 @@ export class CameraConfiguration implements OnInit {
 
   // فتح تعديل
   openEdit(index: number) {
+    
     this.mode = 'edit';
     this.selectedIndex = index;
     this.form = { ...this.cameras[index] };
@@ -59,52 +74,50 @@ export class CameraConfiguration implements OnInit {
   }
 
   // حفظ (Create / Edit)
-  save() {
-    if (this.mode === 'create') {
+save() {
+  const payload = {
+    ...this.form,
+    port: Number(this.form.port)
+  };
 
-      this.cameraService.create(this.form).subscribe({
-        next: () => {
-          this.loadCameras();
-          this.closeModal();
-        },
-        error: (err) => console.error('Create error:', err)
-      });
+  if (this.mode === 'create') {
 
-    } else if (this.mode === 'edit' && this.selectedIndex !== null) {
+    this.cameraService.create(payload).subscribe({
+      next: () => this.veiwCameras(),
+      error: err => console.log(err)
+    });
 
-      const id = (this.cameras[this.selectedIndex] as any).id;
+  } else if (this.mode === 'edit' && this.selectedIndex !== null) {
 
-      this.cameraService.update(id, this.form).subscribe({
-        next: () => {
-          this.loadCameras();
-          this.closeModal();
-        },
-        error: (err) => console.error('Update error:', err)
-      });
-    }
+    const id = this.cameras[this.selectedIndex].id;
+
+    this.cameraService.update(id!, payload).subscribe({
+      next: () => this.veiwCameras(),
+      error: err => console.log(err)
+    });
   }
+
+  this.closeModal();
+}
 
   // حذف
-  delete(index: number) {
+delete(id?: number) {
+  if (!id) return;
 
-    const id = (this.cameras[index] as any).id;
-
-    if (confirm('Are you sure you want to delete this camera?')) {
-      this.cameraService.delete(id).subscribe({
-        next: () => {
-          this.loadCameras();
-        },
-        error: (err) => console.error('Delete error:', err)
-      });
-    }
+  if (confirm('Are you sure?')) {
+    this.cameraService.delete(id).subscribe({
+      next: () => this.veiwCameras(),
+      error: err => console.log(err)
+    });
   }
+}
 
   // فورم فاضي
   emptyForm(): Camera {
     return {
       name: '',
-      IpAddress: '',
-      port: '',
+      ipAddress: '',
+      port: 0,
       username: '',
       password: '',
       path: ''
