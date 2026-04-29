@@ -49,6 +49,20 @@ namespace Smart_Surviellance.Controllers
             return Ok(result);
         }
 
+
+        [HttpGet("byid/{id}")]
+        public async Task<IActionResult> GetCameraByIdAsync(int id)
+        {
+            var result = await _cameraService.GetCameraByIdAsync(id);
+            if (!result.IsSuccess)
+            {
+                return NotFound(result);
+            }
+            return Ok(result);
+        }
+
+
+
         [HttpPut("{id}")]
         public async Task<IActionResult> UpdateCamera(int id, [FromBody] CreateCameraDto updateCameraDto)
         {

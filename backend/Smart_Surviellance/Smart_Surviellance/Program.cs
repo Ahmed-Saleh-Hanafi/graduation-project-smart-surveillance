@@ -74,7 +74,9 @@ builder.Services.AddSignalR();
 builder.Services.AddScoped<IUserRepository, UserRepository>();
 builder.Services.AddScoped<ICameraRepository, CameraRepository>();
 builder.Services.AddScoped<IAlertRepository, AlertRepository>();
-
+builder.Services.AddScoped<IPersonRepository, PersonRepository>();
+builder.Services.AddScoped<ICameraPersonRepository, CameraPersonRepository>();
+builder.Services.AddScoped<IDetectionRepository, DetectionRepository>();
 
 // Services
 builder.Services.AddScoped<IAuthService, AuthService>();
@@ -84,6 +86,10 @@ builder.Services.AddScoped<ICameraService, CameraService>();
 builder.Services.AddScoped<IMediaMTXConfiqService, MediaMTXConfigService>();
 builder.Services.AddScoped<IAlertService, AlertService>();
 builder.Services.AddScoped<IAlertNotifier, AlertNotifier>();
+builder.Services.AddScoped<IFaceProcessingService,FaceProcessingService>();
+builder.Services.AddScoped<IPersonService, PersonService>();
+builder.Services.AddScoped<IDetectionService, DetectionService>();
+
 
 
 

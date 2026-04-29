@@ -1,4 +1,5 @@
-﻿using Domain.Entities;
+﻿using Application.Dto;
+using Domain.Entities;
 using System;
 using System.Collections.Generic;
 using System.Text;
@@ -9,6 +10,7 @@ namespace Application.Services.Interfaces
     {
 
         Task SendAsync(Alert alert);
+        Task SendFaceAlertAsync(FaceAlertDto faceAlertDto);
 
 
     }

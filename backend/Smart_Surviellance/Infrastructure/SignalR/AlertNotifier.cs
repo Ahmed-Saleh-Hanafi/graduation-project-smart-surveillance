@@ -1,4 +1,5 @@
-﻿using Application.Services.Interfaces;
+﻿using Application.Dto;
+using Application.Services.Interfaces;
 using Domain.Entities;
 using Microsoft.AspNetCore.SignalR;
 using System;
@@ -27,6 +28,20 @@ namespace Infrastructure.SignalR
                 alert.IsResolved,
                 alert.Timestamp,
                 alert.CreatedAt
+            });
+        }
+
+        public async Task SendFaceAlertAsync(FaceAlertDto faceAlertDto)
+        {
+            await _hubContext.Clients.All.SendAsync("ReceiveFaceAlert", new
+            {
+                faceAlertDto.Id,
+                faceAlertDto.CameraId,
+                faceAlertDto.PersonId,
+                faceAlertDto.Confidence,
+                faceAlertDto.SnapShotUrl,
+                faceAlertDto.CreatedAt,
+                faceAlertDto.Message
             });
         }
     }
