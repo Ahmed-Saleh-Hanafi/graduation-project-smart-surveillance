@@ -77,12 +77,18 @@ async function fetchAlerts() {
 }
 
 async function resolveAlert(id) {
-  // TODO: await fetch(`https://your-api.com/alerts/${id}/resolve`, { method: 'POST' });
+  const res = await fetch(`/api/alerts/${id}/resolve`, { method: 'POST' });
+  if (!res.ok) {
+    throw new Error('Failed to resolve alert');
+  }
   console.log('resolveAlert:', id);
 }
 
 async function escalateAlert(id) {
-  // TODO: await fetch(`https://your-api.com/alerts/${id}/escalate`, { method: 'POST' });
+  const res = await fetch(`/api/alerts/${id}/escalate`, { method: 'POST' });
+  if (!res.ok) {
+    throw new Error('Failed to escalate alert');
+  }
   console.log('escalateAlert:', id);
 }
 
@@ -280,7 +286,7 @@ function AlertCard({ alert, onResolve, onEscalate, onViewEvent }) {
 
 // ─── Main Screen ──────────────────────────────────────────────────────────────
 export default function AlertsScreen() {
-  const [alerts, setAlerts]     = useState(MOCK_ALERTS);
+  const [alerts, setAlerts]     = useState([]);
   const [activeTab, setActiveTab] = useState('All');
   const [selected, setSelected]   = useState(null);
 
