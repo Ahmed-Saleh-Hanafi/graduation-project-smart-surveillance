@@ -39,6 +39,12 @@ namespace Infrastructure.Repositories
                 .ToListAsync();
         }
 
+        public async Task<bool> AssignationIsExist(string userId, int cameraId)
+        {
+            return await _context.UserCameras.AnyAsync(uc => uc.UserId == userId && uc.CameraId == cameraId);
+        }
+
+
         public async Task RemoveUserToCameraAsync(UserCamera userCamera)
         {
             var existing = await _context.UserCameras

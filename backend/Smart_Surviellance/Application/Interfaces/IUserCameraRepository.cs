@@ -13,7 +13,7 @@ namespace Application.Interfaces
         Task RemoveUserToCameraAsync(UserCamera userCamera);
         Task<List<int>> GetCameraIdsByUserIdAsync(string userId);
         Task<UserCamera?> GetAsync(int cameraId, string userId);
-
+        Task<bool> AssignationIsExist(string userId, int cameraId);
 
     }
 }

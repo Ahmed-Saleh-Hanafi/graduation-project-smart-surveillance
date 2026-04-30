@@ -74,7 +74,23 @@ namespace Application.Services.Implementations
             return ApiResponse<bool>.Success(true, "Camera deleted successfully.");
         }
         
-        
+        public async Task<ApiResponse<List<CameraDto>>> GetAllForAiAsync()
+        {
+            var cameras = await _cameraRepository.GetAllCamerasAsync();
+            var cameraDtos = new List<CameraDto>();
+            foreach (var camera in cameras)
+            {
+                cameraDtos.Add(new CameraDto
+                {
+                    Id = camera.Id,
+                    Name = camera.Name,
+                    IpAddress = camera.IpAddress,
+                    Port = camera.Port,
+                    StreamUrl = BuildRtspUrl(camera)
+                });
+            }
+            return ApiResponse<List<CameraDto>>.Success(cameraDtos, "Cameras retrieved successfully.");
+        }
 
         public async Task<ApiResponse<List<CameraDto>>> GetAllAsync()
         {

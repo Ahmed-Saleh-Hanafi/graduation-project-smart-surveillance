@@ -170,6 +170,16 @@
   },
   {
     "ContainingType": "Smart_Surviellance.Controllers.CameraController",
+    "Method": "GetAllForAi",
+    "RelativePath": "api/Camera/ai",
+    "HttpMethod": "GET",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "Smart_Surviellance.Controllers.CameraController",
     "Method": "GetCameraByIdAsync",
     "RelativePath": "api/Camera/byid/{id}",
     "HttpMethod": "GET",
