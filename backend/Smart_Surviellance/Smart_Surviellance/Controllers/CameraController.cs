@@ -101,5 +101,19 @@ namespace Smart_Surviellance.Controllers
         }
 
 
+        [HttpGet("ai")]
+        public async Task<IActionResult> GetAllForAi()
+        {
+            var result = await _cameraService.GetAllForAiAsync();
+            if (!result.IsSuccess)
+            {
+                return BadRequest(result);
+            }
+            return Ok(result);
+        }
+
+
+
+
     }
 }

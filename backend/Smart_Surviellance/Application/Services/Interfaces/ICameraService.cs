@@ -17,6 +17,7 @@ namespace Application.Services.Interfaces
         Task<ApiResponse<bool>> DeleteAsync (int id);        
         Task<ApiResponse<WebRTCDto>> GetWebRTCStreamAsync(int id);
 
+        Task<ApiResponse<List<CameraDto>>> GetAllForAiAsync();
 
 
 

@@ -37,6 +37,11 @@ namespace Application.Services.Implementations
                 return ApiResponse<bool>.Fail($"Camera with ID {cameraId} not found.");
             }
 
+            if(await _userCameraRepository.AssignationIsExist(userId, cameraId))
+            {
+                return ApiResponse<bool>.Fail($"User with ID {userId} is already assigned to camera with ID {cameraId}.");
+            }
+
 
             var userCamera = new UserCamera
             {
@@ -46,7 +51,7 @@ namespace Application.Services.Implementations
 
             await _userCameraRepository.AssignUserToCameraAsync(userCamera);
 
-            return ApiResponse<bool>.Success(true);
+            return ApiResponse<bool>.Success(true, "The user is assigned succesfully to this camera");
 
 
 
@@ -62,7 +67,7 @@ namespace Application.Services.Implementations
 
             var cameraIds = await _userCameraRepository.GetCameraIdsByUserIdAsync(userId);
 
-            return ApiResponse<List<int>>.Success(cameraIds);
+            return ApiResponse<List<int>>.Success(cameraIds , "Camera IDs retrieved successfully");
 
 
         }
@@ -108,5 +113,11 @@ namespace Application.Services.Implementations
 
 
         }
+
+
+
+
+
+
     }
 }

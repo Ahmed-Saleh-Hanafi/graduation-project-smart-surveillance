@@ -302,6 +302,18 @@
         }
       }
     },
+    "/api/Camera/ai": {
+      "get": {
+        "tags": [
+          "Camera"
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
     "/api/Detection/face/{cameraId}": {
       "post": {
         "tags": [
