@@ -19,3 +19,6 @@ build/
 
 # env .net
 git rm -r --cached bin obj
+
+# dataset 
+train-models/data/dataset
