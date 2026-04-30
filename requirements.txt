@@ -1,0 +1,15 @@
+# ==============================
+# requirements for ai service 
+# ==============================
+# To install -> pip install -r requirements.txt
+fastapi
+uvicorn
+opencv-python
+numpy
+faiss-cpu
+insightface
+onnxruntime
+onnxruntime-gpu
+pydantic
+python-multipart
+httpx
