@@ -9,5 +9,9 @@ export const routes: Routes = [
   { path: 'login', component: Login },
   { path: 'CameraConfiguration', component: CameraConfiguration, canActivate: [authGuard] },
   { path: 'Dashboard', component: Dashboard },
-  { path: 'Alerts', component: Alerts }
+ {
+  path: 'Alerts',
+  loadComponent: () =>
+    import('./alerts/alerts').then(m => m.Alerts)
+}
 ];
