@@ -20,13 +20,13 @@ namespace Infrastructure.Repositories
 
         public async Task CreateAsync(Person person)
         {
-           await _context.AddAsync(person);
+           await _context.Persons.AddAsync(person);
             await _context.SaveChangesAsync();
         }
 
         public async Task<int?> CreateIDAsync(Person person)
         {
-            await _context.AddAsync(person);
+            await _context.Persons.AddAsync(person);
             await _context.SaveChangesAsync();
             return person.Id;
         }

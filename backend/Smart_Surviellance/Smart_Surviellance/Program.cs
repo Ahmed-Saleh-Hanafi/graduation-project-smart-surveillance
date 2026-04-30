@@ -60,7 +60,25 @@ builder.Services.AddAuthentication(options =>
             Encoding.UTF8.GetBytes(builder.Configuration["JWT:Key"])
         )
     };
+
+    // ✅ Required for SignalR: read JWT from query string (?access_token=...)
+    // because browser WebSockets cannot send Authorization headers
+    options.Events = new Microsoft.AspNetCore.Authentication.JwtBearer.JwtBearerEvents
+    {
+        OnMessageReceived = context =>
+        {
+            var accessToken = context.Request.Query["access_token"];
+            var path = context.HttpContext.Request.Path;
+
+            if (!string.IsNullOrEmpty(accessToken) && path.StartsWithSegments("/hub/alerts"))
+            {
+                context.Token = accessToken;
+            }
+            return Task.CompletedTask;
+        }
+    };
 });
+
 
 
 
@@ -77,6 +95,7 @@ builder.Services.AddScoped<IAlertRepository, AlertRepository>();
 builder.Services.AddScoped<IPersonRepository, PersonRepository>();
 builder.Services.AddScoped<ICameraPersonRepository, CameraPersonRepository>();
 builder.Services.AddScoped<IDetectionRepository, DetectionRepository>();
+builder.Services.AddScoped<IUserCameraRepository, UserCameraRepository>();
 
 // Services
 builder.Services.AddScoped<IAuthService, AuthService>();
@@ -89,6 +108,10 @@ builder.Services.AddScoped<IAlertNotifier, AlertNotifier>();
 builder.Services.AddScoped<IFaceProcessingService,FaceProcessingService>();
 builder.Services.AddScoped<IPersonService, PersonService>();
 builder.Services.AddScoped<IDetectionService, DetectionService>();
+builder.Services.AddScoped<IUserManagmentService, UserManagementService>();
+builder.Services.AddScoped<IUserCameraService, UserCameraService>();
+builder.Services.AddScoped<ICurrentUserService, CurrentUserService>();
+builder.Services.AddHttpContextAccessor();
 
 
 

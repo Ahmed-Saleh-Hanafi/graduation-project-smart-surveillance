@@ -1,4 +1,4 @@
-﻿using Application.Dto;
+using Application.Dto;
 using Application.Services.Interfaces;
 using Domain.Entities;
 using Microsoft.AspNetCore.SignalR;
@@ -19,7 +19,7 @@ namespace Infrastructure.SignalR
 
         public async Task SendAsync(Alert alert)
         {
-            await _hubContext.Clients.All.SendAsync("ReceiveAlert", new
+            var payload = new
             {
                 alert.Id,
                 alert.CameraId,
@@ -28,12 +28,16 @@ namespace Infrastructure.SignalR
                 alert.IsResolved,
                 alert.Timestamp,
                 alert.CreatedAt
-            });
+            };
+
+            // Send to the camera-specific group (regular users) AND the admin group
+            await _hubContext.Clients.Group($"camera-{alert.CameraId}").SendAsync("ReceiveAlert", payload);
+            await _hubContext.Clients.Group("admin").SendAsync("ReceiveAlert", payload);
         }
 
         public async Task SendFaceAlertAsync(FaceAlertDto faceAlertDto)
         {
-            await _hubContext.Clients.All.SendAsync("ReceiveFaceAlert", new
+            var payload = new
             {
                 faceAlertDto.Id,
                 faceAlertDto.CameraId,
@@ -42,7 +46,12 @@ namespace Infrastructure.SignalR
                 faceAlertDto.SnapShotUrl,
                 faceAlertDto.CreatedAt,
                 faceAlertDto.Message
-            });
+            };
+
+            // Send to the camera-specific group (regular users) AND the admin group
+            await _hubContext.Clients.Group($"camera-{faceAlertDto.CameraId}").SendAsync("ReceiveFaceAlert", payload);
+            await _hubContext.Clients.Group("admin").SendAsync("ReceiveFaceAlert", payload);
         }
     }
 }
+

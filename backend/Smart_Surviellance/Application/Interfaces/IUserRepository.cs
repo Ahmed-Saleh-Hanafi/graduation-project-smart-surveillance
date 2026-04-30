@@ -9,6 +9,12 @@ namespace Application.Interfaces
     {
         Task<bool> IsEmailExistsAsync(string email);
         Task<User> GetByEmailAsync(string email);
+        Task<User> GetByEmailAsync(string email, string role);
         Task CreateUserAsync(User user, string password);
+        Task<List<User>> GetAllUsersAsync();
+        Task<List<User>> GetAllUsersAsync(string role);
+        Task<User> GetByIdAsync(string id);
+        Task<User> GetByIdAsync(string id, string role);
+
     }
 }
