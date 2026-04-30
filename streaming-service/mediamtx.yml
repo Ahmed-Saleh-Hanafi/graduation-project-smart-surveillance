@@ -6,7 +6,8 @@ rtspAddress: :8554
 hls: yes
 hlsAddress: :8888
 
-hamdah bateeekh
 paths:
   cam1:
-    source: rtsp://localhost:8554/cam1
+    source: rtsp://192.168.1.1:554/cam1
+  cam1:
+    source: rtsp://192.168.1.1:554/cam1

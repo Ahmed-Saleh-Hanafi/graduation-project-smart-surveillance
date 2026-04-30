@@ -1,0 +1,587 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>CamGuard API Tester</title>
+  <script src="https://cdn.jsdelivr.net/npm/@microsoft/signalr@8.0.0/dist/browser/signalr.min.js"></script>
+  <style>
+    :root {
+      color-scheme: dark;
+      --bg: #09101a;
+      --surface: #121d2c;
+      --surface2: #18253a;
+      --border: rgba(255,255,255,0.08);
+      --accent: #5e72ff;
+      --accent2: #19f6d1;
+      --text: #e6edf7;
+      --muted: #8ea3c7;
+      --danger: #ff6b81;
+      --warning: #f7b500;
+      --radius: 18px;
+      font-family: Inter, system-ui, sans-serif;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      background: radial-gradient(circle at top, rgba(94,114,255,0.16), transparent 32%),
+                  linear-gradient(180deg, #09101a 0%, #080c14 100%);
+      color: var(--text);
+      padding: 24px;
+    }
+    header {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: space-between;
+      gap: 18px;
+      margin-bottom: 20px;
+      align-items: center;
+    }
+    header h1 { font-size: 1.7rem; margin: 0; }
+    header p { margin: 0; color: var(--muted); max-width: 640px; }
+    .config-bar {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      margin-bottom: 18px;
+    }
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 20px;
+      box-shadow: 0 20px 80px rgba(0,0,0,0.12);
+    }
+    .grid { display: grid; grid-template-columns: repeat(2, minmax(280px, 1fr)); gap: 18px; }
+    @media (max-width: 920px) { .grid { grid-template-columns: 1fr; } }
+    .card-title {
+      display: flex; align-items: center; gap: 10px;
+      margin-bottom: 16px;
+      color: var(--accent2);
+      font-size: 0.9rem; letter-spacing: 0.08em; text-transform: uppercase;
+    }
+    .card-title .dot {
+      width: 10px; height: 10px; border-radius: 50%; background: var(--accent);
+    }
+    .form-group { margin-bottom: 14px; }
+    .form-group label {
+      display: block; margin-bottom: 6px; color: var(--muted); font-size: 0.82rem;
+    }
+    .form-group input,
+    .form-group textarea,
+    .form-group select {
+      width: 100%; border-radius: 12px; border: 1px solid var(--border);
+      background: var(--surface2); color: var(--text); padding: 11px 14px;
+      font-size: 0.95rem; outline: none;
+    }
+    .form-group textarea { min-height: 78px; resize: vertical; }
+    .form-row { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+    .btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+      border: none; border-radius: 12px; padding: 12px 16px; cursor: pointer;
+      font-weight: 700; transition: transform 0.15s ease, opacity 0.15s ease;
+      background: linear-gradient(135deg, var(--accent), var(--accent2)); color: #05101a;
+    }
+    .btn:hover { transform: translateY(-1px); }
+    .btn:disabled { opacity: 0.5; cursor: default; }
+    .btn-secondary { background: transparent; border: 1px solid var(--border); color: var(--text); }
+    .small { font-size: 0.84rem; color: var(--muted); }
+    .response-panel { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; margin-top: 18px; }
+    .response-card { min-height: 260px; overflow: auto; white-space: pre-wrap; word-break: break-word; }
+    pre { margin: 0; font-size: 0.88rem; line-height: 1.5; color: var(--text); }
+    .tab-nav { display: flex; gap: 10px; margin-bottom: 18px; }
+    .tab-button { flex: 1; padding: 12px 16px; border: 1px solid var(--border); border-radius: 12px; background: transparent; color: var(--text); font-weight: 700; cursor: pointer; transition: background 0.2s, color 0.2s; }
+    .tab-button.active { background: rgba(94,114,255,0.18); border-color: rgba(94,114,255,0.55); color: #fff; }
+    .hidden { display: none; }
+    .status-badge { display: inline-flex; align-items: center; gap: 8px; padding: 8px 12px; border-radius: 999px; background: rgba(255,255,255,0.06); color: var(--muted); font-weight: 700; }
+    .status-badge.connected { background: rgba(25,246,209,0.16); color: var(--accent2); }
+    .status-badge.disconnected { background: rgba(255,111,129,0.16); color: var(--danger); }
+    .status-badge.connecting { background: rgba(247,181,0,0.16); color: var(--warning); }
+  </style>
+</head>
+<body>
+  <header>
+    <div>
+      <h1>CamGuard API Tester</h1>
+      <p>Use this page to exercise alerts, cameras, detections, user management, authentication, and user-camera binding endpoints.</p>
+    </div>
+  </header>
+
+  <div class="config-bar card">
+    <div class="form-group">
+      <label for="api-url">API base URL</label>
+      <input id="api-url" type="text" value="https://localhost:7274" />
+      <div class="small">Example: https://localhost:7274</div>
+    </div>
+    <div class="form-group">
+      <label for="auth-token">Bearer token (optional)</label>
+      <input id="auth-token" type="text" placeholder="Paste JWT here" />
+      <div class="small">If your APIs require auth, this header is included automatically.</div>
+    </div>
+  </div>
+
+  <div class="tab-nav card">
+    <button class="tab-button active" onclick="switchTab('api')">API Testing</button>
+    <button class="tab-button" onclick="switchTab('signalr')">SignalR Test</button>
+  </div>
+
+  <div id="tab-api">
+    <div class="grid">
+      <section class="card">
+      <div class="card-title"><span class="dot"></span> Authentication</div>
+      <div class="form-group"><label for="register-email">Register email</label><input id="register-email" type="email" placeholder="user@example.com" /></div>
+      <div class="form-row">
+        <div class="form-group"><label for="register-username">Username</label><input id="register-username" type="text" placeholder="username" /></div>
+        <div class="form-group"><label for="register-firstname">First name</label><input id="register-firstname" type="text" placeholder="First" /></div>
+      </div>
+      <div class="form-row">
+        <div class="form-group"><label for="register-lastname">Last name</label><input id="register-lastname" type="text" placeholder="Last" /></div>
+        <div class="form-group"><label for="register-password">Password</label><input id="register-password" type="password" /></div>
+      </div>
+      <button class="btn" onclick="registerUser()">Register</button>
+      <hr style="margin:18px 0;border-color:rgba(255,255,255,0.08);" />
+      <div class="form-group"><label for="login-email">Login email</label><input id="login-email" type="email" /></div>
+      <div class="form-group"><label for="login-password">Login password</label><input id="login-password" type="password" /></div>
+      <button class="btn" onclick="loginUser()">Login</button>
+    </section>
+
+    <section class="card">
+      <div class="card-title"><span class="dot"></span> User Management</div>
+      <div class="form-row">
+        <div class="form-group"><label for="user-email">Email</label><input id="user-email" type="email" /></div>
+        <div class="form-group"><label for="user-username">UserName</label><input id="user-username" type="text" /></div>
+      </div>
+      <div class="form-row">
+        <div class="form-group"><label for="user-firstname">First Name</label><input id="user-firstname" type="text" /></div>
+        <div class="form-group"><label for="user-lastname">Last Name</label><input id="user-lastname" type="text" /></div>
+      </div>
+      <div class="form-group"><label for="user-password">Password</label><input id="user-password" type="password" /></div>
+      <button class="btn" onclick="createUser()">Create User</button>
+      <button class="btn btn-secondary" onclick="getAllUsers()" style="margin-top: 10px;">Get All Users</button>
+      <div class="form-row" style="margin-top: 16px; gap: 12px;">
+        <div class="form-group" style="flex:1"><label for="query-user-email">Query email</label><input id="query-user-email" type="email" /></div>
+        <div class="form-group" style="flex:1"><label for="query-user-id">Query id</label><input id="query-user-id" type="text" /></div>
+      </div>
+      <div class="btn-row" style="display:flex; gap:12px; margin-top:10px;">
+        <button class="btn btn-secondary" onclick="getUserByEmail()">Get by Email</button>
+        <button class="btn btn-secondary" onclick="getUserById()">Get by ID</button>
+      </div>
+    </section>
+
+    <section class="card">
+      <div class="card-title"><span class="dot"></span> Camera API</div>
+      <div class="form-group"><label for="camera-name">Name</label><input id="camera-name" type="text" placeholder="Front gate" /></div>
+      <div class="form-group"><label for="camera-ip">IP Address</label><input id="camera-ip" type="text" placeholder="192.168.1.100" /></div>
+      <div class="form-row">
+        <div class="form-group"><label for="camera-port">Port</label><input id="camera-port" type="number" value="554" /></div>
+        <div class="form-group"><label for="camera-path">Path</label><input id="camera-path" type="text" placeholder="/h264" /></div>
+      </div>
+      <div class="form-row">
+        <div class="form-group"><label for="camera-username">Username</label><input id="camera-username" type="text" /></div>
+        <div class="form-group"><label for="camera-password">Password</label><input id="camera-password" type="password" /></div>
+      </div>
+      <button class="btn" onclick="createCamera()">Create Camera</button>
+      <button class="btn btn-secondary" onclick="getAllCameras()" style="margin-top: 10px;">Get All Cameras</button>
+      <div class="form-row" style="margin-top: 16px; gap: 12px;">
+        <div class="form-group"><label for="camera-id-query">Camera ID</label><input id="camera-id-query" type="number" /></div>
+        <div class="form-group"><label for="camera-id-update">Update ID</label><input id="camera-id-update" type="number" /></div>
+      </div>
+      <div class="btn-row" style="display:flex; gap:12px; margin-top:10px;">
+        <button class="btn btn-secondary" onclick="getCameraById()">Get by ID</button>
+        <button class="btn btn-secondary" onclick="getCameraByIdById()">Get by /byid</button>
+      </div>
+      <button class="btn btn-secondary" onclick="getCameraWebRTC()" style="margin-top: 10px;">Get /webrtc</button>
+      <button class="btn btn-secondary" onclick="updateCamera()" style="margin-top: 10px;">Update Camera</button>
+      <button class="btn btn-danger" onclick="deleteCamera()" style="margin-top: 10px;">Delete Camera</button>
+    </section>
+
+    <section class="card">
+      <div class="card-title"><span class="dot"></span> Person API</div>
+      <div class="form-group"><label for="person-name">Name</label><input id="person-name" type="text" placeholder="John Doe" /></div>
+      <div class="form-group"><label for="person-image">Image URL</label><input id="person-image" type="text" placeholder="https://.../face.jpg" /></div>
+      <button class="btn" onclick="createPerson()">Create Person</button>
+      <button class="btn btn-secondary" onclick="getAllPersons()" style="margin-top: 10px;">Get All Persons</button>
+    </section>
+
+    <section class="card">
+      <div class="card-title"><span class="dot"></span> Detection API</div>
+      <div class="form-row">
+        <div class="form-group"><label for="detection-camera-id">Camera ID</label><input id="detection-camera-id" type="number" /></div>
+        <div class="form-group"><label for="detection-person-id">Person ID</label><input id="detection-person-id" type="number" /></div>
+      </div>
+      <div class="form-row">
+        <div class="form-group"><label for="detection-confidence">Confidence</label><input id="detection-confidence" type="number" step="0.01" value="0.75" /></div>
+        <div class="form-group"><label for="detection-snapshot-url">Snapshot URL</label><input id="detection-snapshot-url" type="text" placeholder="https://.../snapshot.jpg" /></div>
+      </div>
+      <button class="btn" onclick="postFaceDetection()">POST Face Detection</button>
+      <button class="btn btn-secondary" onclick="getAllDetections()" style="margin-top: 10px;">Get All Detections</button>
+      <div class="form-row" style="margin-top: 16px; gap: 12px;">
+        <div class="form-group"><label for="detection-camera-query">Query Camera</label><input id="detection-camera-query" type="number" /></div>
+        <div class="form-group"><label for="detection-person-query">Query Person</label><input id="detection-person-query" type="number" /></div>
+      </div>
+      <div class="form-row" style="gap: 12px;">
+        <div class="form-group"><label for="detection-day-query">Day</label><input id="detection-day-query" type="date" /></div>
+        <div class="form-group"><label for="detection-person-camera-person">Person ID for Combined</label><input id="detection-person-camera-person" type="number" /></div>
+      </div>
+      <div class="form-group"><label for="detection-person-camera-camera">Camera ID for Combined</label><input id="detection-person-camera-camera" type="number" /></div>
+      <div class="btn-row" style="display:flex; gap:12px; margin-top:10px; flex-wrap: wrap;">
+        <button class="btn btn-secondary" onclick="getDetectionsByCamera()">By Camera</button>
+        <button class="btn btn-secondary" onclick="getDetectionsByPerson()">By Person</button>
+        <button class="btn btn-secondary" onclick="getDetectionsByDay()">By Day</button>
+        <button class="btn btn-secondary" onclick="getDetectionsByPersonAndCamera()">By Person+Camera</button>
+      </div>
+    </section>
+
+    <section class="card">
+      <div class="card-title"><span class="dot"></span> Alert API</div>
+      <div class="form-row">
+        <div class="form-group"><label for="alert-camera-id">Camera ID</label><input id="alert-camera-id" type="number" /></div>
+        <div class="form-group"><label for="alert-type">Type</label><input id="alert-type" type="text" placeholder="Intrusion" /></div>
+      </div>
+      <div class="form-group"><label for="alert-desc">Description</label><textarea id="alert-desc" placeholder="Person detected near entrance"></textarea></div>
+      <button class="btn" onclick="createAlert()">Create Alert</button>
+      <button class="btn btn-secondary" onclick="getAllAlerts()" style="margin-top: 10px;">Get All Alerts</button>
+      <div class="form-group" style="margin-top: 14px;"><label for="alert-resolve-id">Resolve Alert ID</label><input id="alert-resolve-id" type="number" /></div>
+      <button class="btn btn-danger" onclick="resolveAlert()">Resolve Alert</button>
+    </section>
+
+    <section class="card">
+      <div class="card-title"><span class="dot"></span> User Camera Bindings</div>
+      <div class="form-group"><label for="uc-user-id">User ID</label><input id="uc-user-id" type="text" placeholder="user-id" /></div>
+      <div class="form-group"><label for="uc-camera-id">Camera ID</label><input id="uc-camera-id" type="number" /></div>
+      <button class="btn" onclick="assignUserCamera()">Assign User → Camera</button>
+      <button class="btn btn-danger" onclick="unassignUserCamera()" style="margin-top: 10px;">Unassign User from Camera</button>
+      <button class="btn btn-secondary" onclick="getUserCameras()" style="margin-top: 10px;">Get Cameras for User</button>
+    </section>
+  </div>
+
+  <div class="response-panel">
+    <div class="card response-card">
+      <div class="card-title"><span class="dot"></span> Response</div>
+      <pre id="response-output">Ready to test APIs.</pre>
+    </div>
+    <div class="card response-card">
+      <div class="card-title"><span class="dot"></span> Request Log</div>
+      <pre id="request-log">No requests yet.</pre>
+    </div>
+  </div>
+  </div>
+
+  <div id="tab-signalr" class="hidden">
+    <div class="grid">
+      <section class="card" style="grid-column: 1 / -1;">
+        <div class="card-title"><span class="dot"></span> SignalR /hub/alerts</div>
+        <div class="form-row">
+          <div class="form-group">
+            <label for="signalr-group">Group filter</label>
+            <input id="signalr-group" type="text" placeholder="admin or camera-1" />
+            <div class="small">Leave blank to connect to default identity groups.</div>
+          </div>
+          <div class="form-group">
+            <label>Status</label>
+            <div id="signalr-status" class="status-badge disconnected">Disconnected</div>
+          </div>
+        </div>
+        <div class="btn-row" style="display:flex; gap:12px; flex-wrap: wrap; margin-top: 10px;">
+          <button class="btn" onclick="connectSignalR()">Connect</button>
+          <button class="btn btn-secondary" onclick="disconnectSignalR()">Disconnect</button>
+        </div>
+      </section>
+    </div>
+    <div class="response-panel">
+      <div class="card response-card">
+        <div class="card-title"><span class="dot"></span> SignalR Log</div>
+        <pre id="signalr-log">SignalR events will appear here.</pre>
+      </div>
+      <div class="card response-card">
+        <div class="card-title"><span class="dot"></span> Latest Message</div>
+        <pre id="signalr-message">No messages received yet.</pre>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    function getBaseUrl() {
+      return document.getElementById('api-url').value.replace(/\/+$/, '');
+    }
+    function getAuthToken() {
+      return document.getElementById('auth-token').value.trim();
+    }
+    function defaultHeaders() {
+      const headers = { 'Content-Type': 'application/json' };
+      const token = getAuthToken();
+      if (token) headers.Authorization = `Bearer ${token}`;
+      return headers;
+    }
+    function showResponse(title, status, body) {
+      document.getElementById('response-output').textContent = `${title}\nStatus: ${status}\n\n${body}`;
+    }
+    function logRequest(text) {
+      const log = document.getElementById('request-log');
+      log.textContent = `${new Date().toISOString()} — ${text}\n${log.textContent}`;
+    }
+    async function request(method, path, body) {
+      const url = `${getBaseUrl()}${path}`;
+      logRequest(`${method.toUpperCase()} ${url}${body ? '\n' + JSON.stringify(body, null, 2) : ''}`);
+      const options = { method, headers: defaultHeaders() };
+      if (body) options.body = JSON.stringify(body);
+      try {
+        const res = await fetch(url, options);
+        const text = await res.text();
+        let payload = text;
+        try { payload = JSON.stringify(JSON.parse(text), null, 2); } catch (e) {}
+        showResponse(path, `${res.status} ${res.statusText}`, payload);
+        return { ok: res.ok, status: res.status, data: payload };
+      } catch (error) {
+        showResponse(path, 'NETWORK ERROR', error.message);
+        return { ok: false, error };
+      }
+    }
+
+    let signalRConnection = null;
+
+    function switchTab(tab) {
+      const apiTab = document.getElementById('tab-api');
+      const signalrTab = document.getElementById('tab-signalr');
+      const apiButton = document.querySelector('.tab-button[onclick="switchTab(\'api\')"]');
+      const signalrButton = document.querySelector('.tab-button[onclick="switchTab(\'signalr\')"]');
+      if (tab === 'api') {
+        apiTab.classList.remove('hidden');
+        signalrTab.classList.add('hidden');
+        apiButton.classList.add('active');
+        signalrButton.classList.remove('active');
+      } else {
+        apiTab.classList.add('hidden');
+        signalrTab.classList.remove('hidden');
+        apiButton.classList.remove('active');
+        signalrButton.classList.add('active');
+      }
+    }
+
+    function setSignalRStatus(text, state) {
+      const status = document.getElementById('signalr-status');
+      if (!status) return;
+      status.textContent = text;
+      status.className = `status-badge ${state}`;
+    }
+
+    function signalRLog(message) {
+      const log = document.getElementById('signalr-log');
+      log.textContent = `${new Date().toISOString()} — ${message}\n${log.textContent}`;
+    }
+
+    function showSignalRMessage(message) {
+      const output = document.getElementById('signalr-message');
+      output.textContent = JSON.stringify(message, null, 2);
+    }
+
+    function getSignalRUrl() {
+      const token = getAuthToken();
+      const url = `${getBaseUrl()}/hub/alerts`;
+      return token ? `${url}?access_token=${encodeURIComponent(token)}` : url;
+    }
+
+    async function connectSignalR() {
+      if (signalRConnection && signalRConnection.state === signalR.HubConnectionState.Connected) {
+        signalRLog('Already connected.');
+        return;
+      }
+
+      const token = getAuthToken();
+      if (!token) {
+        signalRLog('SignalR requires a valid JWT token to connect. Paste one into the token field.');
+        setSignalRStatus('Disconnected', 'disconnected');
+        return;
+      }
+
+      setSignalRStatus('Connecting…', 'connecting');
+      signalRConnection = new signalR.HubConnectionBuilder()
+        .withUrl(`${getBaseUrl()}/hub/alerts`, {
+          accessTokenFactory: () => token
+        })
+        .withAutomaticReconnect()
+        .configureLogging(signalR.LogLevel.Warning)
+        .build();
+
+      signalRConnection.on('ReceiveAlert', data => {
+        signalRLog('ReceiveAlert event received.');
+        showSignalRMessage(data);
+      });
+
+      signalRConnection.onclose(async error => {
+        setSignalRStatus('Disconnected', 'disconnected');
+        signalRLog(`Connection closed${error ? ': ' + error.message : ''}`);
+      });
+
+      try {
+        await signalRConnection.start();
+        setSignalRStatus('Connected', 'connected');
+        signalRLog('Connected to /hub/alerts.');
+      } catch (error) {
+        setSignalRStatus('Disconnected', 'disconnected');
+        signalRLog(`Failed to connect: ${error.message}`);
+      }
+    }
+
+    async function disconnectSignalR() {
+      if (!signalRConnection) {
+        signalRLog('No active SignalR connection.');
+        setSignalRStatus('Disconnected', 'disconnected');
+        return;
+      }
+      try {
+        await signalRConnection.stop();
+        setSignalRStatus('Disconnected', 'disconnected');
+        signalRLog('SignalR disconnected.');
+      } catch (error) {
+        signalRLog(`Disconnect error: ${error.message}`);
+      }
+      signalRConnection = null;
+    }
+
+    async function registerUser() {
+      const body = {
+        email: document.getElementById('register-email').value,
+        password: document.getElementById('register-password').value,
+        firstName: document.getElementById('register-firstname').value,
+        lastName: document.getElementById('register-lastname').value,
+        userName: document.getElementById('register-username').value,
+      };
+      await request('post', '/api/account/register', body);
+    }
+    async function loginUser() {
+      const body = {
+        email: document.getElementById('login-email').value,
+        password: document.getElementById('login-password').value,
+      };
+      await request('post', '/api/account/login', body);
+    }
+    async function createUser() {
+      const body = {
+        email: document.getElementById('user-email').value,
+        password: document.getElementById('user-password').value,
+        firstName: document.getElementById('user-firstname').value,
+        lastName: document.getElementById('user-lastname').value,
+        userName: document.getElementById('user-username').value,
+      };
+      await request('post', '/api/usermanagement/create-user', body);
+    }
+    async function getAllUsers() { await request('get', '/api/usermanagement/get-all-users'); }
+    async function getUserByEmail() {
+      const email = document.getElementById('query-user-email').value;
+      await request('get', `/api/usermanagement/get-user-by-email?email=${encodeURIComponent(email)}`);
+    }
+    async function getUserById() {
+      const id = document.getElementById('query-user-id').value;
+      await request('get', `/api/usermanagement/get-user-by-id?id=${encodeURIComponent(id)}`);
+    }
+
+    async function createCamera() {
+      const body = {
+        name: document.getElementById('camera-name').value,
+        ipAddress: document.getElementById('camera-ip').value,
+        port: Number(document.getElementById('camera-port').value) || 0,
+        username: document.getElementById('camera-username').value,
+        password: document.getElementById('camera-password').value,
+        path: document.getElementById('camera-path').value,
+      };
+      await request('post', '/api/camera', body);
+    }
+    async function getAllCameras() { await request('get', '/api/camera'); }
+    async function getCameraById() {
+      const id = document.getElementById('camera-id-query').value;
+      await request('get', `/api/camera/${id}`);
+    }
+    async function getCameraByIdById() {
+      const id = document.getElementById('camera-id-query').value;
+      await request('get', `/api/camera/byid/${id}`);
+    }
+    async function getCameraWebRTC() {
+      const id = document.getElementById('camera-id-query').value;
+      await request('get', `/api/camera/${id}/webrtc`);
+    }
+    async function updateCamera() {
+      const id = document.getElementById('camera-id-update').value;
+      const body = {
+        name: document.getElementById('camera-name').value,
+        ipAddress: document.getElementById('camera-ip').value,
+        port: Number(document.getElementById('camera-port').value) || 0,
+        username: document.getElementById('camera-username').value,
+        password: document.getElementById('camera-password').value,
+        path: document.getElementById('camera-path').value,
+      };
+      await request('put', `/api/camera/${id}`, body);
+    }
+    async function deleteCamera() {
+      const id = document.getElementById('camera-id-update').value || document.getElementById('camera-id-query').value;
+      await request('delete', `/api/camera/${id}`);
+    }
+
+    async function createPerson() {
+      const body = {
+        name: document.getElementById('person-name').value,
+        imageUrl: document.getElementById('person-image').value || null,
+      };
+      await request('post', '/api/person', body);
+    }
+    async function getAllPersons() { await request('get', '/api/person'); }
+
+    async function postFaceDetection() {
+      const cameraId = document.getElementById('detection-camera-id').value;
+      const body = {
+        confidence: Number(document.getElementById('detection-confidence').value) || 0,
+        snapShotUrl: document.getElementById('detection-snapshot-url').value || null,
+      };
+      await request('post', `/api/detection/face/${cameraId}`, body);
+    }
+    async function getAllDetections() { await request('get', '/api/detection'); }
+    async function getDetectionsByCamera() {
+      const cameraId = document.getElementById('detection-camera-query').value;
+      await request('get', `/api/detection/camera/${cameraId}`);
+    }
+    async function getDetectionsByPerson() {
+      const personId = document.getElementById('detection-person-query').value;
+      await request('get', `/api/detection/person/${personId}`);
+    }
+    async function getDetectionsByDay() {
+      const date = document.getElementById('detection-day-query').value;
+      await request('get', `/api/detection/day/${encodeURIComponent(date)}`);
+    }
+    async function getDetectionsByPersonAndCamera() {
+      const personId = document.getElementById('detection-person-camera-person').value;
+      const cameraId = document.getElementById('detection-person-camera-camera').value;
+      await request('get', `/api/detection/CameraPerson/${personId}/${cameraId}`);
+    }
+
+    async function createAlert() {
+      const body = {
+        cameraId: Number(document.getElementById('alert-camera-id').value) || 0,
+        type: document.getElementById('alert-type').value || 'Alert',
+        description: document.getElementById('alert-desc').value || '',
+        timestamp: new Date().toISOString(),
+      };
+      await request('post', '/api/alerts', body);
+    }
+    async function getAllAlerts() { await request('get', '/api/alerts'); }
+    async function resolveAlert() {
+      const id = document.getElementById('alert-resolve-id').value;
+      await request('put', `/api/alerts/${id}/resolve`);
+    }
+
+    async function assignUserCamera() {
+      const userId = document.getElementById('uc-user-id').value;
+      const cameraId = document.getElementById('uc-camera-id').value;
+      await request('post', `/api/usercamera/user/${encodeURIComponent(userId)}/camera/${cameraId}`);
+    }
+    async function unassignUserCamera() {
+      const userId = document.getElementById('uc-user-id').value;
+      const cameraId = document.getElementById('uc-camera-id').value;
+      await request('delete', `/api/usercamera/user/${encodeURIComponent(userId)}/camera/${cameraId}`);
+    }
+    async function getUserCameras() {
+      const userId = document.getElementById('uc-user-id').value;
+      await request('get', `/api/usercamera/user/${encodeURIComponent(userId)}/cameras`);
+    }
+  </script>
+</body>
+</html>

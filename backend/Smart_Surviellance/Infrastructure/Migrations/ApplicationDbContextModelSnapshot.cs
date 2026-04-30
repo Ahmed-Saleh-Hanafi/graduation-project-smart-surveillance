@@ -123,11 +123,11 @@ namespace Infrastructure.Migrations
 
             modelBuilder.Entity("Domain.Entities.Detection", b =>
                 {
-                    b.Property<int>("id")
+                    b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("int");
 
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("id"));
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
                     b.Property<int>("CameraId")
                         .HasColumnType("int");
@@ -135,17 +135,17 @@ namespace Infrastructure.Migrations
                     b.Property<DateTime>("DetectedAt")
                         .HasColumnType("datetime2");
 
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
                     b.Property<int?>("PersonId")
                         .HasColumnType("int");
 
                     b.Property<string>("SnapShotUrl")
                         .HasColumnType("nvarchar(max)");
 
-                    b.Property<string>("name")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.HasKey("id");
+                    b.HasKey("Id");
 
                     b.HasIndex("CameraId");
 
@@ -245,6 +245,30 @@ namespace Infrastructure.Migrations
                         .HasFilter("[NormalizedUserName] IS NOT NULL");
 
                     b.ToTable("AspNetUsers", (string)null);
+                });
+
+            modelBuilder.Entity("Domain.Entities.UserCamera", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<int>("CameraId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("UserId")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(450)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CameraId");
+
+                    b.HasIndex("UserId");
+
+                    b.ToTable("UserCameras");
                 });
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRole", b =>
@@ -417,6 +441,25 @@ namespace Infrastructure.Migrations
                     b.Navigation("Person");
                 });
 
+            modelBuilder.Entity("Domain.Entities.UserCamera", b =>
+                {
+                    b.HasOne("Domain.Entities.Camera", "Camera")
+                        .WithMany("UserCameras")
+                        .HasForeignKey("CameraId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("Domain.Entities.User", "User")
+                        .WithMany("UserCameras")
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Camera");
+
+                    b.Navigation("User");
+                });
+
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRoleClaim<string>", b =>
                 {
                     b.HasOne("Microsoft.AspNetCore.Identity.IdentityRole", null)
@@ -473,6 +516,8 @@ namespace Infrastructure.Migrations
                     b.Navigation("CameraPersonLists");
 
                     b.Navigation("Detections");
+
+                    b.Navigation("UserCameras");
                 });
 
             modelBuilder.Entity("Domain.Entities.Person", b =>
@@ -480,6 +525,11 @@ namespace Infrastructure.Migrations
                     b.Navigation("CameraPersonLists");
 
                     b.Navigation("Detections");
+                });
+
+            modelBuilder.Entity("Domain.Entities.User", b =>
+                {
+                    b.Navigation("UserCameras");
                 });
 #pragma warning restore 612, 618
         }

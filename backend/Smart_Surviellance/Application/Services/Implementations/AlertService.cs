@@ -13,11 +13,15 @@ namespace Application.Services.Implementations
     {
         private readonly IAlertRepository _alertRepository;
         private readonly IAlertNotifier _alertNotifier;
+        private readonly ICurrentUserService _currentUserService;
+        private readonly IUserCameraRepository _userCameraRepository;   
 
-        public AlertService(IAlertRepository alertRepository, IAlertNotifier alertNotifier)
+        public AlertService(IAlertRepository alertRepository, IAlertNotifier alertNotifier, ICurrentUserService currentUserService, IUserCameraRepository userCameraRepository)
         {
             _alertRepository = alertRepository;
             _alertNotifier = alertNotifier;
+            _currentUserService = currentUserService;
+            _userCameraRepository = userCameraRepository;
         }
 
 
@@ -36,12 +40,22 @@ namespace Application.Services.Implementations
 
         public async Task<ApiResponse<IEnumerable<AlertDto>>> GetAllAsync()
         {
+
+
             var alerts = await _alertRepository.GetAllAsync();
 
             if (alerts == null)
             {
                 return ApiResponse<IEnumerable<AlertDto>>.Fail("No alerts found");
             }
+
+            if (!_currentUserService.IsAdmin)
+            {
+                var allowedCameraIds = await _userCameraRepository
+                    .GetCameraIdsByUserIdAsync(_currentUserService.UserId);
+                alerts = alerts.Where(a => allowedCameraIds.Contains(a.CameraId));
+            }
+
 
             var alertDtos = alerts.Select(alert => new AlertDto
             {

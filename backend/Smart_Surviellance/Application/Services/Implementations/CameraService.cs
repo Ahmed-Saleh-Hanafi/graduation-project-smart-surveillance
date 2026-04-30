@@ -14,11 +14,15 @@ namespace Application.Services.Implementations
     {
         private readonly ICameraRepository _cameraRepository;
         private readonly IMediaMTXConfiqService _mediaMTXConfigService;
+        private readonly ICurrentUserService _currentUserService;
+        private readonly IUserCameraRepository _userCameraRepository;
 
-        public CameraService(ICameraRepository cameraRepository, IMediaMTXConfiqService mediaMTXConfiqService)
+        public CameraService(ICameraRepository cameraRepository, IMediaMTXConfiqService mediaMTXConfiqService, ICurrentUserService currentUserService, IUserCameraRepository userCameraRepository   )
         {
             _cameraRepository = cameraRepository;
             _mediaMTXConfigService = mediaMTXConfiqService;
+            _currentUserService = currentUserService;
+            _userCameraRepository = userCameraRepository;
         }
 
 
@@ -74,30 +78,68 @@ namespace Application.Services.Implementations
 
         public async Task<ApiResponse<List<CameraDto>>> GetAllAsync()
         {
-            var cameras = await _cameraRepository.GetAllCamerasAsync();
-            var cameraDtos = new List<CameraDto>();
-            foreach (var camera in cameras)
+            if (_currentUserService.IsAdmin)
             {
-                cameraDtos.Add(new CameraDto
+
+
+                var cameras = await _cameraRepository.GetAllCamerasAsync();
+                var cameraDtos = new List<CameraDto>();
+                foreach (var camera in cameras)
                 {
-                    Id = camera.Id,
-                    Name = camera.Name,
-                    IpAddress = camera.IpAddress,
-                    Port = camera.Port,
-                    StreamUrl = BuildRtspUrl(camera)
-                });
+                    cameraDtos.Add(new CameraDto
+                    {
+                        Id = camera.Id,
+                        Name = camera.Name,
+                        IpAddress = camera.IpAddress,
+                        Port = camera.Port,
+                        StreamUrl = BuildRtspUrl(camera)
+                    });
+                }
+                return ApiResponse<List<CameraDto>>.Success(cameraDtos, "Cameras retrieved successfully.");
+
             }
-            return ApiResponse<List<CameraDto>>.Success(cameraDtos, "Cameras retrieved successfully.");
+
+            var userId = _currentUserService.UserId;
+            var allowedCameras = await _userCameraRepository.GetCameraIdsByUserIdAsync(userId);
+
+            var usercameras =  await _cameraRepository.GetAllCamerasAsync();
+            var filteredCameras = usercameras .Where (c=>allowedCameras.Contains(c.Id))
+                                              .Select(c => new CameraDto
+                                              {
+                                                  Id = c.Id,
+                                                  Name = c.Name,
+                                                  IpAddress = c.IpAddress,
+                                                  Port = c.Port,
+                                                  StreamUrl = BuildRtspUrl(c)
+                                              }).ToList();
+
+            return ApiResponse<List<CameraDto>>.Success(filteredCameras, "Cameras retrieved successfully.");
+
+
+
+
+
 
         }
 
         public async Task<ApiResponse<CameraDto>> GetByIdAsync(int id)
         {
+
+            if (!_currentUserService.IsAdmin)
+            {
+                var allowedIds = await _userCameraRepository.GetCameraIdsByUserIdAsync(_currentUserService.UserId);
+                if (!allowedIds.Contains(id))
+                    return ApiResponse<CameraDto>.Fail("Access denied to this camera.");
+            }
+
+
+
             var camera = await _cameraRepository.GetCameraByIdAsync(id);
             if (camera == null)
             {
                 return ApiResponse<CameraDto>.Fail($"Camera with ID {id} not found.");
             }
+
             return ApiResponse<CameraDto>.Success(new CameraDto
             {
                 Id = camera.Id,
@@ -111,6 +153,7 @@ namespace Application.Services.Implementations
 
         public async Task<ApiResponse<bool>> UpdateAsync(int id, CreateCameraDto updateCameraDto)
         {
+
             var camera = await _cameraRepository.GetCameraByIdAsync(id);
             if (camera == null)
             {
@@ -134,6 +177,15 @@ namespace Application.Services.Implementations
 
         public async Task<ApiResponse<WebRTCDto>> GetWebRTCStreamAsync(int id)
         {
+
+            if (!_currentUserService.IsAdmin)
+            {
+                var allowedIds = await _userCameraRepository.GetCameraIdsByUserIdAsync(_currentUserService.UserId);
+                if (!allowedIds.Contains(id))
+                    return ApiResponse<WebRTCDto>.Fail("Access denied to this camera.");
+            }
+
+
             var camera = await _cameraRepository.GetCameraByIdAsync(id);
             if (camera == null)
             {
@@ -152,6 +204,13 @@ namespace Application.Services.Implementations
 
         public async Task<ApiResponse<GetCameraDto>> GetCameraByIdAsync(int id)
         {
+            if (!_currentUserService.IsAdmin)
+            {
+                var allowedIds = await _userCameraRepository.GetCameraIdsByUserIdAsync(_currentUserService.UserId);
+                if (!allowedIds.Contains(id))
+                    return ApiResponse<GetCameraDto>.Fail("Access denied to this camera.");
+            }
+
             var camera = await _cameraRepository.GetCameraByIdAsync(id);
             if (camera == null)
             {

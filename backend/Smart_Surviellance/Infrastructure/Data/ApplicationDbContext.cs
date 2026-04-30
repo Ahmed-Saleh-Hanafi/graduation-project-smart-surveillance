@@ -19,6 +19,7 @@ namespace Infrastructure.Data
         public DbSet<Person> Persons { get; set; }
         public DbSet<CameraPersonList> CameraPersonLists{ get; set; }
         public DbSet<Detection> Detections { get; set; }
+        public DbSet<UserCamera> UserCameras { get; set; }
 
         protected override void OnModelCreating(ModelBuilder builder)
         {
@@ -40,6 +41,16 @@ namespace Infrastructure.Data
                 .HasOne(x => x.Person)
                 .WithMany(p => p.CameraPersonLists)
                 .HasForeignKey(x => x.PersonId);
+
+            builder.Entity<UserCamera>()
+                .HasOne(x => x.User)
+                .WithMany(u => u.UserCameras)
+                .HasForeignKey(x => x.UserId);
+
+            builder.Entity<UserCamera>()
+                .HasOne(x => x.Camera)
+                .WithMany(c => c.UserCameras)
+                .HasForeignKey(x => x.CameraId);
 
             builder.Entity<Detection>()
                 .HasOne(d => d.Camera)
