@@ -495,8 +495,13 @@
       setStatus('connecting', 'Connecting…');
       log(`Connecting to ${url}/hub/alerts …`, 'info');
 
+      const token = document.getElementById('jwt-token').value.trim();
+
       connection = new signalR.HubConnectionBuilder()
-        .withUrl(`${url}/hub/alerts`)
+        .withUrl(`${url}/hub/alerts`, {
+          // Pass JWT via query string — required because WebSockets can't set Auth headers
+          accessTokenFactory: () => token
+        })
         .withAutomaticReconnect()
         .configureLogging(signalR.LogLevel.Warning)
         .build();
