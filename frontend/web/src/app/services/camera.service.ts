@@ -26,7 +26,8 @@ export interface CameraView {
 
 export class CameraService {
 
-  private baseUrl = 'http://localhost:5198/api/Camera';
+  private baseUrl = 'http://localhost:5198/api/camera';
+  private Url = 'http://localhost:5198/api/camera/byid';
 
   constructor(private http: HttpClient) {}
 
@@ -37,14 +38,17 @@ export class CameraService {
   getById(id: number): Observable<any> {
     return this.http.get(`${this.baseUrl}/${id}`);
   }
+  lol(id: number): Observable<any> {
+    return this.http.get(`${this.Url}/${id}`);
+  }
 
   create(data: Camera): Observable<any> {
     return this.http.post(this.baseUrl, data);
   }
 
-  update(id: number, data: Camera): Observable<any> {
-    return this.http.put(`${this.baseUrl}/${id}`, data);
-  }
+ update(id: number, data: Camera): Observable<any> {
+  return this.http.put(`${this.baseUrl}/${id}`, data); // 👈 بدل Url
+}
 
   delete(id: number): Observable<any> {
     return this.http.delete(`${this.baseUrl}/${id}`);
