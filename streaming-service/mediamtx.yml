@@ -14,7 +14,11 @@ paths:
     source: rtsp://192.168.1.1:8https://www.youtube.com/watch?v=CxccCSSTw78
 =======
   cam1:
+<<<<<<< HEAD
+    source: rtsp://localhost:8554/cam1
+=======
     source: rtsp://192.168.1.1:554/cam1
   cam1:
     source: rtsp://192.168.1.1:554/cam1
 >>>>>>> 8842f1a67d4467077dc8116fc060fa5d131d23cd
+>>>>>>> 3de5ea858d51f6cd12bb7a5d5084835da2c7583b

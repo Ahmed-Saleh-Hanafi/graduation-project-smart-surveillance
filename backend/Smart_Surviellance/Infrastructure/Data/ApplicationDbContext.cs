@@ -20,6 +20,7 @@ namespace Infrastructure.Data
         public DbSet<CameraPersonList> CameraPersonLists{ get; set; }
         public DbSet<Detection> Detections { get; set; }
         public DbSet<UserCamera> UserCameras { get; set; }
+        public DbSet<Face> Faces { get; set; }
 
         protected override void OnModelCreating(ModelBuilder builder)
         {
@@ -63,6 +64,14 @@ namespace Infrastructure.Data
                 .WithMany(p => p.Detections)
                 .HasForeignKey(d => d.PersonId)
                 .OnDelete(DeleteBehavior.Restrict);
+
+            builder.Entity<Face>()
+                .HasOne(f => f.Camera)
+                .WithMany(c => c.Faces)
+                .HasForeignKey(f => f.CameraId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+
 
 
 

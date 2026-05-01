@@ -24,6 +24,7 @@ namespace Domain.Entities
         public ICollection<CameraPersonList> CameraPersonLists { get; set; }
         public ICollection<Detection> Detections { get; set; }
         public ICollection<UserCamera> UserCameras { get; set; }
+        public ICollection<Face> Faces { get; set; }
 
     }
 }
