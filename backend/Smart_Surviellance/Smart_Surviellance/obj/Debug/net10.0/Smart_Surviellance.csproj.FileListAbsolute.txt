@@ -168,4 +168,5 @@ E:\CamGuard\graduation-project-smart-surveillance\backend\Smart_Surviellance\Sma
 E:\CamGuard\graduation-project-smart-surveillance\backend\Smart_Surviellance\Smart_Surviellance\obj\Debug\net10.0\Smart_Surviellance.pdb
 E:\CamGuard\graduation-project-smart-surveillance\backend\Smart_Surviellance\Smart_Surviellance\obj\Debug\net10.0\Smart_Surviellance.genruntimeconfig.cache
 E:\CamGuard\graduation-project-smart-surveillance\backend\Smart_Surviellance\Smart_Surviellance\obj\Debug\net10.0\ref\Smart_Surviellance.dll
+E:\CamGuard\graduation-project-smart-surveillance\backend\Smart_Surviellance\Smart_Surviellance\bin\Debug\net10.0\Smart_Surviellance.staticwebassets.runtime.json
 E:\CamGuard\graduation-project-smart-surveillance\backend\Smart_Surviellance\Smart_Surviellance\obj\Debug\net10.0\staticwebassets.upToDateCheck.txt

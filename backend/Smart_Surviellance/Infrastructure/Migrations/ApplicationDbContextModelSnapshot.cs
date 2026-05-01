@@ -154,6 +154,28 @@ namespace Infrastructure.Migrations
                     b.ToTable("Detections");
                 });
 
+            modelBuilder.Entity("Domain.Entities.Face", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<int>("CameraId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Url")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CameraId");
+
+                    b.ToTable("Faces");
+                });
+
             modelBuilder.Entity("Domain.Entities.Person", b =>
                 {
                     b.Property<int>("Id")
@@ -441,6 +463,17 @@ namespace Infrastructure.Migrations
                     b.Navigation("Person");
                 });
 
+            modelBuilder.Entity("Domain.Entities.Face", b =>
+                {
+                    b.HasOne("Domain.Entities.Camera", "Camera")
+                        .WithMany("Faces")
+                        .HasForeignKey("CameraId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Camera");
+                });
+
             modelBuilder.Entity("Domain.Entities.UserCamera", b =>
                 {
                     b.HasOne("Domain.Entities.Camera", "Camera")
@@ -516,6 +549,8 @@ namespace Infrastructure.Migrations
                     b.Navigation("CameraPersonLists");
 
                     b.Navigation("Detections");
+
+                    b.Navigation("Faces");
 
                     b.Navigation("UserCameras");
                 });
