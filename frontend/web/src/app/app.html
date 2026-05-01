@@ -1,1 +1,19 @@
+
+<style>
+    .popup {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  background: red;
+  color: white;
+  padding: 10px;
+  border-radius: 8px;
+  z-index: 9999;
+}
+</style>
+
+<div *ngFor="let alert of alerts" class="popup">
+  🔥 {{ alert.message }}
+</div>
+
 <router-outlet></router-outlet>
