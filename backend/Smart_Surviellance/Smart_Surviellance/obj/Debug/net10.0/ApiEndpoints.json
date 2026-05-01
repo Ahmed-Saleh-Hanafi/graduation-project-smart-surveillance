@@ -316,6 +316,48 @@
     "ReturnTypes": []
   },
   {
+    "ContainingType": "Smart_Surviellance.Controllers.FaceController",
+    "Method": "DeleteFace",
+    "RelativePath": "api/Face/delete-face/{faceId}",
+    "HttpMethod": "DELETE",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "faceId",
+        "Type": "System.Int32",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "Smart_Surviellance.Controllers.FaceController",
+    "Method": "GetAllFaces",
+    "RelativePath": "api/Face/get-all-faces",
+    "HttpMethod": "GET",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [],
+    "ReturnTypes": []
+  },
+  {
+    "ContainingType": "Smart_Surviellance.Controllers.FaceController",
+    "Method": "GetFacesByCameraId",
+    "RelativePath": "api/Face/get-faces/{cameraId}",
+    "HttpMethod": "GET",
+    "IsController": true,
+    "Order": 0,
+    "Parameters": [
+      {
+        "Name": "cameraId",
+        "Type": "System.Int32",
+        "IsRequired": true
+      }
+    ],
+    "ReturnTypes": []
+  },
+  {
     "ContainingType": "Smart_Surviellance.Controllers.ImageController",
     "Method": "UploadImage",
     "RelativePath": "api/Image/upload",

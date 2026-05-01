@@ -512,6 +512,64 @@
         }
       }
     },
+    "/api/Face/get-faces/{cameraId}": {
+      "get": {
+        "tags": [
+          "Face"
+        ],
+        "parameters": [
+          {
+            "name": "cameraId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/Face/delete-face/{faceId}": {
+      "delete": {
+        "tags": [
+          "Face"
+        ],
+        "parameters": [
+          {
+            "name": "faceId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
+    "/api/Face/get-all-faces": {
+      "get": {
+        "tags": [
+          "Face"
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        }
+      }
+    },
     "/api/Image/upload": {
       "post": {
         "tags": [

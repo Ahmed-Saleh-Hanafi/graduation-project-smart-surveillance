@@ -16,6 +16,8 @@ namespace Application.Services.Interfaces
 
         Task<ApiResponse<List<FaceDto>>> GetAllFacesAsync();
 
+        Task<ApiResponse<bool>> DeleteFaceAsync(int faceId);
+
 
 
     }

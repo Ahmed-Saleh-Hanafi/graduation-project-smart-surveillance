@@ -11,6 +11,8 @@ namespace Application.Interfaces
         Task<Face> GetFaceByIdAsync(int id);
         Task CreateFace(Face face);
 
+        Task DeleteFaceAsync(int id);
+
         Task<List<Face>> GetFacesByCameraIdAsync(int cameraId);
         Task<List<Face>> GetAllFacesAsync();
 

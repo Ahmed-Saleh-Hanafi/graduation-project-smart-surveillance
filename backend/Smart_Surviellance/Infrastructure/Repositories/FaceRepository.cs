@@ -25,6 +25,15 @@ namespace Infrastructure.Repositories
 
         }
 
+        
+
+        public async Task DeleteFaceAsync(int id)
+        {
+            var face = await _context.Faces.FirstOrDefaultAsync(f => f.Id == id);
+            _context.Faces.Remove(face);
+            await _context.SaveChangesAsync();
+        }
+
         public async Task<List<Face>> GetAllFacesAsync()
         {
            return await _context.Faces.ToListAsync();

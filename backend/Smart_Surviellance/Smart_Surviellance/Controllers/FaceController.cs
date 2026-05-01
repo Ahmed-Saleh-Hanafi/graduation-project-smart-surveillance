@@ -29,7 +29,32 @@ namespace Smart_Surviellance.Controllers
         [HttpGet("get-faces/{cameraId}")]
         public async Task<IActionResult> GetFacesByCameraId(int cameraId)
         {
+
             var response = await _faceService.GetFacesByCameraIdAsync(cameraId);
+            if (response.IsSuccess)
+            {
+                return Ok(response);
+            }
+            return BadRequest(response);
+
+        }
+
+
+        [HttpDelete("delete-face/{faceId}")]
+        public async Task<IActionResult> DeleteFace(int faceId)
+        {
+            var response = await _faceService.DeleteFaceAsync(faceId);
+            if (response.IsSuccess)
+            {
+                return Ok(response);
+            }
+            return BadRequest(response);
+        }
+
+        [HttpGet("get-all-faces")]
+        public async Task<IActionResult> GetAllFaces()
+        {
+            var response = await _faceService.GetAllFacesAsync();
             if (response.IsSuccess)
             {
                 return Ok(response);
@@ -39,5 +64,5 @@ namespace Smart_Surviellance.Controllers
 
 
 
-        }
+    }
 }

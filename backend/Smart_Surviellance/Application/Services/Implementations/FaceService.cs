@@ -61,9 +61,32 @@ namespace Application.Services.Implementations
 
         }
 
-        public Task<ApiResponse<List<FaceDto>>> GetAllFacesAsync()
+        public async Task<ApiResponse<bool>> DeleteFaceAsync(int faceId)
         {
-            throw new NotImplementedException();
+            var face = await _faceRepository.GetFaceByIdAsync(faceId);
+            if (face == null)
+            {
+                return ApiResponse<bool>.Fail("There is no face with the specified ID.");
+            }
+
+            await _faceRepository.DeleteFaceAsync(faceId);
+            return ApiResponse<bool>.Success(true, "Face deleted successfully.");
+        }
+
+        public async Task<ApiResponse<List<FaceDto>>> GetAllFacesAsync()
+        {
+            var faces = await _faceRepository.GetAllFacesAsync();
+            var faceDtos = new List<FaceDto>();
+            foreach (var face in faces)
+            {
+                faceDtos.Add(new FaceDto
+                {
+                    Id = face.Id,
+                    CameraId = face.CameraId,
+                    Url = face.Url
+                });
+            }
+            return ApiResponse<List<FaceDto>>.Success(faceDtos, "Faces retrieved successfully.");
         }
 
         public async Task<ApiResponse<List<FaceDto>>> GetFacesByCameraIdAsync(int cameraId)
