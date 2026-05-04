@@ -25,4 +25,4 @@ build/
 
 
 # dataset 
-ai-service/train-models/data/dataset
+ai-service/train-models/weapon-detection/dataset

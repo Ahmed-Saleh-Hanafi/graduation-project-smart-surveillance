@@ -1,21 +1,36 @@
 from fastapi import FastAPI
-from api.cameras import get_all_cameras
+from comunication.cameras import get_all_cameras
 import asyncio
-from config import settings
-from core.camera_worker import camera_worker
+from api.faces import router as face_router
 
-app = FastAPI()
+app = FastAPI(title="AI Surveillance Service")
+
+BACKEND_CAMERAS_API = "http://localhost:5198/api/Camera/ai"
+
+@app.on_event("startup")
+async def startup_event():
+    try:
+        cameras = await get_all_cameras(BACKEND_CAMERAS_API)
+
+        if not cameras:
+            print("[WARNING] No cameras found.")
+            return
+        print(cameras)
+        print(f"[INFO] Loaded {len(cameras)} cameras.")
 
 
-@app.on_event(settings.APP_NAME)
-async def startup():
-    cameras = await get_all_cameras("http://your-backend/api/cameras")
-    settings.CAMERA_SOURCES = cameras
+    except Exception as e:
+        print(f"[ERROR] Failed to load cameras: {e}")
+        
+
+@app.get("/")
+async def home():
+    return {
+        "message": "AI Surveillance Service Running"
+    }
     
-    # Start workers
-    for cam_id, url in cameras.items():
-        asyncio.create_task(camera_worker(cam_id, url))
-    
-    
-    # Start batch engine
-    asyncio.create_task(batch_inference_loop())
+app.include_router(
+    face_router,
+    prefix="/faces",  
+    tags=["Face Management"]
+)

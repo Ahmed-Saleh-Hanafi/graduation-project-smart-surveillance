@@ -1,7 +1,7 @@
 
 import torch
 from torchvision.io import read_image
-from ai.train.utils.validation import validate_path
+from utils.validation import validate_path
 
 def load_img(img_path: str)-> torch.tensor:
         """To load image from hard disk
