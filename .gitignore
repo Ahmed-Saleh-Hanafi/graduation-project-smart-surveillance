@@ -15,15 +15,14 @@ __pycache__/
 # IDE/editor folders
 .vscode/
 .idea/
-=======
+# =======
 .vs/
 node_modules/
 .angular/
 dist/
 build/
 
-# env .net
-git rm -r --cached bin obj
+
 
 # dataset 
 ai-service/train-models/weapon-detection/dataset

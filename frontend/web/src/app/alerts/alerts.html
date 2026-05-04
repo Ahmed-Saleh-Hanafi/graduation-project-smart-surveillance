@@ -114,9 +114,9 @@
                 </nav>
             </div>
             <div class="flex items-center gap-4">
-                <button class="p-2 text-slate-500 hover:bg-slate-100/50 transition-all duration-200 active:scale-95">
+              <a href="/Alerts">  <button class="p-2 text-slate-500 hover:bg-slate-100/50 transition-all duration-200 active:scale-95">
                     <span class="material-symbols-outlined" data-icon="notifications">notifications</span>
-                </button>
+                </button></a>
                 <button class="p-2 text-slate-500 hover:bg-slate-100/50 transition-all duration-200 active:scale-95">
                     <span class="material-symbols-outlined" data-icon="settings">settings</span>
                 </button>
@@ -130,14 +130,14 @@
     </header>
     <!-- SideNavBar -->
     <aside style="padding-top: 40px;"
-        class="fixed left-0 top-16 h-[calc(100vh-4rem)] w-64 z-40 bg-slate-50/80 backdrop-blur-xl flex flex-col py-4 px-2 border-r border-slate-200/20">
+        class="fixed left-0 top-16 h-[calc(100vh-4rem)] w-74 z-40 bg-slate-50/80 backdrop-blur-xl flex flex-col py-4 px-2 border-r border-slate-200/20">
 
         <nav class="flex-1 space-y-1">
 
-            <a class="flex items-center gap-3 px-4 py-3 text-sm font-medium bg-blue-50 text-blue-700 border-l-4 border-blue-700 transition-colors duration-150 rounded-r-lg group"
+            <a class="flex items-center gap-3 px-4 py-3 text-sm font-medium text-slate-600 hover:bg-slate-100 transition-colors duration-150 rounded-lg group"
                 href="/Dashboard">
 
-                <span class="material-symbols-outlined text-blue-700">
+                <span class="material-symbols-outlined">
                     dashboard
                 </span>
 
@@ -161,17 +161,23 @@
                     data-icon="group">group</span>
                 User Access
             </a>
-            <a class="flex items-center gap-3 px-4 py-3 text-sm font-medium text-slate-600 hover:bg-slate-100 transition-colors duration-150 rounded-lg group"
-                href="#">
-                <span class="material-symbols-outlined text-slate-400 group-hover:text-blue-700"
-                    data-icon="receipt_long">receipt_long</span>
-                Logs
-            </a>
+           <a class="flex items-center gap-3 px-4 py-3 text-sm font-medium bg-blue-50 text-blue-700 border-l-4 border-blue-700 transition-colors duration-150 rounded-r-lg group"
+        href="/Alerts">
+        <span class="material-symbols-outlined text-blue-700"
+          data-icon="notifications">notifications</span>
+        Notification Management
+      </a>
         </nav>
 
     </aside>
     <!-- Main Content -->
-    
+    <main>
+        <h2>Alerts History</h2>
+
+<div *ngFor="let a of alertsHistory">
+  {{ a.message }}
+</div>
+    </main>
 </body>
 
 </html>

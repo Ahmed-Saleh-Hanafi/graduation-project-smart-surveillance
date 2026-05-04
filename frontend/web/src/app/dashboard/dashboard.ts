@@ -20,7 +20,7 @@ export class Dashboard implements OnInit {
     this.loadCameras();
 
     // افتراضي أول كاميرا
-    this.videoUrl = this.dashboardService.getCameraStream(1);
+    this.videoUrl = "http://localhost:8889/cam1";
   }
 
   loadCameras() {

@@ -96,6 +96,7 @@ builder.Services.AddScoped<IPersonRepository, PersonRepository>();
 builder.Services.AddScoped<ICameraPersonRepository, CameraPersonRepository>();
 builder.Services.AddScoped<IDetectionRepository, DetectionRepository>();
 builder.Services.AddScoped<IUserCameraRepository, UserCameraRepository>();
+builder.Services.AddScoped<IFaceRepository, FaceRepository>();
 
 // Services
 builder.Services.AddScoped<IAuthService, AuthService>();
@@ -106,11 +107,13 @@ builder.Services.AddScoped<IMediaMTXConfiqService, MediaMTXConfigService>();
 builder.Services.AddScoped<IAlertService, AlertService>();
 builder.Services.AddScoped<IAlertNotifier, AlertNotifier>();
 builder.Services.AddScoped<IFaceProcessingService,FaceProcessingService>();
+builder.Services.AddScoped<IFaceService, FaceService>();
 builder.Services.AddScoped<IPersonService, PersonService>();
 builder.Services.AddScoped<IDetectionService, DetectionService>();
 builder.Services.AddScoped<IUserManagmentService, UserManagementService>();
 builder.Services.AddScoped<IUserCameraService, UserCameraService>();
 builder.Services.AddScoped<ICurrentUserService, CurrentUserService>();
+builder.Services.AddScoped<IImageService, ImageService>();
 builder.Services.AddHttpContextAccessor();
 
 
@@ -160,6 +163,8 @@ using (var scope = app.Services.CreateScope())
 
 
 app.UseHttpsRedirection();
+
+app.UseStaticFiles();
 
 app.UseRouting();
 app.UseCors("AllowAll");

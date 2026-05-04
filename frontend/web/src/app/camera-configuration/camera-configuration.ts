@@ -60,13 +60,19 @@ this.cameras = res.data;      // 🔥 أجبر Angular يعمل refresh للـ U
   }
 
   // فتح تعديل
-  openEdit(index: number) {
-    
-    this.mode = 'edit';
-    this.selectedIndex = index;
-    this.form = { ...this.cameras[index] };
-    this.isModalOpen = true;
-  }
+openEdit(index: number) {
+  this.mode = 'edit';
+
+  const id = this.s[index].id; // 👈 من ال view
+
+  this.cameraService.lol(id).subscribe({
+    next: (res: any) => {
+      this.form = res.data; // 👈 full object جاهز للفورم
+      this.isModalOpen = true;
+    },
+    error: err => console.log(err)
+  });
+}
 
   // إغلاق المودال
   closeModal() {
@@ -75,10 +81,9 @@ this.cameras = res.data;      // 🔥 أجبر Angular يعمل refresh للـ U
 
   // حفظ (Create / Edit)
 save() {
-  const payload = {
-    ...this.form,
-    port: Number(this.form.port)
-  };
+  const { id, ...payload } = this.form;
+
+  payload.port = Number(payload.port);
 
   if (this.mode === 'create') {
 
@@ -87,14 +92,13 @@ save() {
       error: err => console.log(err)
     });
 
-  } else if (this.mode === 'edit' && this.selectedIndex !== null) {
+  } else if (this.mode === 'edit' && id) {
 
-    const id = this.cameras[this.selectedIndex].id;
-
-    this.cameraService.update(id!, payload).subscribe({
+    this.cameraService.update(id, payload).subscribe({
       next: () => this.veiwCameras(),
       error: err => console.log(err)
     });
+
   }
 
   this.closeModal();
