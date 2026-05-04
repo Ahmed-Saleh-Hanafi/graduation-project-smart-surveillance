@@ -4,7 +4,7 @@ from typing import Dict, List
 
 router = APIRouter()
 
-# In-memory storage (you can replace with DB later)
+# In-memory storage
 camera_faces: Dict[int, List[str]] = {}
 
 
@@ -15,20 +15,6 @@ class FaceRequest(BaseModel):
 
 @router.post("/add-face")
 async def add_face(request: FaceRequest) -> dict:
-    """
-    Add a face image URL to a specific camera.
-
-    Args:
-        request (FaceRequest):
-            cam_id (int): Camera ID.
-            url_image_face (HttpUrl): URL of the face image.
-
-    Returns:
-        dict: Success message with updated count of faces for the camera.
-
-    Raises:
-        HTTPException: If the input is invalid.
-    """
     cam_id = request.cam_id
     face_url = str(request.url_image_face)
 
@@ -48,20 +34,6 @@ async def add_face(request: FaceRequest) -> dict:
 
 @router.delete("/remove-face")
 async def remove_face(request: FaceRequest) -> dict:
-    """
-    Remove a face image URL from a specific camera.
-
-    Args:
-        request (FaceRequest):
-            cam_id (int): Camera ID.
-            url_image_face (HttpUrl): URL of the face image.
-
-    Returns:
-        dict: Success message with updated count.
-
-    Raises:
-        HTTPException: If camera or face does not exist.
-    """
     cam_id = request.cam_id
     face_url = str(request.url_image_face)
 
