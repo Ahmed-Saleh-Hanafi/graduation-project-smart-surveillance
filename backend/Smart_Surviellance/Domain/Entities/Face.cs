@@ -7,6 +7,8 @@ namespace Domain.Entities
     public class Face
     {
         public int Id { get; set; }
+
+        public string Name { get; set; }
         public string Url { get; set; }
         public int CameraId { get; set; }
 

@@ -10,7 +10,7 @@ namespace Application.Services.Interfaces
     public interface IFaceService
     {
 
-        Task<ApiResponse<bool>> CreateFaceAsync (int cameraId , IFormFile file);
+        Task<ApiResponse<bool>> CreateFaceAsync (CreateFaceDto createFaceDto);
 
         Task<ApiResponse<List<FaceDto>>> GetFacesByCameraIdAsync(int cameraId);
 

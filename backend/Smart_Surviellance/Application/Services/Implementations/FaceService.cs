@@ -30,22 +30,23 @@ namespace Application.Services.Implementations
             _userCameraRepository = userCameraRepository;
         }
 
-        public async Task<ApiResponse<bool>> CreateFaceAsync(int cameraId, IFormFile file)
+        public async Task<ApiResponse<bool>> CreateFaceAsync(CreateFaceDto createFaceDto)
         {
             try
             {
-                var camera = await _cameraRepository.GetCameraByIdAsync(cameraId);
+                var camera = await _cameraRepository.GetCameraByIdAsync(createFaceDto.CameraId);
                 if (camera == null)
                 {
                     return ApiResponse<bool>.Fail("There is no camera with the specified ID.");
                 }
 
-                var FileUrl = await _imageService.SaveImageAsync(file);
+                var FileUrl = await _imageService.SaveImageAsync(createFaceDto.file);
 
                  
                 var face = new Face
                 {
-                    CameraId = cameraId,
+                    CameraId = createFaceDto.CameraId,
+                    Name = createFaceDto.Name,
                     Url = FileUrl,
                     Camera=camera
                 };
@@ -83,6 +84,7 @@ namespace Application.Services.Implementations
                 {
                     Id = face.Id,
                     CameraId = face.CameraId,
+                    Name = face.Name,
                     Url = face.Url
                 });
             }
@@ -114,6 +116,7 @@ namespace Application.Services.Implementations
                     {
                         Id = face.Id,
                         CameraId = face.CameraId,
+                        Name= face.Name,
                         Url = face.Url
                     });
                 }
