@@ -5,271 +5,249 @@ import {
   KeyboardAvoidingView, ActivityIndicator, Alert,
   Pressable, FlatList,
 } from 'react-native';
-import { Ionicons, Feather } from '@expo/vector-icons';
+import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import axios from 'axios';
 
-// ─── Types ──────────────────────────────────────────────────────────────────
+// ─── Types ────────────────────────────────────────────────────────────────────
 
-export type AccessLevel = 'Whitelist' | 'Blacklist';
+interface Camera {
+  id: number;
+  name: string;
+  ipAddress: string;
+  port: number;
+  streamUrl: string;
+}
 
-export interface Face {
-  id: string;
+interface Face {
+  id: string;          // kept as string in UI; API uses integer faceId
   name: string;
   role: string;
-  type: AccessLevel;
   imageUrl: string;
   createdAt: string;
+  cameraId: number;
 }
 
-// ─── API Layer (swap base URL + add auth headers as needed) ─────────────────
+// ─── Constants ────────────────────────────────────────────────────────────────
 
-const API_BASE = 'https://your-api.com/api'; // ← change this
+const BASE_URL = 'http://192.168.1.229:5198';
 
-async function apiFetch<T>(
-  path: string,
-  options: RequestInit = {}
-): Promise<T> {
-  const res = await fetch(`${API_BASE}${path}`, {
-    headers: {
-      'Content-Type': 'application/json',
-      // 'Authorization': `Bearer ${yourToken}`,
-      ...options.headers,
-    },
-    ...options,
-  });
-  if (!res.ok) {
-    const err = await res.text();
-    throw new Error(err || `HTTP ${res.status}`);
-  }
-  return res.json();
-}
+// ─── API helpers ──────────────────────────────────────────────────────────────
 
-const facesApi = {
-  getAll: () => apiFetch<Face[]>('/faces'),
-
-  create: (data: Omit<Face, 'id' | 'createdAt'>) =>
-    apiFetch<Face>('/faces', { method: 'POST', body: JSON.stringify(data) }),
-
-  updateType: (id: string, type: AccessLevel) =>
-    apiFetch<Face>(`/faces/${id}`, {
-      method: 'PATCH',
-      body: JSON.stringify({ type }),
-    }),
-
-  delete: (id: string) =>
-    apiFetch<void>(`/faces/${id}`, { method: 'DELETE' }),
+const authHeader = async () => {
+  const token = await AsyncStorage.getItem('userToken');
+  return token ? { Authorization: `Bearer ${token}` } : {};
 };
 
-// ─── Mock data (used as fallback / during dev) ───────────────────────────────
+/** POST /api/Face/add-face  – multipart form */
+const apiAddFace = async (
+  cameraId: number,
+  name: string,
+  imageUri: string,
+): Promise<{ id: number; imageUrl: string }> => {
+  const headers = await authHeader();
 
-const MOCK_FACES: Face[] = [
-  {
-    id: '1',
-    name: 'Alice Smith',
-    role: 'Staff / Manager',
-    type: 'Whitelist',
-    imageUrl: 'https://i.pravatar.cc/150?u=1',
-    createdAt: new Date().toISOString(),
-  },
-  {
-    id: '2',
-    name: 'Unknown Subject',
-    role: 'Threat Detected',
-    type: 'Blacklist',
-    imageUrl: 'https://i.pravatar.cc/150?u=2',
-    createdAt: new Date().toISOString(),
-  },
-];
+  const form = new FormData();
+  form.append('CameraId', String(cameraId));
+  form.append('Name',     name);
 
-// ─── Sub-components ──────────────────────────────────────────────────────────
+  // React-Native FormData accepts the file as a plain object
+  const filename  = imageUri.split('/').pop() ?? 'photo.jpg';
+  const extension = filename.split('.').pop()?.toLowerCase() ?? 'jpg';
+  const mimeType  = extension === 'png' ? 'image/png' : 'image/jpeg';
 
-interface StatPillProps {
-  count: number;
-  label: string;
-  color: string;
-}
+  (form as any).append('file', {
+    uri:  imageUri,
+    name: filename,
+    type: mimeType,
+  });
 
-const StatPill: React.FC<StatPillProps> = ({ count, label, color }) => (
-  <View style={styles.statPill}>
-    <Text style={styles.statNum}>{count}</Text>
-    <View style={styles.statLabelRow}>
-      <View style={[styles.statDot, { backgroundColor: color }]} />
-      <Text style={styles.statLabel}>{label}</Text>
-    </View>
-  </View>
-);
+  const res = await axios.post(
+    `${BASE_URL}/api/Face/add-face`,
+    form,
+    {
+      headers: {
+        ...headers,
+        'Content-Type': 'multipart/form-data',
+      },
+    },
+  );
 
-interface FaceCardProps {
-  face: Face;
-  onDelete: (face: Face) => void;
-  onToggleType: (face: Face) => void;
-}
+  // Return whatever the server gives back; fall back gracefully
+  const data = res.data?.data ?? res.data ?? {};
+  return {
+    id:       data.id       ?? data.faceId ?? 0,
+    imageUrl: data.imageUrl ?? data.snapShotUrl ?? imageUri,
+  };
+};
 
-const FaceCard: React.FC<FaceCardProps> = ({ face, onDelete, onToggleType }) => {
-  const isWhite = face.type === 'Whitelist';
+/** GET /api/Face/get-faces/{cameraId} */
+const apiFetchFaces = async (cameraId: number): Promise<Face[]> => {
+  const headers = await authHeader();
+  const res = await axios.get(
+    `${BASE_URL}/api/Face/get-faces/${cameraId}`,
+    { headers },
+  );
+  const list: any[] = res.data?.data ?? res.data ?? [];
+  return list.map(f => ({
+    id:        String(f.id ?? f.faceId ?? Date.now()),
+    name:      f.name      ?? 'Unknown',
+    role:      f.role      ?? '',
+    imageUrl:  f.imageUrl  ?? f.snapShotUrl ?? '',
+    createdAt: f.createdAt ?? new Date().toISOString(),
+    cameraId,
+  }));
+};
 
-  return (
-    <View style={styles.card}>
-      <View style={[styles.indicator, { backgroundColor: isWhite ? COLORS.green : COLORS.red }]} />
-      <Image
-        source={{ uri: face.imageUrl }}
-        style={styles.avatar}
-        defaultSource={{ uri: 'https://i.pravatar.cc/150?u=default' }}
-      />
-      <View style={styles.info}>
-        <Text style={styles.name} numberOfLines={1}>{face.name}</Text>
-        <Text style={styles.roleText} numberOfLines={1}>{face.role}</Text>
-        <View style={[styles.badge, isWhite ? styles.whitelistBadge : styles.blacklistBadge]}>
-          <Text style={[styles.badgeText, { color: isWhite ? COLORS.greenDark : COLORS.redDark }]}>
-            {face.type.toUpperCase()}
-          </Text>
-        </View>
-      </View>
-      <View style={styles.cardActions}>
-        <TouchableOpacity
-          style={styles.iconBtn}
-          onPress={() => onToggleType(face)}
-          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-          accessibilityLabel={`Toggle ${face.name} access level`}
-        >
-          <Feather name="refresh-cw" size={16} color={'#007AFF'} />
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={[styles.iconBtn, styles.deleteBtn]}
-          onPress={() => onDelete(face)}
-          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-          accessibilityLabel={`Delete ${face.name}`}
-        >
-          <Feather name="trash-2" size={16} color={COLORS.red} />
-        </TouchableOpacity>
-      </View>
-    </View>
+/** DELETE /api/Face/delete-face/{faceId} */
+const apiDeleteFace = async (faceId: string): Promise<void> => {
+  const headers = await authHeader();
+  await axios.delete(
+    `${BASE_URL}/api/Face/delete-face/${faceId}`,
+    { headers },
   );
 };
 
-// ─── Add Face Modal ──────────────────────────────────────────────────────────
+// ─── CameraChip ───────────────────────────────────────────────────────────────
 
-interface FormErrors {
-  image?: string;
-  name?: string;
-  role?: string;
-}
+const CameraChip = ({
+  camera, active, faceCount, onPress,
+}: {
+  camera: Camera;
+  active: boolean;
+  faceCount: number;
+  onPress: () => void;
+}) => (
+  <TouchableOpacity
+    style={[styles.chip, active && styles.chipActive]}
+    onPress={onPress}
+    activeOpacity={0.75}
+  >
+    <View style={[styles.chipDot, { backgroundColor: active ? '#34C759' : '#AEAEB2' }]} />
+    <Text style={[styles.chipText, active && styles.chipTextActive]} numberOfLines={1}>
+      {camera.name}
+    </Text>
+    {faceCount > 0 && (
+      <View style={[styles.chipBadge, active && styles.chipBadgeActive]}>
+        <Text style={[styles.chipBadgeText, active && styles.chipBadgeTextActive]}>
+          {faceCount}
+        </Text>
+      </View>
+    )}
+  </TouchableOpacity>
+);
+
+// ─── FaceCard ─────────────────────────────────────────────────────────────────
+
+const FaceCard = ({ face, onDelete }: { face: Face; onDelete: (face: Face) => void }) => (
+  <View style={styles.card}>
+    <Image source={{ uri: face.imageUrl }} style={styles.avatar} />
+    <View style={styles.cardInfo}>
+      <Text style={styles.cardName} numberOfLines={1}>{face.name}</Text>
+      <Text style={styles.cardRole} numberOfLines={1}>{face.role}</Text>
+      <Text style={styles.cardDate}>
+        Added {new Date(face.createdAt).toLocaleDateString('en-US', {
+          month: 'short', day: 'numeric', year: 'numeric',
+        })}
+      </Text>
+    </View>
+    <TouchableOpacity
+      style={styles.deleteBtn}
+      onPress={() => onDelete(face)}
+      hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+    >
+      <Ionicons name="trash-outline" size={17} color="#FF3B30" />
+    </TouchableOpacity>
+  </View>
+);
+
+// ─── Add Face Modal ───────────────────────────────────────────────────────────
 
 interface AddFaceModalProps {
   visible: boolean;
+  cameraName: string;
   onClose: () => void;
-  onSave: (data: Omit<Face, 'id' | 'createdAt'>) => Promise<void>;
+  onSave: (name: string, role: string, imageUri: string) => Promise<void>;
   isSaving: boolean;
 }
 
-const AddFaceModal: React.FC<AddFaceModalProps> = ({ visible, onClose, onSave, isSaving }) => {
-  const [name, setName]           = useState('');
-  const [role, setRole]           = useState('');
-  const [type, setType]           = useState<AccessLevel>('Whitelist');
-  const [imageUri, setImageUri]   = useState<string | null>(null);
-  const [errors, setErrors]       = useState<FormErrors>({});
-  const [submitted, setSubmitted] = useState(false);
+const AddFaceModal: React.FC<AddFaceModalProps> = ({
+  visible, cameraName, onClose, onSave, isSaving,
+}) => {
+  const [name,     setName]     = useState('');
+  const [role,     setRole]     = useState('');
+  const [imageUri, setImageUri] = useState<string | null>(null);
+  const [errors,   setErrors]   = useState<{ name?: string; role?: string; image?: string }>({});
 
-  // Re-validate on every change after first submit attempt
-  useEffect(() => {
-    if (submitted) validate();
-  }, [name, role, imageUri, submitted]);
-
-  const reset = () => {
-    setName(''); setRole(''); setType('Whitelist');
-    setImageUri(null); setErrors({}); setSubmitted(false);
-  };
-
+  const reset      = () => { setName(''); setRole(''); setImageUri(null); setErrors({}); };
   const handleClose = () => { reset(); onClose(); };
 
-  const validate = (): FormErrors => {
-    const e: FormErrors = {};
-    if (!imageUri)      e.image = 'A face photo is required.';
-    if (!name.trim())   e.name  = 'Full name is required.';
-    if (!role.trim())   e.role  = 'Job title / role is required.';
+  const validate = () => {
+    const e: typeof errors = {};
+    if (!imageUri)    e.image = 'A face photo is required.';
+    if (!name.trim()) e.name  = 'Full name is required.';
+    if (!role.trim()) e.role  = 'Job title / role is required.';
     setErrors(e);
-    return e;
-  };
-
-  const pickImage = async () => {
-    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
-    if (status !== 'granted') {
-      Alert.alert('Permission required', 'Please allow access to your photo library.');
-      return;
-    }
-    const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.Images,
-      allowsEditing: true,
-      aspect: [1, 1],
-      quality: 0.8,
-    });
-    if (!result.canceled && result.assets[0]) {
-      setImageUri(result.assets[0].uri);
-    }
-  };
-
-  const takePhoto = async () => {
-    const { status } = await ImagePicker.requestCameraPermissionsAsync();
-    if (status !== 'granted') {
-      Alert.alert('Permission required', 'Please allow camera access.');
-      return;
-    }
-    const result = await ImagePicker.launchCameraAsync({
-      allowsEditing: true,
-      aspect: [1, 1],
-      quality: 0.8,
-    });
-    if (!result.canceled && result.assets[0]) {
-      setImageUri(result.assets[0].uri);
-    }
+    return Object.keys(e).length === 0;
   };
 
   const handlePhotoPress = () => {
     Alert.alert('Add Photo', 'Choose a source', [
-      { text: 'Camera',        onPress: takePhoto },
-      { text: 'Photo Library', onPress: pickImage },
+      {
+        text: 'Camera',
+        onPress: async () => {
+          const { status } = await ImagePicker.requestCameraPermissionsAsync();
+          if (status !== 'granted') { Alert.alert('Permission required', 'Please allow camera access.'); return; }
+          const r = await ImagePicker.launchCameraAsync({ allowsEditing: true, aspect: [1, 1], quality: 0.8 });
+          if (!r.canceled) setImageUri(r.assets[0].uri);
+        },
+      },
+      {
+        text: 'Photo Library',
+        onPress: async () => {
+          const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+          if (status !== 'granted') { Alert.alert('Permission required', 'Please allow photo library access.'); return; }
+          const r = await ImagePicker.launchImageLibraryAsync({
+            mediaTypes: ImagePicker.MediaTypeOptions.Images, allowsEditing: true, aspect: [1, 1], quality: 0.8,
+          });
+          if (!r.canceled) setImageUri(r.assets[0].uri);
+        },
+      },
       { text: 'Cancel', style: 'cancel' },
     ]);
   };
 
   const handleSave = async () => {
-    setSubmitted(true);
-    const e = validate();
-    if (Object.keys(e).length > 0) return;
-
-    await onSave({
-      name:     name.trim(),
-      role:     role.trim(),
-      type,
-      imageUrl: imageUri!,
-    });
+    if (!validate()) return;
+    await onSave(name.trim(), role.trim(), imageUri!);
     reset();
   };
 
   return (
-    <Modal
-      animationType="slide"
-      transparent
-      visible={visible}
-      onRequestClose={handleClose}
-    >
+    <Modal animationType="slide" transparent visible={visible} onRequestClose={handleClose}>
       <Pressable style={styles.overlay} onPress={handleClose}>
         <KeyboardAvoidingView
           behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
           style={styles.sheet}
         >
           <Pressable onPress={e => e.stopPropagation()}>
-            <View style={styles.dragHandle} />
-            <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Register New Face</Text>
-              <TouchableOpacity onPress={handleClose} style={styles.closeBtn}>
-                <Ionicons name="close" size={18} color={COLORS.textSecondary} />
+            <View style={styles.sheetHandle} />
+
+            {/* Header */}
+            <View style={styles.sheetHeader}>
+              <View>
+                <Text style={styles.sheetTitle}>Register New Face</Text>
+                <Text style={styles.sheetSub}>{cameraName}</Text>
+              </View>
+              <TouchableOpacity style={styles.closeBtn} onPress={handleClose}>
+                <Ionicons name="close" size={16} color="#1C1C1E" />
               </TouchableOpacity>
             </View>
 
-            {/* ── Photo picker ── */}
+            {/* Photo picker */}
             <TouchableOpacity
-              style={[styles.uploadCircle, errors.image ? styles.uploadCircleError : null]}
+              style={[styles.uploadCircle, errors.image && styles.uploadCircleError]}
               onPress={handlePhotoPress}
               activeOpacity={0.75}
             >
@@ -282,8 +260,8 @@ const AddFaceModal: React.FC<AddFaceModalProps> = ({ visible, onClose, onSave, i
                 </>
               ) : (
                 <>
-                  <Ionicons name="camera" size={28} color={errors.image ? COLORS.red: '#007AFF'} />
-                  <Text style={[styles.uploadLabel, errors.image ? { color: COLORS.red } : null]}>
+                  <Ionicons name="camera" size={28} color={errors.image ? '#FF3B30' : '#007AFF'} />
+                  <Text style={[styles.uploadLabel, errors.image && { color: '#FF3B30' }]}>
                     Add Photo *
                   </Text>
                 </>
@@ -291,12 +269,12 @@ const AddFaceModal: React.FC<AddFaceModalProps> = ({ visible, onClose, onSave, i
             </TouchableOpacity>
             {errors.image && <Text style={styles.fieldError}>{errors.image}</Text>}
 
-            {/* ── Name ── */}
+            {/* Name */}
             <Text style={styles.fieldLabel}>Full Name *</Text>
             <TextInput
-              style={[styles.input, errors.name ? styles.inputError : null]}
+              style={[styles.input, errors.name && styles.inputError]}
               placeholder="e.g. Ahmed Hassan"
-              placeholderTextColor={COLORS.placeholder}
+              placeholderTextColor="#AEAEB2"
               value={name}
               onChangeText={setName}
               autoCapitalize="words"
@@ -304,46 +282,24 @@ const AddFaceModal: React.FC<AddFaceModalProps> = ({ visible, onClose, onSave, i
             />
             {errors.name && <Text style={styles.fieldError}>{errors.name}</Text>}
 
-            {/* ── Role ── */}
+            {/* Role */}
             <Text style={styles.fieldLabel}>Job Title / Role *</Text>
             <TextInput
-              style={[styles.input, errors.role ? styles.inputError : null]}
+              style={[styles.input, errors.role && styles.inputError]}
               placeholder="e.g. Security Manager"
-              placeholderTextColor={COLORS.placeholder}
+              placeholderTextColor="#AEAEB2"
               value={role}
               onChangeText={setRole}
               returnKeyType="done"
             />
             {errors.role && <Text style={styles.fieldError}>{errors.role}</Text>}
 
-            {/* ── Access level ── */}
-            <Text style={styles.fieldLabel}>Access Level *</Text>
-            <View style={styles.segControl}>
-              {(['Whitelist', 'Blacklist'] as AccessLevel[]).map(t => (
-                <TouchableOpacity
-                  key={t}
-                  style={[styles.segBtn, type === t && styles.segBtnActive]}
-                  onPress={() => setType(t)}
-                >
-                  <Text
-                    style={[
-                      styles.segText,
-                      type === t && {
-                        color: t === 'Whitelist' ? COLORS.green : COLORS.red,
-                        fontWeight: '700',
-                      },
-                    ]}
-                  >
-                    {t}
-                  </Text>
-                </TouchableOpacity>
-              ))}
-            </View>
-
+            {/* Save */}
             <TouchableOpacity
               style={[styles.saveBtn, isSaving && { opacity: 0.7 }]}
               onPress={handleSave}
               disabled={isSaving}
+              activeOpacity={0.85}
             >
               {isSaving
                 ? <ActivityIndicator color="#fff" />
@@ -357,294 +313,365 @@ const AddFaceModal: React.FC<AddFaceModalProps> = ({ visible, onClose, onSave, i
   );
 };
 
-// ─── Main Screen ─────────────────────────────────────────────────────────────
-
-type FilterType = 'all' | AccessLevel;
-const FILTERS: { label: string; value: FilterType }[] = [
-  { label: 'All', value: 'all' },
-  { label: 'Whitelist', value: 'Whitelist' },
-  { label: 'Blacklist', value: 'Blacklist' },
-];
+// ─── Main Screen ──────────────────────────────────────────────────────────────
 
 export default function FacesScreen() {
-  const [faces, setFaces] = useState<Face[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [filter, setFilter] = useState<FilterType>('all');
-  const [modalOpen, setModalOpen] = useState(false);
-  const [isSaving, setIsSaving] = useState(false);
+  const [cameras,     setCameras]     = useState<Camera[]>([]);
+  const [loadingCams, setLoadingCams] = useState(true);
+  const [selectedCam, setSelectedCam] = useState<Camera | null>(null);
 
-  // ── Fetch ──
-  const fetchFaces = useCallback(async () => {
-    setLoading(true);
-    setError(null);
+  // faces per camera, loaded from API
+  const [allFaces,    setAllFaces]    = useState<Record<number, Face[]>>({});
+  const [loadingFaces,setLoadingFaces]= useState(false);
+
+  const [modalOpen,   setModalOpen]   = useState(false);
+  const [isSaving,    setIsSaving]    = useState(false);
+
+  // ── Fetch cameras ────────────────────────────────────────────────────────
+  const fetchCameras = useCallback(async () => {
+    setLoadingCams(true);
     try {
-      const data = await facesApi.getAll();
-      setFaces(data);
-    } catch {
-      // fallback to mock during development
-      setFaces(MOCK_FACES);
-      setError(null); // comment this out to surface errors in prod
+      const headers = await authHeader();
+      const res     = await axios.get(`${BASE_URL}/api/Camera`, { headers });
+      const data: Camera[] = res.data.data ?? [];
+      setCameras(data);
+      setSelectedCam(prev => prev ?? (data[0] ?? null));
+    } catch (e) {
+      console.error('Failed to fetch cameras:', e);
     } finally {
-      setLoading(false);
+      setLoadingCams(false);
     }
   }, []);
 
-  useEffect(() => { fetchFaces(); }, [fetchFaces]);
+  useEffect(() => { fetchCameras(); }, []);
 
-  // ── Add ──
-  const handleSave = async (data: Omit<Face, 'id' | 'createdAt'>) => {
+  // ── Fetch faces for selected camera ──────────────────────────────────────
+  const fetchFacesForCamera = useCallback(async (cam: Camera) => {
+    setLoadingFaces(true);
+    try {
+      const faces = await apiFetchFaces(cam.id);
+      setAllFaces(prev => ({ ...prev, [cam.id]: faces }));
+    } catch (e) {
+      console.error('Failed to fetch faces:', e);
+    } finally {
+      setLoadingFaces(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (selectedCam) fetchFacesForCamera(selectedCam);
+  }, [selectedCam]);
+
+  const currentFaces: Face[] = selectedCam ? (allFaces[selectedCam.id] ?? []) : [];
+
+  // ── Save face ─────────────────────────────────────────────────────────────
+  const handleSave = async (name: string, role: string, imageUri: string) => {
+    if (!selectedCam) return;
     setIsSaving(true);
     try {
-      const created = await facesApi.create(data);
-      setFaces(prev => [created, ...prev]);
-      setModalOpen(false);
-    } catch {
-      // Optimistic fallback during dev
+      const result = await apiAddFace(selectedCam.id, name, imageUri);
+
       const newFace: Face = {
-        ...data,
-        id: String(Date.now()),
+        id:        String(result.id),
+        name,
+        role,                               // role is stored locally (API has no role field)
+        imageUrl:  result.imageUrl || imageUri,
         createdAt: new Date().toISOString(),
+        cameraId:  selectedCam.id,
       };
-      setFaces(prev => [newFace, ...prev]);
+
+      setAllFaces(prev => ({
+        ...prev,
+        [selectedCam.id]: [newFace, ...(prev[selectedCam.id] ?? [])],
+      }));
       setModalOpen(false);
+    } catch (e: any) {
+      Alert.alert(
+        'Upload Failed',
+        e?.response?.data?.message ?? 'Could not register face. Please try again.',
+      );
     } finally {
       setIsSaving(false);
     }
   };
 
-  // ── Toggle Type ──
-  const handleToggleType = useCallback(async (face: Face) => {
-    const newType: AccessLevel = face.type === 'Whitelist' ? 'Blacklist' : 'Whitelist';
-    setFaces(prev => prev.map(f => f.id === face.id ? { ...f, type: newType } : f));
-    try {
-      await facesApi.updateType(face.id, newType);
-    } catch {
-      setFaces(prev => prev.map(f => f.id === face.id ? { ...f, type: face.type } : f));
-      Alert.alert('Error', 'Could not update access level.');
-    }
-  }, []);
-
-  // ── Delete ──
+  // ── Delete face ───────────────────────────────────────────────────────────
   const handleDelete = useCallback((face: Face) => {
     Alert.alert(
-      'Remove Identity',
-      `Remove "${face.name}" from the face database?`,
+      'Remove Face',
+      `Remove "${face.name}" from this camera?`,
       [
         { text: 'Cancel', style: 'cancel' },
         {
           text: 'Remove',
           style: 'destructive',
           onPress: async () => {
-            setFaces(prev => prev.filter(f => f.id !== face.id));
             try {
-              await facesApi.delete(face.id);
-            } catch {
-              setFaces(prev => [face, ...prev]);
-              Alert.alert('Error', 'Could not delete face.');
+              await apiDeleteFace(face.id);
+              if (!selectedCam) return;
+              setAllFaces(prev => ({
+                ...prev,
+                [selectedCam.id]: (prev[selectedCam.id] ?? []).filter(f => f.id !== face.id),
+              }));
+            } catch (e: any) {
+              Alert.alert(
+                'Delete Failed',
+                e?.response?.data?.message ?? 'Could not delete face. Please try again.',
+              );
             }
           },
         },
-      ]
+      ],
     );
-  }, []);
+  }, [allFaces, selectedCam]);
 
-  const filtered = filter === 'all' ? faces : faces.filter(f => f.type === filter);
-  const whiteCount = faces.filter(f => f.type === 'Whitelist').length;
-  const blackCount = faces.filter(f => f.type === 'Blacklist').length;
+  // ── Loading cameras ───────────────────────────────────────────────────────
+  if (loadingCams) {
+    return (
+      <View style={styles.centered}>
+        <ActivityIndicator size="large" color="#007AFF" />
+        <Text style={styles.loadingText}>Loading cameras...</Text>
+      </View>
+    );
+  }
 
-  return (
-    <View style={styles.container}>
-      {/* Header */}
-      <View style={styles.header}>
-
-        <TouchableOpacity style={styles.addButton} onPress={() => setModalOpen(true)}>
-          <Ionicons name="person-add" size={17} color="#fff" />
-          <Text style={styles.addButtonText}>Add Face</Text>
+  if (cameras.length === 0) {
+    return (
+      <View style={styles.centered}>
+        <Ionicons name="videocam-off-outline" size={48} color="#AEAEB2" />
+        <Text style={styles.emptyTitle}>No cameras found</Text>
+        <TouchableOpacity style={styles.retryBtn} onPress={fetchCameras}>
+          <Text style={styles.retryText}>Retry</Text>
         </TouchableOpacity>
       </View>
+    );
+  }
 
-      {loading ? (
-        <ActivityIndicator style={{ marginTop: 40 }} color={COLORS.blue} />
-      ) : error ? (
-        <View style={styles.errorBox}>
-          <Text style={styles.errorText}>{error}</Text>
-          <TouchableOpacity onPress={fetchFaces} style={styles.retryBtn}>
-            <Text style={styles.retryText}>Retry</Text>
-          </TouchableOpacity>
+  // ── Render ────────────────────────────────────────────────────────────────
+  return (
+    <View style={styles.container}>
+
+      {/* ── Camera selector ── */}
+      <View style={styles.selectorCard}>
+        <Text style={styles.selectorLabel}>Cameras</Text>
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={styles.selectorContent}
+        >
+          {cameras.map(cam => (
+            <CameraChip
+              key={cam.id}
+              camera={cam}
+              active={selectedCam?.id === cam.id}
+              faceCount={(allFaces[cam.id] ?? []).length}
+              onPress={() => setSelectedCam(cam)}
+            />
+          ))}
+        </ScrollView>
+      </View>
+
+      {/* ── Faces list ── */}
+      {loadingFaces ? (
+        <View style={styles.centered}>
+          <ActivityIndicator size="large" color="#007AFF" />
+          <Text style={styles.loadingText}>Loading faces...</Text>
         </View>
       ) : (
         <FlatList
-          data={filtered}
+          data={currentFaces}
           keyExtractor={item => item.id}
-          contentContainerStyle={styles.listContainer}
+          contentContainerStyle={styles.listContent}
           ListHeaderComponent={
-            <>
-              {/* Stats */}
-              <View style={styles.statsRow}>
-                <StatPill count={whiteCount} label="Whitelist" color={COLORS.green} />
-                <StatPill count={blackCount} label="Blacklist" color={COLORS.red} />
+            selectedCam ? (
+              <View style={styles.listHeader}>
+                <View>
+                  <Text style={styles.listTitle}>{selectedCam.name}</Text>
+                  <Text style={styles.listSub}>
+                    {currentFaces.length} {currentFaces.length === 1 ? 'face' : 'faces'} registered
+                  </Text>
+                </View>
+                <TouchableOpacity
+                  style={styles.addBtn}
+                  onPress={() => setModalOpen(true)}
+                  activeOpacity={0.85}
+                >
+                  <Ionicons name="person-add" size={16} color="#fff" />
+                  <Text style={styles.addBtnText}>Add Face</Text>
+                </TouchableOpacity>
               </View>
-
-              {/* Filter chips */}
-              <ScrollView
-                horizontal
-                showsHorizontalScrollIndicator={false}
-                style={styles.filterRow}
-                contentContainerStyle={{ paddingHorizontal: 16, gap: 8 }}
-              >
-                {FILTERS.map(f => (
-                  <TouchableOpacity
-                    key={f.value}
-                    style={[styles.chip, filter === f.value && styles.chipActive]}
-                    onPress={() => setFilter(f.value)}
-                  >
-                    <Text style={[styles.chipText, filter === f.value && styles.chipTextActive]}>
-                      {f.label}
-                    </Text>
-                  </TouchableOpacity>
-                ))}
-              </ScrollView>
-            </>
+            ) : null
           }
           ListEmptyComponent={
             <View style={styles.emptyState}>
-              <Ionicons name="people-outline" size={40} color={COLORS.placeholder} />
-              <Text style={styles.emptyText}>No faces found</Text>
+              <MaterialCommunityIcons name="face-recognition" size={48} color="#AEAEB2" />
+              <Text style={styles.emptyTitle}>No faces registered</Text>
+              <Text style={styles.emptySub}>Tap "Add Face" to register the first identity</Text>
             </View>
           }
           renderItem={({ item }) => (
-            <FaceCard
-              face={item}
-              onDelete={handleDelete}
-              onToggleType={handleToggleType}
-            />
+            <FaceCard face={item} onDelete={handleDelete} />
           )}
           ItemSeparatorComponent={() => <View style={{ height: 10 }} />}
         />
       )}
 
-      {/* Add Modal */}
-      <AddFaceModal
-        visible={modalOpen}
-        onClose={() => setModalOpen(false)}
-        onSave={handleSave}
-        isSaving={isSaving}
-      />
+      {/* ── Modal ── */}
+      {selectedCam && (
+        <AddFaceModal
+          visible={modalOpen}
+          cameraName={selectedCam.name}
+          onClose={() => setModalOpen(false)}
+          onSave={handleSave}
+          isSaving={isSaving}
+        />
+      )}
     </View>
   );
 }
 
-// ─── Colors ──────────────────────────────────────────────────────────────────
-
-const COLORS = {
-  bg: '#F2F2F7',
-  surface: '#FFFFFF',
-  text: '#1C1C1E',
-  textSecondary: '#8E8E93',
-  placeholder: '#C7C7CC',
-  border: 'rgba(60,60,67,0.12)',
-  blue: '#272a2d',
-  green: '#34C759',
-  greenDark: '#1A7A35',
-  greenBg: '#E8F9EE',
-  red: '#FF3B30',
-  redDark: '#C0392B',
-  redBg: '#FFEBEB',
-  inputBg: '#F2F2F7',
-};
-
 // ─── Styles ───────────────────────────────────────────────────────────────────
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: COLORS.bg },
+  container: { flex: 1, backgroundColor: '#F2F2F7' },
 
-  header: {
-    backgroundColor: COLORS.bg,
-    paddingTop: Platform.OS === 'ios' ? 60 : 40,
-    paddingHorizontal: 20,
-    paddingBottom: 22,
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'flex-end',
-    borderBottomLeftRadius: 24,
-    borderBottomRightRadius: 24,
-    shadowColor: '#ffffff00',
-    
-    
-    elevation: 4,
+  centered: {
+    flex: 1, alignItems: 'center', justifyContent: 'center',
+    gap: 12, backgroundColor: '#F2F2F7',
   },
-  headerSub: { fontSize: 11, color: COLORS.textSecondary, fontWeight: '600', textTransform: 'uppercase', letterSpacing: 0.5 },
-  headerTitle: { fontSize: 24, fontWeight: '800', color: COLORS.text },
-  addButton: { backgroundColor: '#007AFF', flexDirection: 'row', paddingHorizontal: 14, paddingVertical: 10, borderRadius: 14, alignItems: 'center', gap: 6 },
-  addButtonText: { color: '#fff', fontWeight: '700', fontSize: 13 },
+  loadingText: { fontSize: 14, color: '#AEAEB2' },
 
-  statsRow: { flexDirection: 'row', gap: 10, paddingHorizontal: 16, paddingTop: 16 },
-  statPill: { flex: 1, backgroundColor: COLORS.surface, borderRadius: 14, padding: 14, borderWidth: 0.5, borderColor: COLORS.border },
-  statNum: { fontSize: 22, fontWeight: '800', color: COLORS.text },
-  statLabelRow: { flexDirection: 'row', alignItems: 'center', marginTop: 4 },
-  statDot: { width: 7, height: 7, borderRadius: 4, marginRight: 5 },
-  statLabel: { fontSize: 11, color: COLORS.textSecondary, fontWeight: '500' },
+  selectorCard: {
+    backgroundColor: '#fff',
+    paddingTop: Platform.OS === 'ios' ? 56 : 36,
+    paddingBottom: 16,
+    borderBottomWidth: 0.5,
+    borderBottomColor: 'rgba(0,0,0,0.08)',
+    shadowColor: '#000', shadowOpacity: 0.04, shadowRadius: 4, elevation: 2,
+  },
+  selectorLabel: {
+    fontSize: 11, fontWeight: '700', color: '#AEAEB2',
+    textTransform: 'uppercase', letterSpacing: 0.5,
+    paddingHorizontal: 16, marginBottom: 10,
+  },
+  selectorContent: { paddingHorizontal: 16, gap: 8 },
 
-  filterRow: { paddingVertical: 12 },
-  chip: { paddingHorizontal: 14, paddingVertical: 7, borderRadius: 20, backgroundColor: COLORS.surface, borderWidth: 0.5, borderColor: COLORS.border },
-  chipActive: { backgroundColor: COLORS.blue, borderColor: COLORS.blue },
-  chipText: { fontSize: 12, fontWeight: '600', color: COLORS.textSecondary },
-  chipTextActive: { color: '#fff' },
+  chip: {
+    flexDirection: 'row', alignItems: 'center', gap: 6,
+    paddingHorizontal: 14, paddingVertical: 9,
+    borderRadius: 20, backgroundColor: '#F2F2F7',
+    borderWidth: 0.5, borderColor: 'rgba(0,0,0,0.08)',
+  },
+  chipActive:         { backgroundColor: '#1C1C1E', borderColor: '#1C1C1E' },
+  chipDot:            { width: 6, height: 6, borderRadius: 3 },
+  chipText:           { fontSize: 13, fontWeight: '600', color: '#AEAEB2' },
+  chipTextActive:     { color: '#fff' },
+  chipBadge: {
+    backgroundColor: 'rgba(0,0,0,0.08)', borderRadius: 10,
+    paddingHorizontal: 6, paddingVertical: 1,
+  },
+  chipBadgeActive:     { backgroundColor: 'rgba(255,255,255,0.2)' },
+  chipBadgeText:       { fontSize: 10, fontWeight: '700', color: '#AEAEB2' },
+  chipBadgeTextActive: { color: '#fff' },
 
-  listContainer: { paddingBottom: 30 },
+  listContent: { paddingBottom: 32 },
+  listHeader: {
+    flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
+    paddingHorizontal: 16, paddingTop: 20, paddingBottom: 14,
+  },
+  listTitle: { fontSize: 18, fontWeight: '800', color: '#1C1C1E' },
+  listSub:   { fontSize: 12, color: '#AEAEB2', marginTop: 2 },
+
+  addBtn: {
+    flexDirection: 'row', alignItems: 'center', gap: 6,
+    backgroundColor: '#007AFF',
+    paddingHorizontal: 14, paddingVertical: 10, borderRadius: 14,
+  },
+  addBtnText: { color: '#fff', fontWeight: '700', fontSize: 13 },
 
   card: {
-    backgroundColor: COLORS.surface,
-    borderRadius: 18,
-    flexDirection: 'row',
-    padding: 14,
-    paddingLeft: 18,
-    alignItems: 'center',
+    backgroundColor: '#fff', borderRadius: 18,
+    flexDirection: 'row', padding: 14, alignItems: 'center',
     marginHorizontal: 16,
-    overflow: 'hidden',
-    borderWidth: 0.5,
-    borderColor: COLORS.border,
+    borderWidth: 0.5, borderColor: 'rgba(0,0,0,0.06)',
   },
-  indicator: { position: 'absolute', left: 0, top: 0, bottom: 0, width: 4 },
-  avatar: { width: 58, height: 58, borderRadius: 14, backgroundColor: COLORS.inputBg },
-  info: { flex: 1, marginLeft: 12 },
-  name: { fontSize: 15, fontWeight: '700', color: COLORS.text },
-  roleText: { fontSize: 12, color: COLORS.textSecondary, marginTop: 2 },
-  badge: { paddingHorizontal: 9, paddingVertical: 3, borderRadius: 7, alignSelf: 'flex-start', marginTop: 7 },
-  whitelistBadge: { backgroundColor: COLORS.greenBg },
-  blacklistBadge: { backgroundColor: COLORS.redBg },
-  badgeText: { fontSize: 10, fontWeight: '800' },
-  cardActions: { gap: 8 },
-  iconBtn: { width: 34, height: 34, borderRadius: 17, backgroundColor: '#F0F7FF', justifyContent: 'center', alignItems: 'center' },
-  deleteBtn: { backgroundColor: '#FFF5F5' },
+  avatar:   { width: 58, height: 58, borderRadius: 14, backgroundColor: '#F2F2F7' },
+  cardInfo: { flex: 1, marginLeft: 12 },
+  cardName: { fontSize: 15, fontWeight: '700', color: '#1C1C1E' },
+  cardRole: { fontSize: 12, color: '#AEAEB2', marginTop: 2 },
+  cardDate: { fontSize: 11, color: '#C7C7CC', marginTop: 4 },
+  deleteBtn: {
+    width: 36, height: 36, borderRadius: 18,
+    backgroundColor: '#FFF5F5', justifyContent: 'center', alignItems: 'center',
+  },
 
-  emptyState: { alignItems: 'center', paddingTop: 60, gap: 10 },
-  emptyText: { fontSize: 14, color: COLORS.textSecondary, fontWeight: '500' },
-  errorBox: { alignItems: 'center', padding: 40 },
-  errorText: { color: COLORS.red, marginBottom: 12, textAlign: 'center' },
-  retryBtn: { backgroundColor: '#007AFF', paddingHorizontal: 20, paddingVertical: 10, borderRadius: 12 },
-  retryText: { color: '#fff', fontWeight: '700' },
+  emptyState: { alignItems: 'center', paddingTop: 60, gap: 8 },
+  emptyTitle: { fontSize: 16, fontWeight: '600', color: '#AEAEB2' },
+  emptySub:   { fontSize: 13, color: '#C7C7CC' },
 
-  overlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.4)', justifyContent: 'flex-end' },
-  sheet: { backgroundColor: COLORS.surface, borderTopLeftRadius: 28, borderTopRightRadius: 28, padding: 20, paddingBottom: Platform.OS === 'ios' ? 5 : 0.1 },
-  dragHandle: { width: 36, height: 4, backgroundColor: COLORS.placeholder, borderRadius: 2, alignSelf: 'center', marginBottom: 16 },
-  modalHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 },
-  modalTitle: { fontSize: 19, fontWeight: '800', color: COLORS.text },
-  closeBtn: { width: 30, height: 30, borderRadius: 15, backgroundColor: COLORS.inputBg, justifyContent: 'center', alignItems: 'center' },
-  uploadCircle: { width: 90, height: 90, borderRadius: 45, borderWidth: 2, borderColor: '#007AFF', borderStyle: 'dashed', justifyContent: 'center', alignItems: 'center', backgroundColor: '#F0F7FF', alignSelf: 'center', marginBottom: 6, overflow: 'hidden', position: 'relative' },
-  uploadCircleError: { borderColor: COLORS.red, backgroundColor: COLORS.redBg },
-  uploadPreview: { width: 90, height: 90, borderRadius: 45 },
-  uploadEditBadge: { position: 'absolute', bottom: 4, right: 4, backgroundColor: '#007AFF', borderRadius: 10, width: 20, height: 20, justifyContent: 'center', alignItems: 'center' },
+  retryBtn: {
+    marginTop: 8, backgroundColor: '#007AFF',
+    paddingHorizontal: 24, paddingVertical: 10, borderRadius: 20,
+  },
+  retryText: { color: '#fff', fontWeight: '700', fontSize: 14 },
+
+  overlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.45)', justifyContent: 'flex-end' },
+  sheet: {
+    backgroundColor: '#fff',
+    borderTopLeftRadius: 24, borderTopRightRadius: 24,
+    paddingHorizontal: 20, paddingTop: 12,
+    paddingBottom: Platform.OS === 'ios' ? 8 : 20,
+  },
+  sheetHandle: {
+    width: 36, height: 4, borderRadius: 2,
+    backgroundColor: 'rgba(0,0,0,0.12)',
+    alignSelf: 'center', marginBottom: 16,
+  },
+  sheetHeader: {
+    flexDirection: 'row', justifyContent: 'space-between',
+    alignItems: 'flex-start', marginBottom: 20,
+  },
+  sheetTitle: { fontSize: 16, fontWeight: '700', color: '#1C1C1E' },
+  sheetSub:   { fontSize: 12, color: '#AEAEB2', marginTop: 2 },
+  closeBtn: {
+    width: 32, height: 32, borderRadius: 16,
+    backgroundColor: '#F2F2F7', alignItems: 'center', justifyContent: 'center',
+  },
+
+  uploadCircle: {
+    width: 90, height: 90, borderRadius: 45,
+    borderWidth: 2, borderColor: '#007AFF', borderStyle: 'dashed',
+    justifyContent: 'center', alignItems: 'center',
+    backgroundColor: '#F0F7FF', alignSelf: 'center',
+    marginBottom: 6, overflow: 'hidden',
+  },
+  uploadCircleError: { borderColor: '#FF3B30', backgroundColor: '#FFF5F5' },
+  uploadPreview:     { width: 90, height: 90, borderRadius: 45 },
+  uploadEditBadge: {
+    position: 'absolute', bottom: 4, right: 4,
+    backgroundColor: '#007AFF', borderRadius: 10,
+    width: 20, height: 20, justifyContent: 'center', alignItems: 'center',
+  },
   uploadLabel: { fontSize: 11, color: '#007AFF', fontWeight: '700', marginTop: 4 },
-  fieldLabel: { fontSize: 11, color: COLORS.textSecondary, fontWeight: '600', textTransform: 'uppercase', letterSpacing: 0.4, marginBottom: 6 },
-  fieldError: { fontSize: 11, color: COLORS.red, fontWeight: '500', marginTop: -10, marginBottom: 10, marginLeft: 2 },
-  input: { backgroundColor: COLORS.inputBg, borderRadius: 13, padding: 14, fontSize: 14, color: COLORS.text, borderWidth: 1, borderColor: COLORS.border, marginBottom: 14 },
-  inputError: { borderColor: COLORS.red, backgroundColor: COLORS.redBg },
-  segControl: { flexDirection: 'row', backgroundColor: COLORS.inputBg, borderRadius: 13, padding: 3, gap: 3, marginBottom: 16 },
-  segBtn: { flex: 1, paddingVertical: 10, borderRadius: 10, alignItems: 'center', backgroundColor: 'transparent' },
-  segBtnActive: { backgroundColor: COLORS.surface, shadowColor: '#000', shadowOpacity: 0.08, shadowRadius: 4, elevation: 2 },
-  segText: { fontSize: 13, fontWeight: '600', color: COLORS.textSecondary },
-  saveBtn: { backgroundColor: '#007AFF', padding: 16, borderRadius: 16, alignItems: 'center' },
+
+  fieldLabel: {
+    fontSize: 11, color: '#AEAEB2', fontWeight: '600',
+    textTransform: 'uppercase', letterSpacing: 0.4, marginBottom: 6,
+  },
+  fieldError: {
+    fontSize: 11, color: '#FF3B30', fontWeight: '500',
+    marginTop: -10, marginBottom: 10, marginLeft: 2,
+  },
+  input: {
+    backgroundColor: '#F2F2F7', borderRadius: 13, padding: 14,
+    fontSize: 14, color: '#1C1C1E',
+    borderWidth: 1, borderColor: 'rgba(0,0,0,0.08)', marginBottom: 14,
+  },
+  inputError: { borderColor: '#FF3B30', backgroundColor: '#FFF5F5' },
+
+  saveBtn: {
+    backgroundColor: '#007AFF', padding: 16,
+    borderRadius: 16, alignItems: 'center', marginTop: 4,
+  },
   saveBtnText: { color: '#fff', fontSize: 15, fontWeight: '800' },
 });
