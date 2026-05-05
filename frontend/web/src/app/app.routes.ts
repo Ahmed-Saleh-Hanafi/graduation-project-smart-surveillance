@@ -4,6 +4,7 @@ import { CameraConfiguration } from './camera-configuration/camera-configuration
 import { authGuard } from './auth-guard';
 import { Dashboard } from './dashboard/dashboard';
 import { Alerts } from './alerts/alerts';
+import { UserManagement } from './user-management/user-management';
 export const routes: Routes = [
   { path: '', redirectTo: 'login', pathMatch: 'full' },
   { path: 'login', component: Login },
@@ -13,5 +14,6 @@ export const routes: Routes = [
   path: 'Alerts',
   loadComponent: () =>
     import('./alerts/alerts').then(m => m.Alerts)
-}
+},
+{path: 'usermanagement',component: UserManagement}
 ];

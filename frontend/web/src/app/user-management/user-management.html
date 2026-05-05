@@ -5,7 +5,7 @@
 <head>
   <meta charset="utf-8" />
   <meta content="width=device-width, initial-scale=1.0" name="viewport" />
-  <title>Camera Configuration</title>
+  <title>User-Management</title>
   <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&amp;display=swap"
     rel="stylesheet" />
@@ -144,9 +144,9 @@
           data-icon="dashboard">dashboard</span>
         Dashboard
       </a>
-      <a class="flex items-center gap-3 px-4 py-3 text-sm font-medium bg-blue-50 text-blue-700 border-l-4 border-blue-700 transition-colors duration-150 rounded-r-lg group"
+      <a class="flex items-center gap-3 px-4 py-3 text-sm font-medium text-slate-600 hover:bg-slate-100 transition-colors duration-150 rounded-lg group"
         href="/CameraConfiguration">
-        <span class="material-symbols-outlined text-blue-700" data-icon="videocam"
+        <span class="material-symbols-outlined text-slate-400 group-hover:text-blue-700" data-icon="videocam"
           style="font-variation-settings: 'FILL' 1;">videocam</span>
         Camera Config
       </a>
@@ -156,9 +156,9 @@
           data-icon="database">database</span>
         Sensor Configuration
       </a>
-      <a class="flex items-center gap-3 px-4 py-3 text-sm font-medium text-slate-600 hover:bg-slate-100 transition-colors duration-150 rounded-lg group"
+      <a class="flex items-center gap-3 px-4 py-3 text-sm font-medium bg-blue-50 text-blue-700 border-l-4 border-blue-700 transition-colors duration-150 rounded-r-lg group"
         href="/usermanagement">
-        <span class="material-symbols-outlined text-slate-400 group-hover:text-blue-700" data-icon="group">group</span>
+        <span class="material-symbols-outlined text-blue-700" data-icon="group">group</span>
         User Management
       </a>
      
@@ -174,99 +174,105 @@
 
   </aside>
   <!-- Main Content -->
-  <main class="ml-64 mt-16 p-8 min-h-screen bg-surface">
 
-    <!-- HEADER -->
-    <div class="flex justify-between items-center mb-6">
-      <div>
-        <h1 class="text-3xl font-extrabold">Camera Configuration</h1>
-        <p class="text-sm text-on-surface-variant">Manage all cameras</p>
-      </div>
+<!-- Main Content -->
+<main class="ml-64 mt-16 p-8 min-h-screen bg-surface">
 
-      <button (click)="openCreate()" class="px-4 py-2 bg-primary text-white rounded shadow hover:bg-primary-container">
-        + Add Camera
-      </button>
+  <!-- HEADER -->
+  <div class="flex justify-between items-center mb-6">
+    <div>
+      <h1 class="text-3xl font-extrabold">User Management</h1>
+      <p class="text-sm text-on-surface-variant">Manage all users</p>
     </div>
 
-    <!-- TABLE -->
-    <div class="bg-white rounded-xl border overflow-hidden">
-
-      <table class="w-full text-sm">
-        <thead class="bg-slate-100 text-xs uppercase">
-          <tr>
-            <th class="p-3 text-center">Id</th>
-            <th class="text-center">Name</th>
-            <th class="text-center">IpAddress</th>
-            <th class="text-center">Port</th>
-            <th class="text-center">StreamUrl</th>
-            <th class="text-center">Actions</th>
-          </tr>
-        </thead>
-
-        <tbody>
-          <tr *ngFor="let cam of s; let i = index " class="border-t">
-
-            <td class="p-3 text-center">{{ cam.id }}</td>
-            <td class="text-center">{{ cam.name }}</td>
-            <td class="text-center">{{ cam.ipAddress }}</td>
-            <td class="text-center">{{ cam.port }}</td>
-            <td class="text-center">{{ cam.streamUrl }}</td>
-
-            <td class="text-center space-x-2">
-
-              <button (click)="openEdit(i)" class="px-3 py-1 bg-blue-500 text-white rounded text-xs">
-                Edit
-              </button>
-
-              <button (click)="delete(cam.id)" class="px-3 py-1 bg-red-500 text-white rounded text-xs">
-                Delete
-              </button>
-
-            </td>
-
-          </tr>
-        </tbody>
-
-      </table>
-
-    </div>
-
-  </main>
-
-  <!-- MODAL -->
-  <div *ngIf="isModalOpen" class="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-
-    <div class="bg-white w-[420px] p-6 rounded-xl shadow-lg">
-
-      <h2 class="text-lg font-bold mb-4">
-        {{ mode === 'create' ? 'Add Camera' : 'Edit Camera' }}
-      </h2>
-
-      <div class="space-y-3">
-
-        <input [(ngModel)]="form.name" placeholder="Name" class="w-full p-2 border rounded" />
-        <input [(ngModel)]="form.ipAddress" placeholder="IP Address" class="w-full p-2 border rounded" />
-        <input [(ngModel)]="form.port" placeholder="Port" class="w-full p-2 border rounded" type="number" />
-        <input [(ngModel)]="form.username" placeholder="Username" class="w-full p-2 border rounded" />
-        <input [(ngModel)]="form.password" type="password" placeholder="Password" class="w-full p-2 border rounded" />
-        <input [(ngModel)]="form.path" placeholder="path" class="w-full p-2 border rounded" />
-
-      </div>
-
-      <div class="flex justify-end gap-2 mt-4">
-
-        <button (click)="closeModal()" class="px-3 py-1">
-          Cancel
-        </button>
-
-        <button (click)="save()" class="px-3 py-1 bg-primary text-white rounded">
-          Save
-        </button>
-
-      </div>
-
-    </div>
+    <button (click)="openCreate()" 
+      class="px-4 py-2 bg-primary text-white rounded shadow hover:bg-primary-container">
+      + Add User
+    </button>
   </div>
+
+  <!-- TABLE -->
+  <div class="bg-white rounded-xl border overflow-hidden">
+
+    <table class="w-full text-sm">
+      <thead class="bg-slate-100 text-xs uppercase">
+        <tr>
+          <th class="p-3 text-center">Id</th>
+          <th class="text-center">Email</th>
+          <th class="text-center">User Name</th>
+          <th class="text-center">First Name</th>
+          <th class="text-center">Last Name</th>
+        </tr>
+      </thead>
+
+      <tbody>
+        <tr *ngFor="let user of users" class="border-t">
+
+          <td class="p-3 text-center">{{ user.id }}</td>
+          <td class="text-center">{{ user.email }}</td>
+          <td class="text-center">{{ user.userName }}</td>
+          <td class="text-center">{{ user.firstName }}</td>
+          <td class="text-center">{{ user.lastName }}</td>
+
+        </tr>
+      </tbody>
+
+    </table>
+
+  </div>
+
+</main>
+
+<!-- MODAL -->
+<div *ngIf="isModalOpen" 
+     class="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+
+  <div class="bg-white w-[420px] p-6 rounded-xl shadow-lg">
+
+    <h2 class="text-lg font-bold mb-4">
+      Add User
+    </h2>
+
+    <div class="space-y-3">
+
+      <input [(ngModel)]="form.email" 
+             placeholder="Email" 
+             class="w-full p-2 border rounded" />
+
+      <input [(ngModel)]="form.password" 
+             type="password" 
+             placeholder="Password" 
+             class="w-full p-2 border rounded" />
+
+      <input [(ngModel)]="form.firstName" 
+             placeholder="First Name" 
+             class="w-full p-2 border rounded" />
+
+      <input [(ngModel)]="form.lastName" 
+             placeholder="Last Name" 
+             class="w-full p-2 border rounded" />
+
+      <input [(ngModel)]="form.userName" 
+             placeholder="User Name" 
+             class="w-full p-2 border rounded" />
+
+    </div>
+
+    <div class="flex justify-end gap-2 mt-4">
+
+      <button (click)="closeModal()" class="px-3 py-1">
+        Cancel
+      </button>
+
+      <button (click)="save()" 
+              class="px-3 py-1 bg-primary text-white rounded">
+        Save
+      </button>
+
+    </div>
+
+  </div>
+</div>
 </body>
 
 </html>
