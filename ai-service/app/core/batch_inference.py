@@ -1,36 +1,30 @@
 import asyncio
 import numpy as np
 from typing import List, Tuple
-from batch_queue import frame_queue
-from config import settings
-from model_loader import models
+from app.config import settings
+from app.models.model_loader import models
+from app.data.faces_dp import face_dp
+import cv2
+from app.utils.normalize import normalize
+from app.utils.make_snapshot import save_frame_and_get_url
+from app.utils.draw_box_frame import draw
 
-
-async def batch_inference_frame_loop():
-    while True:
-        batch: List[Tuple[int, any]] = []
-
-        for _ in range(settings.BATCH_SIZE):
-            item = await frame_queue.get()
-            batch.append(item)
-
-        cam_ids = [x[0] for x in batch]
-        frames = [x[1] for x in batch]
-
-        imgs = np.stack(frames)
-
-        # 🔥 Run models in batch
-        weapon_results = models.weapon_model(imgs, device=models.device)
-        face_results = models.face_model(imgs, device=models.device)
-        abnormal_results = models.abnormal_model(imgs, device=models.device)
-
-        # Process results
-        for i, cam_id in enumerate(cam_ids):
-            detection = process_results(
-                weapon_results[i],
-                face_results[i],
-                abnormal_results[i]
-            )
-
-            if detection:
-                asyncio.create_task(handle_detection(cam_id, frames[i], detection))
+async def run_inference(batch):
+    frames = [f for _, f in batch]
+    cam_ids = [c for c, _ in batch]
+    for cam_id, frame in batch:
+        faces = models.face_detector.detect(frame)
+        for face in faces:
+            em = face.embedding
+            em = normalize(em)
+            met, d = face_dp.search(em)
+            print(met, d)
+            print(face.bbox)
+            if d < 0.5:
+                frame = draw(frame, face.bbox, d)
+                url = save_frame_and_get_url(frame)
+                print(url)
+            
+    print("batch size:", len(batch)) 
+    
+    

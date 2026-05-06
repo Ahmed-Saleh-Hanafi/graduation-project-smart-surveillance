@@ -1,60 +1,38 @@
 import cv2
-from ultralytics import YOLO
+import numpy as np
+import onnxruntime as ort
 
+# تحميل الموديل
+session = ort.InferenceSession("retinaface_mnet025_v2.onnx", providers=['CPUExecutionProvider'])
 
-onnx_model_path = r"D:\GitHub\graduation-project-smart-surveillance\ai-service\app\models\weabon_v1.onnx"
-model = YOLO(onnx_model_path)
+input_name = session.get_inputs()[0].name
 
-camera_source = 0
+def preprocess(img):
+    img = cv2.resize(img, (640, 640))
+    img = img.astype(np.float32)
+    img -= (104, 117, 123)
+    img = np.transpose(img, (2, 0, 1))
+    img = np.expand_dims(img, axis=0)
+    return img
 
-cap = cv2.VideoCapture(camera_source)
-
-
-cap.set(cv2.CAP_PROP_FRAME_WIDTH, 1280)
-cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 720)
-
-if not cap.isOpened():
-    print("Error: Cannot open camera")
-    exit()
+cap = cv2.VideoCapture(0)
 
 while True:
     ret, frame = cap.read()
-
     if not ret:
-        print("Failed to read frame")
         break
 
-    results = model(frame, conf=0.6)  
+    input_tensor = preprocess(frame)
 
-    for result in results:
-        for box in result.boxes:
-            x1, y1, x2, y2 = map(int, box.xyxy[0])
+    outputs = session.run(None, {input_name: input_tensor})
 
-            conf = float(box.conf[0])
+    # ⚠️ decoding محتاج implementation حسب الموديل
+    # (دي أهم نقطة — لو عايز أديك decoder جاهز قولّي)
 
-            cls_id = int(box.cls[0])
+    cv2.imshow("RetinaFace", frame)
 
-            label = model.names[cls_id]
-
-            cv2.rectangle(frame, (x1, y1), (x2, y2), (0, 255, 0), 2)
-
-            text = f"{label} {conf:.2f}"
-            cv2.putText(
-                frame,
-                text,
-                (x1, y1 - 10),
-                cv2.FONT_HERSHEY_SIMPLEX,
-                0.6,
-                (0, 255, 0),
-                2
-            )
-
- 
-    cv2.imshow("Weapon Detection", frame)
-
-    if cv2.waitKey(1) & 0xFF == ord("q"):
+    if cv2.waitKey(1) & 0xFF == ord('q'):
         break
-
 
 cap.release()
 cv2.destroyAllWindows()
