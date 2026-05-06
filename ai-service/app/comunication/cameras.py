@@ -63,5 +63,4 @@ async def get_all_cameras(api_url: str) -> Dict[int, str]:
 
         except KeyError as e:
             raise KeyError(f"Missing required camera field: {e}")
-
     return cameras_dict
