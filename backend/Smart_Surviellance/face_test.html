@@ -1,0 +1,379 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>CamGuard Face API Tester</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      --bg: #09101a;
+      --surface: #121d2c;
+      --surface2: #18253a;
+      --border: rgba(255,255,255,0.08);
+      --accent: #5e72ff;
+      --accent2: #19f6d1;
+      --text: #e6edf7;
+      --muted: #8ea3c7;
+      --danger: #ff6b81;
+      --warning: #f7b500;
+      --success: #19f6d1;
+      --radius: 18px;
+      font-family: Inter, system-ui, sans-serif;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      background: radial-gradient(circle at top, rgba(94,114,255,0.16), transparent 32%),
+                  linear-gradient(180deg, #09101a 0%, #080c14 100%);
+      color: var(--text);
+      padding: 24px;
+    }
+    header {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: space-between;
+      gap: 18px;
+      margin-bottom: 20px;
+      align-items: center;
+    }
+    header h1 { font-size: 1.7rem; margin: 0; }
+    header p { margin: 0; color: var(--muted); max-width: 640px; }
+    .config-bar {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      margin-bottom: 18px;
+    }
+    @media (max-width: 768px) { .config-bar { grid-template-columns: 1fr; } }
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 20px;
+      box-shadow: 0 20px 80px rgba(0,0,0,0.12);
+    }
+    .grid { display: grid; grid-template-columns: repeat(2, minmax(280px, 1fr)); gap: 18px; }
+    @media (max-width: 920px) { .grid { grid-template-columns: 1fr; } }
+    .card-title {
+      display: flex; align-items: center; gap: 10px;
+      margin-bottom: 16px;
+      color: var(--accent2);
+      font-size: 0.9rem; letter-spacing: 0.08em; text-transform: uppercase;
+    }
+    .card-title .dot {
+      width: 10px; height: 10px; border-radius: 50%; background: var(--accent);
+    }
+    .form-group { margin-bottom: 14px; }
+    .form-group label {
+      display: block; margin-bottom: 6px; color: var(--muted); font-size: 0.82rem; font-weight: 600;
+    }
+    .form-group input,
+    .form-group textarea,
+    .form-group select {
+      width: 100%; border-radius: 12px; border: 1px solid var(--border);
+      background: var(--surface2); color: var(--text); padding: 11px 14px;
+      font-size: 0.95rem; outline: none;
+    }
+    .form-group input:focus,
+    .form-group textarea:focus,
+    .form-group select:focus {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px rgba(94,114,255,0.1);
+    }
+    .form-group textarea { min-height: 78px; resize: vertical; }
+    .form-group input[type="file"] { cursor: pointer; }
+    .form-row { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+    .btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+      border: none; border-radius: 12px; padding: 12px 16px; cursor: pointer;
+      font-weight: 700; transition: transform 0.15s ease, opacity 0.15s ease;
+      background: linear-gradient(135deg, var(--accent), var(--accent2)); color: #05101a;
+    }
+    .btn:hover { transform: translateY(-1px); }
+    .btn:disabled { opacity: 0.5; cursor: default; }
+    .btn-secondary { background: transparent; border: 1px solid var(--border); color: var(--text); }
+    .btn-secondary:hover { background: rgba(255,255,255,0.05); }
+    .btn-danger { background: linear-gradient(135deg, var(--danger), #ff8fa3); color: white; }
+    .small { font-size: 0.84rem; color: var(--muted); }
+    .response-panel { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; margin-top: 18px; }
+    @media (max-width: 920px) { .response-panel { grid-template-columns: 1fr; } }
+    .response-card { min-height: 260px; overflow: auto; white-space: pre-wrap; word-break: break-word; }
+    pre { margin: 0; font-size: 0.88rem; line-height: 1.5; color: var(--text); font-family: 'Courier New', monospace; }
+    .status-badge { display: inline-flex; align-items: center; gap: 8px; padding: 8px 12px; border-radius: 999px; background: rgba(255,255,255,0.06); color: var(--muted); font-weight: 700; font-size: 0.82rem; }
+    .status-badge.success { background: rgba(25,246,209,0.16); color: var(--success); }
+    .status-badge.error { background: rgba(255,111,129,0.16); color: var(--danger); }
+    .status-badge.pending { background: rgba(247,181,0,0.16); color: var(--warning); }
+    .image-preview {
+      max-width: 200px;
+      max-height: 200px;
+      border-radius: 12px;
+      border: 1px solid var(--border);
+      margin-top: 10px;
+      display: none;
+    }
+    .preview-info { font-size: 0.82rem; color: var(--muted); margin-top: 8px; }
+    .file-info { font-size: 0.82rem; color: var(--accent2); margin-top: 6px; }
+    hr { border: none; border-top: 1px solid var(--border); margin: 18px 0; }
+  </style>
+</head>
+<body>
+  <header>
+    <div>
+      <h1>CamGuard Face API Tester</h1>
+      <p>Use this page to test Face API endpoints for uploading and managing face images associated with cameras.</p>
+    </div>
+  </header>
+
+  <div class="config-bar card">
+    <div class="form-group">
+      <label for="api-url">API base URL</label>
+      <input id="api-url" type="text" value="https://localhost:7274" />
+      <div class="small">Example: https://localhost:7274</div>
+    </div>
+    <div class="form-group">
+      <label for="auth-token">Bearer token (optional)</label>
+      <input id="auth-token" type="text" placeholder="Paste JWT here" />
+      <div class="small">If your APIs require auth, this header is included automatically.</div>
+    </div>
+  </div>
+
+  <div class="grid">
+    <!-- Add Face Section -->
+    <section class="card">
+      <div class="card-title"><span class="dot"></span> Add Face to Camera</div>
+      <div class="form-group">
+        <label for="camera-id">Camera ID</label>
+        <input id="camera-id" type="number" placeholder="Enter camera ID" />
+      </div>
+      <div class="form-group">
+        <label for="face-file">Select Image File</label>
+        <input id="face-file" type="file" accept="image/*" />
+        <div class="small">Supported formats: JPG, JPEG, PNG, GIF, BMP</div>
+        <div class="file-info" id="file-info"></div>
+      </div>
+      <img id="image-preview" class="image-preview" />
+      <div class="preview-info" id="preview-info"></div>
+      <button class="btn" onclick="addFace()" style="width: 100%; margin-top: 14px;">Upload Face</button>
+    </section>
+
+    <!-- API Response Section -->
+    <section class="card">
+      <div class="card-title"><span class="dot"></span> Response</div>
+      <div id="status-badge" class="status-badge" style="margin-bottom: 14px;">
+        <span>Ready</span>
+      </div>
+      <div class="response-card">
+        <pre id="response-output">Response will appear here...</pre>
+      </div>
+    </section>
+  </div>
+
+  <!-- Request Details -->
+  <section class="card" style="margin-top: 18px;">
+    <div class="card-title"><span class="dot"></span> Request Details</div>
+    <div class="response-panel">
+      <div>
+        <h3 style="margin-top: 0; color: var(--accent2);">Endpoint</h3>
+        <pre id="endpoint-output">POST /api/face/add-face/{cameraId}</pre>
+      </div>
+      <div>
+        <h3 style="margin-top: 0; color: var(--accent2);">Headers</h3>
+        <pre id="headers-output">Content-Type: multipart/form-data
+Authorization: Bearer [token]</pre>
+      </div>
+    </div>
+  </section>
+
+  <!-- Documentation -->
+  <section class="card" style="margin-top: 18px;">
+    <div class="card-title"><span class="dot"></span> API Documentation</div>
+    <div style="line-height: 1.8;">
+      <h3 style="margin: 0 0 12px 0; color: var(--accent2);">POST /api/face/add-face/{cameraId}</h3>
+      <p style="margin: 0 0 12px 0; color: var(--muted);">
+        Uploads and associates a face image with a specific camera. The face will be stored and linked to the camera for identification purposes.
+      </p>
+      
+      <h4 style="margin: 16px 0 8px 0; color: var(--accent);">Parameters:</h4>
+      <pre style="background: var(--surface2); padding: 12px; border-radius: 8px; overflow-x: auto;">cameraId (path): int - The ID of the camera to associate the face with
+file (form-data): IFormFile - The image file containing the face</pre>
+
+      <h4 style="margin: 16px 0 8px 0; color: var(--accent);">Request Headers:</h4>
+      <pre style="background: var(--surface2); padding: 12px; border-radius: 8px; overflow-x: auto;">Content-Type: multipart/form-data
+Authorization: Bearer {token} (if authentication is required)</pre>
+
+      <h4 style="margin: 16px 0 8px 0; color: var(--accent);">Success Response (200):</h4>
+      <pre style="background: var(--surface2); padding: 12px; border-radius: 8px; overflow-x: auto;">{
+  "isSuccess": true,
+  "message": "Face added successfully",
+  "data": {
+    "id": 1,
+    "url": "path/to/face/image.jpg",
+    "cameraId": 1,
+    "createdAt": "2026-05-01T12:34:56Z"
+  }
+}</pre>
+
+      <h4 style="margin: 16px 0 8px 0; color: var(--accent);">Error Response (400/500):</h4>
+      <pre style="background: var(--surface2); padding: 12px; border-radius: 8px; overflow-x: auto;">{
+  "isSuccess": false,
+  "message": "Error message describing what went wrong",
+  "data": null
+}</pre>
+
+      <h4 style="margin: 16px 0 8px 0; color: var(--accent);">Supported Image Formats:</h4>
+      <ul style="margin: 8px 0; padding-left: 20px;">
+        <li>JPEG (.jpg, .jpeg)</li>
+        <li>PNG (.png)</li>
+        <li>GIF (.gif)</li>
+        <li>BMP (.bmp)</li>
+      </ul>
+
+      <h4 style="margin: 16px 0 8px 0; color: var(--accent);">Testing Steps:</h4>
+      <ol style="margin: 8px 0; padding-left: 20px;">
+        <li>Configure the API base URL (e.g., https://localhost:7274)</li>
+        <li>If your API requires authentication, paste your JWT token</li>
+        <li>Enter a valid Camera ID</li>
+        <li>Select an image file from your system</li>
+        <li>Click "Upload Face" button</li>
+        <li>View the response in the Response panel</li>
+      </ol>
+    </div>
+  </section>
+
+  <script>
+    // File preview
+    document.getElementById('face-file').addEventListener('change', function(e) {
+      const file = e.target.files[0];
+      const preview = document.getElementById('image-preview');
+      const previewInfo = document.getElementById('preview-info');
+      const fileInfo = document.getElementById('file-info');
+
+      if (file) {
+        fileInfo.textContent = `File: ${file.name} (${(file.size / 1024).toFixed(2)} KB)`;
+        const reader = new FileReader();
+        reader.onload = function(event) {
+          preview.src = event.target.result;
+          preview.style.display = 'block';
+          previewInfo.textContent = `Preview: ${file.type}`;
+        };
+        reader.readAsDataURL(file);
+      } else {
+        preview.style.display = 'none';
+        fileInfo.textContent = '';
+        previewInfo.textContent = '';
+      }
+    });
+
+    function getApiUrl() {
+      return document.getElementById('api-url').value.replace(/\/$/, '');
+    }
+
+    function getAuthHeader() {
+      const token = document.getElementById('auth-token').value;
+      return token ? `Bearer ${token}` : null;
+    }
+
+    function updateStatus(message, type = 'pending') {
+      const badge = document.getElementById('status-badge');
+      badge.innerHTML = `<span>${message}</span>`;
+      badge.className = `status-badge ${type}`;
+    }
+
+    function updateResponse(data, endpoint, method = 'POST') {
+      document.getElementById('response-output').textContent = JSON.stringify(data, null, 2);
+      document.getElementById('endpoint-output').textContent = `${method} ${endpoint}`;
+    }
+
+    async function addFace() {
+      const cameraId = document.getElementById('camera-id').value;
+      const file = document.getElementById('face-file').files[0];
+
+      // Validation
+      if (!cameraId) {
+        updateStatus('Error: Please enter a Camera ID', 'error');
+        updateResponse({ error: 'Camera ID is required' });
+        return;
+      }
+
+      if (!file) {
+        updateStatus('Error: Please select a file', 'error');
+        updateResponse({ error: 'File is required' });
+        return;
+      }
+
+      const allowedTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/bmp', 'image/x-bmp'];
+      if (!allowedTypes.includes(file.type)) {
+        updateStatus('Error: Invalid file type', 'error');
+        updateResponse({ error: `Invalid file type: ${file.type}. Allowed: JPEG, PNG, GIF, BMP` });
+        return;
+      }
+
+      updateStatus('Uploading...', 'pending');
+
+      try {
+        const formData = new FormData();
+        formData.append('file', file);
+
+        const apiUrl = getApiUrl();
+        const endpoint = `/api/face/add-face/${cameraId}`;
+        const url = `${apiUrl}${endpoint}`;
+
+        const headers = {};
+        const authHeader = getAuthHeader();
+        if (authHeader) {
+          headers['Authorization'] = authHeader;
+        }
+
+        const response = await fetch(url, {
+          method: 'POST',
+          headers: headers,
+          body: formData
+        });
+
+        let data;
+        const contentType = response.headers.get('content-type');
+        
+        if (contentType && contentType.includes('application/json')) {
+          data = await response.json();
+        } else {
+          const text = await response.text();
+          data = {
+            error: 'Non-JSON response',
+            statusCode: response.status,
+            statusText: response.statusText,
+            responseText: text.substring(0, 500)
+          };
+        }
+
+        updateResponse(data, endpoint);
+
+        if (response.ok && data.isSuccess) {
+          updateStatus('Success: Face uploaded successfully', 'success');
+        } else if (response.ok) {
+          updateStatus(`Warning: ${data.message || 'Upload completed but check response'}`, 'pending');
+        } else {
+          updateStatus(`Error (${response.status}): ${data.message || data.error || response.statusText}`, 'error');
+        }
+      } catch (error) {
+        updateStatus(`Error: ${error.message}`, 'error');
+        updateResponse({ 
+          error: error.message,
+          details: 'Check browser console for more information',
+          type: 'Network/CORS Error'
+        });
+        console.error('Error:', error);
+      }
+    }
+
+    // Allow Enter key to trigger upload
+    document.getElementById('camera-id').addEventListener('keypress', function(e) {
+      if (e.key === 'Enter') addFace();
+    });
+
+    document.getElementById('face-file').addEventListener('keypress', function(e) {
+      if (e.key === 'Enter') addFace();
+    });
+  </script>
+</body>
+</html>

@@ -22,8 +22,7 @@ node_modules/
 dist/
 build/
 
-# env .net
-git rm -r --cached bin obj
+
 
 # dataset 
-ai-service/train-models/data/dataset
+ai-service/train-models/weapon-detection/dataset
