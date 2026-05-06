@@ -1,5 +1,5 @@
 import httpx
-from pydantic import BaseModel, HttpUrl
+from pydantic import BaseModel
 from app.config import settings
 
 class AlertRequest(BaseModel):
@@ -33,6 +33,4 @@ async def send_alert(alert: AlertRequest) -> dict:
             json=alert.model_dump()
         )
         response.raise_for_status()
-        print(response.json())
         return response.json()
-    
