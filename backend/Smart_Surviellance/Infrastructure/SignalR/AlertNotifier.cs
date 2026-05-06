@@ -52,6 +52,29 @@ namespace Infrastructure.SignalR
             await _hubContext.Clients.Group($"camera-{faceAlertDto.CameraId}").SendAsync("ReceiveFaceAlert", payload);
             await _hubContext.Clients.Group("admin").SendAsync("ReceiveFaceAlert", payload);
         }
+
+        public async Task SendDetectionAlertAsync(DetectionDto detectionDto)
+        {
+            var payload = new
+            {
+                detectionDto.Id,
+                detectionDto.CameraId,
+                detectionDto.Name,
+                detectionDto.Description,
+                detectionDto.Type,
+                detectionDto.VideoUrl,
+                detectionDto.SnapShotUrl,
+                detectionDto.DetectedAt
+            };
+            // Send to the camera-specific group (regular users) AND the admin group
+            await _hubContext.Clients.Group($"camera-{detectionDto.CameraId}").SendAsync("ReceiveDetectionAlert", payload);
+            await _hubContext.Clients.Group("admin").SendAsync("ReceiveDetectionAlert", payload);
+        }
+
+
+
+
+
     }
 }
 

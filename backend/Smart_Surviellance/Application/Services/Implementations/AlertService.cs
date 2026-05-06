@@ -5,6 +5,7 @@ using Application.Services.Interfaces;
 using Domain.Entities;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Text;
 
 namespace Application.Services.Implementations
@@ -51,8 +52,8 @@ namespace Application.Services.Implementations
 
             if (!_currentUserService.IsAdmin)
             {
-                var allowedCameraIds = await _userCameraRepository
-                    .GetCameraIdsByUserIdAsync(_currentUserService.UserId);
+                var allowedCameraIds = (await _userCameraRepository
+                    .GetCameraIdsByUserIdAsync(_currentUserService.UserId)).Select(c => c.Id).ToList();
                 alerts = alerts.Where(a => allowedCameraIds.Contains(a.CameraId));
             }
 

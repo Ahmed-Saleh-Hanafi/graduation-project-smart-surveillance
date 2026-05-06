@@ -30,6 +30,10 @@ namespace Infrastructure.Repositories
         public async Task DeleteFaceAsync(int id)
         {
             var face = await _context.Faces.FirstOrDefaultAsync(f => f.Id == id);
+            if(face == null)
+            {
+                throw new Exception($"Face with id {id} not found");
+            }
             _context.Faces.Remove(face);
             await _context.SaveChangesAsync();
         }

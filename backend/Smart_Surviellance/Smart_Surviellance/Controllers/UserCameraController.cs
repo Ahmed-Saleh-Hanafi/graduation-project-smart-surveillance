@@ -48,10 +48,17 @@ namespace Smart_Surviellance.Controllers
             }
             return Ok(result);
         }
-
-
-
-
+        
+        [HttpGet("user/{userId}/UnassignedCameras")]
+        public async Task<IActionResult> GetUnassignedCamerasByUserId(string userId)
+        {
+            var result = await _userCameraService.GetUnassignedCamerasByUserIdAsync(userId);
+            if (!result.IsSuccess)
+            {
+                return BadRequest(result);
+            }
+            return Ok(result);
+        }
 
     }
 }

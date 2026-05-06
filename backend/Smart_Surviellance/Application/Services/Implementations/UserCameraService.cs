@@ -1,4 +1,5 @@
 ﻿using Application.Common;
+using Application.Dto;
 using Application.Interfaces;
 using Application.Services.Interfaces;
 using Domain.Entities;
@@ -21,6 +22,14 @@ namespace Application.Services.Implementations
             _cameraRepository = cameraRepository;
             _userRepository = userRepository;
         }
+
+        private async Task<string> BuildRtspUrl(Camera c)
+        {
+            //return $"rtsp://{c.Username}:{c.Password}@{c.IpAddress}:{c.Port}{c.Path}";
+            return $"rtsp://{c.IpAddress}:{c.Port}{c.Path}";
+        }
+
+
 
         public async Task<ApiResponse<bool>> AssignUserToCameraAsync(string userId, int cameraId)
         {
@@ -58,23 +67,60 @@ namespace Application.Services.Implementations
 
         }
 
-        public async Task<ApiResponse<List<int>>> GetCameraIdsByUserIdAsync(string userId)
+        public async Task<ApiResponse<List<CameraDto>>> GetCameraIdsByUserIdAsync(string userId)
         {
             if (userId == null)
             {
-                return ApiResponse<List<int>>.Fail("User ID cannot be null.");
+                return ApiResponse<List<CameraDto>>.Fail("User ID cannot be null.");
             }
 
-            var cameraIds = await _userCameraRepository.GetCameraIdsByUserIdAsync(userId);
+            var cameras = await _userCameraRepository.GetCameraIdsByUserIdAsync(userId);
 
-            return ApiResponse<List<int>>.Success(cameraIds , "Camera IDs retrieved successfully");
+            var cameraDtos = new List<CameraDto>();
+            foreach (var camera in cameras)
+            {
+                cameraDtos.Add(new CameraDto
+                {
+                    Id = camera.Id,
+                    Name = camera.Name,
+                    IpAddress = camera.IpAddress,
+                    Port = camera.Port,
+                    StreamUrl = await BuildRtspUrl(camera)
+                });
+            }
+
+            return ApiResponse<List<CameraDto>>.Success(cameraDtos, "Camera IDs retrieved successfully");
 
 
         }
 
+        public async Task<ApiResponse<List<CameraDto>>> GetUnassignedCamerasByUserIdAsync(string userId)
+        {
+            if (userId == null)
+            {
+                return ApiResponse<List<CameraDto>>.Fail("User ID cannot be null.");
+            }
 
-
-
+            var cameras = await _cameraRepository.GetAllCamerasAsync();
+            var unassignedCameras = new List<CameraDto>();
+            foreach (var camera in cameras)
+            {
+                var isAssigned = await _userCameraRepository.GetAsync(camera.Id, userId );
+                if (isAssigned == null)
+                {
+                    unassignedCameras.Add(new CameraDto
+                    {
+                        Id = camera.Id,
+                        Name = camera.Name,
+                        IpAddress = camera.IpAddress,
+                        Port = camera.Port,
+                        StreamUrl = await BuildRtspUrl(camera)  
+                    });
+                }
+            }
+            return ApiResponse<List<CameraDto>>.Success(unassignedCameras, "Unassigned cameras retrieved successfully");
+        }
+           
 
         public async Task<ApiResponse<bool>> UnassignUserFromCameraAsync(string userId, int cameraId)
         {

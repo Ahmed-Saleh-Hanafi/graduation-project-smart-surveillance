@@ -50,6 +50,21 @@ namespace Application.Services.Implementations
             return ApiResponse<bool>.Success(true , "User created successfully");
         }
 
+        public async Task<ApiResponse<bool>> DeleteUserAsync(string id)
+        {
+            if(string.IsNullOrEmpty(id))
+                return ApiResponse<bool>.Fail("User Id is required");
+
+            var user = await _userRepository.GetByIdAsync(id, "User");
+            if (user == null)
+            {
+                return ApiResponse<bool>.Fail("User not found");
+            }
+
+            await _userRepository.DeleteUserAsync(user);
+            return ApiResponse<bool>.Success(true, "User deleted successfully");
+        }
+
         public async Task<ApiResponse<List<UserDto>>> GetAllUsers()
         {
 
@@ -118,6 +133,31 @@ namespace Application.Services.Implementations
                     LastName = user.LastName
                 }, "User retrieved successfully");
             }
+
+        public async Task<ApiResponse<bool>> UpdateUserAsync(UpdateUserDto updateUserDto)
+        {
+
             
+
+            var user = await _userRepository.GetByIdAsync(updateUserDto.Id, "User");
+            if (user == null)
+                return ApiResponse<bool>.Fail("User not found");
+
+            // Update user properties
+            user.UserName = updateUserDto.UserName;
+            user.Email = updateUserDto.Email;
+            user.FirstName = updateUserDto.FirstName;
+            user.LastName = updateUserDto.LastName;
+            
+
+            await _userRepository.UpdateUserAsync(user);
+
+            if (!string.IsNullOrEmpty(updateUserDto.password))
+            {
+                await _userRepository.ChangePassword(user.Id, updateUserDto.password);
+            }
+            return ApiResponse<bool>.Success(true, "User updated successfully");
+        }
     }
 }
+

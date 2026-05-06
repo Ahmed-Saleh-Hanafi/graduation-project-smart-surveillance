@@ -11,7 +11,7 @@ namespace Application.Interfaces
         Task AssignUserToCameraAsync(UserCamera userCamera);
         Task <List<UserCamera>> GetAllUserCameraAsync();
         Task RemoveUserToCameraAsync(UserCamera userCamera);
-        Task<List<int>> GetCameraIdsByUserIdAsync(string userId);
+        Task<List<Camera>> GetCameraIdsByUserIdAsync(string userId);
         Task<UserCamera?> GetAsync(int cameraId, string userId);
         Task<bool> AssignationIsExist(string userId, int cameraId);
 

@@ -21,6 +21,12 @@ namespace Infrastructure.Repositories
             await _context.SaveChangesAsync();
         }
 
+       
+
+
+
+
+
         public async Task<List<UserCamera>> GetAllUserCameraAsync()
         {
             return await _context.UserCameras.ToListAsync();
@@ -31,11 +37,11 @@ namespace Infrastructure.Repositories
             return await _context.UserCameras.Where(uc => uc.CameraId == cameraId && uc.UserId == userId).FirstOrDefaultAsync();
         }
 
-        public async Task<List<int>> GetCameraIdsByUserIdAsync(string userId)
+        public async Task<List<Camera>> GetCameraIdsByUserIdAsync(string userId)
         {
             return await _context.UserCameras
                 .Where(uc => uc.UserId == userId)
-                .Select(uc => uc.CameraId)
+                .Select(uc => uc.Camera)
                 .ToListAsync();
         }
 
@@ -58,5 +64,7 @@ namespace Infrastructure.Repositories
             _context.UserCameras.Remove(existing);
             await _context.SaveChangesAsync();
         }
+
+       
     }
 }

@@ -5,6 +5,7 @@ import { authGuard } from './auth-guard';
 import { Dashboard } from './dashboard/dashboard';
 import { Alerts } from './alerts/alerts';
 import { UserManagement } from './user-management/user-management';
+import { RoleManagement } from './role-management/role-management';
 export const routes: Routes = [
   { path: '', redirectTo: 'login', pathMatch: 'full' },
   { path: 'login', component: Login },
@@ -15,5 +16,6 @@ export const routes: Routes = [
   loadComponent: () =>
     import('./alerts/alerts').then(m => m.Alerts)
 },
-{path: 'usermanagement',component: UserManagement}
+{path: 'usermanagement',component: UserManagement},
+{path: 'rolemanagement',component: RoleManagement}
 ];
