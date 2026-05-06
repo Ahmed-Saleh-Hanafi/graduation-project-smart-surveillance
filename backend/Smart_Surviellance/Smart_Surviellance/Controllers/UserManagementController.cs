@@ -59,5 +59,28 @@ namespace Smart_Surviellance.Controllers
             return Ok(result);
         }
 
+
+        [HttpPut("update-user")]
+        public async Task<IActionResult> UpdateUser(UpdateUserDto updateUserDto)
+        {
+            var result = await _userManagementService.UpdateUserAsync(updateUserDto);
+            if (!result.IsSuccess)
+            {
+                return BadRequest(result);
+            }
+            return Ok(result);
+        }
+
+        [HttpDelete("delete-user")]
+        public async Task<IActionResult> DeleteUser(string id)
+        {
+            var result = await _userManagementService.DeleteUserAsync(id);
+            if (!result.IsSuccess)
+            {
+                return BadRequest(result);
+            }
+            return Ok(result);
+        }
+
     }
 }

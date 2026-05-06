@@ -1,10 +1,11 @@
-﻿using Application.Common;
+using Application.Common;
 using Application.Dto;
 using Application.Interfaces;
 using Application.Services.Interfaces;
 using Domain.Entities;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Text;
 
 
@@ -26,7 +27,7 @@ namespace Application.Services.Implementations
         }
 
 
-        private string BuildRtspUrl(Camera c)
+        private async Task<string> BuildRtspUrl(Camera c)
         {
             //return $"rtsp://{c.Username}:{c.Password}@{c.IpAddress}:{c.Port}{c.Path}";
             return $"rtsp://{c.IpAddress}:{c.Port}{c.Path}";
@@ -46,6 +47,20 @@ namespace Application.Services.Implementations
                 Password = createCameraDto.password,
                 Path = createCameraDto.Path
             };
+            var NewCameraRtspUrl = await BuildRtspUrl(camera);
+
+            var allCameras = await _cameraRepository.GetAllCamerasAsync();
+
+            foreach (var existingCamera in allCameras)
+            {
+                var existingCameraRtspUrl = await BuildRtspUrl(existingCamera);
+                if (existingCameraRtspUrl == NewCameraRtspUrl)
+                {
+                    return ApiResponse<CameraDto>.Fail("This camera already exists.");
+                }
+            }
+
+
             await _cameraRepository.AddCameraAsync(camera);
 
             await _mediaMTXConfigService.GenerateConfigAsync();
@@ -56,7 +71,7 @@ namespace Application.Services.Implementations
                 Name = camera.Name,
                 IpAddress = camera.IpAddress,
                 Port = camera.Port,
-                StreamUrl = BuildRtspUrl(camera)
+                StreamUrl = await  BuildRtspUrl(camera)
             }, "Camera created successfully.");
         }
 
@@ -86,7 +101,7 @@ namespace Application.Services.Implementations
                     Name = camera.Name,
                     IpAddress = camera.IpAddress,
                     Port = camera.Port,
-                    StreamUrl = BuildRtspUrl(camera)
+                    StreamUrl = await BuildRtspUrl(camera)
                 });
             }
             return ApiResponse<List<CameraDto>>.Success(cameraDtos, "Cameras retrieved successfully.");
@@ -108,7 +123,7 @@ namespace Application.Services.Implementations
                         Name = camera.Name,
                         IpAddress = camera.IpAddress,
                         Port = camera.Port,
-                        StreamUrl = BuildRtspUrl(camera)
+                        StreamUrl = await BuildRtspUrl(camera)
                     });
                 }
                 return ApiResponse<List<CameraDto>>.Success(cameraDtos, "Cameras retrieved successfully.");
@@ -116,20 +131,21 @@ namespace Application.Services.Implementations
             }
 
             var userId = _currentUserService.UserId;
-            var allowedCameras = await _userCameraRepository.GetCameraIdsByUserIdAsync(userId);
+            var allowedCameras = (await _userCameraRepository.GetCameraIdsByUserIdAsync(userId)).Select(c => c.Id).ToList();
 
             var usercameras =  await _cameraRepository.GetAllCamerasAsync();
             var filteredCameras = usercameras .Where (c=>allowedCameras.Contains(c.Id))
-                                              .Select(c => new CameraDto
+                                              .Select(async c => new CameraDto
                                               {
                                                   Id = c.Id,
                                                   Name = c.Name,
                                                   IpAddress = c.IpAddress,
                                                   Port = c.Port,
-                                                  StreamUrl = BuildRtspUrl(c)
+                                                  StreamUrl = await BuildRtspUrl(c)
                                               }).ToList();
+            var filteredCamerass = (await Task.WhenAll(filteredCameras)).ToList();
 
-            return ApiResponse<List<CameraDto>>.Success(filteredCameras, "Cameras retrieved successfully.");
+            return ApiResponse<List<CameraDto>>.Success(filteredCamerass, "Cameras retrieved successfully.");
 
 
 
@@ -143,7 +159,7 @@ namespace Application.Services.Implementations
 
             if (!_currentUserService.IsAdmin)
             {
-                var allowedIds = await _userCameraRepository.GetCameraIdsByUserIdAsync(_currentUserService.UserId);
+                var allowedIds = (await _userCameraRepository.GetCameraIdsByUserIdAsync(_currentUserService.UserId)).Select(c => c.Id).ToList();
                 if (!allowedIds.Contains(id))
                     return ApiResponse<CameraDto>.Fail("Access denied to this camera.");
             }
@@ -162,7 +178,7 @@ namespace Application.Services.Implementations
                 Name = camera.Name,
                 IpAddress = camera.IpAddress,
                 Port = camera.Port,
-                StreamUrl = BuildRtspUrl(camera)
+                StreamUrl = await BuildRtspUrl(camera)
             }, "Camera retrieved successfully.");
 
         }
@@ -196,7 +212,7 @@ namespace Application.Services.Implementations
 
             if (!_currentUserService.IsAdmin)
             {
-                var allowedIds = await _userCameraRepository.GetCameraIdsByUserIdAsync(_currentUserService.UserId);
+                var allowedIds = (await _userCameraRepository.GetCameraIdsByUserIdAsync(_currentUserService.UserId)).Select(c => c.Id).ToList();
                 if (!allowedIds.Contains(id))
                     return ApiResponse<WebRTCDto>.Fail("Access denied to this camera.");
             }
@@ -222,7 +238,7 @@ namespace Application.Services.Implementations
         {
             if (!_currentUserService.IsAdmin)
             {
-                var allowedIds = await _userCameraRepository.GetCameraIdsByUserIdAsync(_currentUserService.UserId);
+                var allowedIds = (await _userCameraRepository.GetCameraIdsByUserIdAsync(_currentUserService.UserId)).Select(c => c.Id).ToList();
                 if (!allowedIds.Contains(id))
                     return ApiResponse<GetCameraDto>.Fail("Access denied to this camera.");
             }

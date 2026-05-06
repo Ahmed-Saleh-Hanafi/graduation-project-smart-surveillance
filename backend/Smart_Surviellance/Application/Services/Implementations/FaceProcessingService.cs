@@ -70,7 +70,6 @@ namespace Application.Services.Implementations
                 await _detectionRepository.AddDetectionAsync(new Detection
                 {
                     CameraId = cameraId,
-                    PersonId = (int)personId,
                     SnapShotUrl = result.SnapShotUrl,
                     DetectedAt = DateTime.UtcNow
                 });
@@ -104,7 +103,6 @@ namespace Application.Services.Implementations
                 await _detectionRepository.AddDetectionAsync(new Detection
                 {
                     CameraId = cameraId,
-                    PersonId = (int)result.Id,
                     SnapShotUrl = result.SnapShotUrl,
                     DetectedAt = DateTime.UtcNow
                 });
@@ -129,7 +127,6 @@ namespace Application.Services.Implementations
                 await _detectionRepository.AddDetectionAsync(new Detection
                 {
                     CameraId = cameraId,
-                    PersonId = result.Id,
                     SnapShotUrl = result.SnapShotUrl,
                     DetectedAt = DateTime.UtcNow
                 });

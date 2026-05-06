@@ -59,11 +59,7 @@ namespace Infrastructure.Data
                 .HasForeignKey(d => d.CameraId)
                 .OnDelete(DeleteBehavior.Restrict);
 
-            builder.Entity<Detection>()
-                .HasOne(d => d.Person)
-                .WithMany(p => p.Detections)
-                .HasForeignKey(d => d.PersonId)
-                .OnDelete(DeleteBehavior.Restrict);
+            
 
             builder.Entity<Face>()
                 .HasOne(f => f.Camera)

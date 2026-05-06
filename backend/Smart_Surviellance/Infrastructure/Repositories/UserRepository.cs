@@ -100,8 +100,37 @@ namespace Infrastructure.Repositories
             return user;
         }
 
+        public async Task DeleteUserAsync(User user)
+        {
+            var result = await _userManager.DeleteAsync(user);
+            if (!result.Succeeded)
+            {
+                var errors = string.Join(", ", result.Errors.Select(e => e.Description));
+                throw new Exception(errors);
+            }
+        }
 
+        public async Task UpdateUserAsync(User user)
+        {
+            var result = await _userManager.UpdateAsync(user);
 
+            if (!result.Succeeded)
+            {
+                var errors = string.Join(", ", result.Errors.Select(e => e.Description));
+                throw new Exception(errors);
+            }
+        }
+
+        public async Task ChangePassword(string userId, string newPassword)
+        {
+            var user = await _userManager.FindByIdAsync(userId);
+            if (user == null)
+                throw new ArgumentException("User not found");
+
+            await _userManager.RemovePasswordAsync(user);
+            await _userManager.AddPasswordAsync(user, newPassword);
+            
+        }
 
     }
 }
