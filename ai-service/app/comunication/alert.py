@@ -33,3 +33,4 @@ async def send_alert(api_url: str, alert: AlertRequest) -> dict:
         response.raise_for_status()
 
         return response.json()
+    
