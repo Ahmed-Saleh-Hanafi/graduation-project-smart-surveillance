@@ -32,12 +32,7 @@ namespace Application.Services.Implementations
             {
                 return ApiResponse<CreateDetectionDto>.Fail("Camera not found.");
             }
-            if (detectionDto.SnapshotFile == null)
-            {
-                return ApiResponse<CreateDetectionDto>.Fail("Snapshot file is required.");
-            }
-
-            var FileUrl = await _imageService.SaveImageAsync(detectionDto.SnapshotFile);
+           
 
 
             var detection = new Detection
@@ -47,10 +42,11 @@ namespace Application.Services.Implementations
                 Description = detectionDto.Description,
                 Type = detectionDto.Type,
                 VideoUrl = detectionDto.VideoUrl,
-                SnapShotUrl = FileUrl,
+                SnapShotUrl = detectionDto.SnapshotUrl,
             };
             await _detectionRepository.AddDetectionAsync(detection);
             
+
 
             return ApiResponse<CreateDetectionDto>.Success(detectionDto, "Detection created successfully");
 

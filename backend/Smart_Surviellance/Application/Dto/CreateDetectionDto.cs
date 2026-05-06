@@ -13,7 +13,7 @@ namespace Application.Dto
         public string Type { get; set; }
         public string? VideoUrl { get; set; }
         public int CameraId { get; set; }
-        public IFormFile SnapshotFile { get; set; }
+        public string SnapshotUrl { get; set; }
 
 
     }
