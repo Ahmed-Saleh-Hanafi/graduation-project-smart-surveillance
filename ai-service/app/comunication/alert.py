@@ -1,14 +1,17 @@
 import httpx
-from pydantic import BaseModel, HttpUrl
-
+from pydantic import BaseModel
+from app.config import settings
 
 class AlertRequest(BaseModel):
-    cam_id: int
+    name: str = "Name"
+    description: str = "description"
     type: str          # face / weapon / abnormal
-    video_url: HttpUrl
+    videoUrl: str = "VideoUrl"
+    cameraId: int
+    snapshotUrl:str =  "string"
 
 
-async def send_alert(api_url: str, alert: AlertRequest) -> dict:
+async def send_alert(alert: AlertRequest) -> dict:
     """
     Send alert from AI service to backend.
 
@@ -23,14 +26,11 @@ async def send_alert(api_url: str, alert: AlertRequest) -> dict:
         httpx.HTTPStatusError: If response status is bad.
         httpx.RequestError: If connection fails.
     """
-
+    api_url = settings.BACKEND_ALERT_API
     async with httpx.AsyncClient(timeout=30.0) as client:
         response = await client.post(
             api_url,
             json=alert.model_dump()
         )
-
         response.raise_for_status()
-
         return response.json()
-    

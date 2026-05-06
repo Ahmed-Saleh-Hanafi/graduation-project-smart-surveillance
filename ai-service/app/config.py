@@ -6,7 +6,7 @@ class Settings:
     # api to communicate with backend
     BACKEND_CAMERAS_API = "http://localhost:5198/api/Camera/ai"
     BACKEND_FACE_API = "http://localhost:5198/api/Face/get-all-faces"
-    BACKEND_ALERT_API = None
+    BACKEND_ALERT_API = "http://localhost:5198/api/Detection"
     
     # Mapping of camera IDs to RTSP URLs that is acctive 
     CAMERA_SOURCES = {

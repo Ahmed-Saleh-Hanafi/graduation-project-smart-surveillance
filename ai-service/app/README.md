@@ -1,26 +1,30 @@
 ## Structure of Folder app
 
 ```
-graduation-project-smart-surveillance/ai-service/
+graduation-project-smart-surveillance/
 ai-service/app
 │
 │   
-├── main.py                  # FastAPI entry point
+├── main.py                  # entry point
 ├── config.py                # settings (env, paths, GPU config)
 │
-├── api/
-│   │cameras.py       # get all cameras
-│   │faces.py         # add/remove embeddings
-│   │control.py       # start/stop system
-│   │alert.py
+├── comunication/
+│   │alert.py 
+│   │cameras.py
+│   │faces.py
 │
+|
 ├── core/
 │   │camera_worker.py 
 │   │batch_queue.py
 │   │batch_inference.py
-│
+│   |consumer.py
+|
 ├── data/
-│   │database  
+│   │database
+|         / snapshots
+|         / faces.index
+|         / metadata.json
 │   │face_dp.py
 │   
 │ 
@@ -31,8 +35,16 @@ ai-service/app
 │      └── model_loader.py    # load weights on GPU/CPU
 │
 │── utils/
+│      ├── add_cameras.py
+│      ├── add_faces.py
+│      ├── draw_box_fram.py
+│      └── get_provider.py
+│      ├── make_snapshot.py
+│      ├── normalize.py
+│      ├── traker.py
+│      └── validation.py
+|
 ├── tests/
-│   ├── test_api.py
 │   ├── test_pipeline.py
 │
 └── README.md
