@@ -2,20 +2,12 @@ import cv2
 from ultralytics import YOLO
 
 
-onnx_model_path = r"C:\Users\engah\Downloads\weapon_detection_yolov8_samll_100epoch_32batch_imgsz640.onnx"
+onnx_model_path = r"D:\GitHub\graduation-project-smart-surveillance\ai-service\train-models\weapon-detection\YOLOV8_Small_dataset_V2\weapon_detection_yolov8_samll_100epoch_32batch_imgsz640.onnx"
 model = YOLO(onnx_model_path)
 
 camera_source = 0
 
 cap = cv2.VideoCapture(camera_source)
-
-
-cap.set(cv2.CAP_PROP_FRAME_WIDTH, 1280)
-cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 720)
-
-if not cap.isOpened():
-    print("Error: Cannot open camera")
-    exit()
 
 while True:
     ret, frame = cap.read()

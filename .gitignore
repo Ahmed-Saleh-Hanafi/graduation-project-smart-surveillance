@@ -26,3 +26,6 @@ build/
 
 # dataset 
 ai-service/train-models/weapon-detection/dataset
+
+#
+streaming-service/mediamtx.yml
