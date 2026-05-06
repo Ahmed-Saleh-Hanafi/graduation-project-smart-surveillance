@@ -10,7 +10,7 @@ namespace Application.Services.Interfaces
     {
 
 
-        Task<ApiResponse<DetectionDto>> CreateDetectionAsync(DetectionDto detectionDto);
+        Task<ApiResponse<CreateDetectionDto>> CreateDetectionAsync(CreateDetectionDto detectionDto);
         Task<ApiResponse<List<DetectionDto>>> GetAllDetectionsAsync();
         Task<ApiResponse<List<DetectionDto>>> GetDetectionsByCameraAsync(int cameraId);
         Task<ApiResponse<List<DetectionDto>>> GetDetectionsByDayAsync(DateTime date);

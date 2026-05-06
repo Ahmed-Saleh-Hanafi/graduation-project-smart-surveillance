@@ -11,6 +11,7 @@ namespace Application.Services.Interfaces
 
         Task SendAsync(Alert alert);
         Task SendFaceAlertAsync(FaceAlertDto faceAlertDto);
+        Task SendDetectionAlertAsync(DetectionDto detectionDto);
 
 
     }

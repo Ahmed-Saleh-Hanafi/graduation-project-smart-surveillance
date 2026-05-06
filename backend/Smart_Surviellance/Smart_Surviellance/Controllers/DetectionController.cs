@@ -17,16 +17,21 @@ namespace Smart_Surviellance.Controllers
             _faceProcessingService = faceProcessingService;
         }
 
-        [HttpPost("face/{cameraId}")]
-        public async Task<IActionResult> ProcessDetectionAsync(int cameraId, [FromBody] FaceResultDto result)
+
+
+        [HttpPost]
+        public async Task<IActionResult> CreateDetection(CreateDetectionDto detectionDto)
         {
-            var response = await _faceProcessingService.HandleDetectionAsync(cameraId, result);
+            var response = await _detectionService.CreateDetectionAsync(detectionDto);
             if (response.IsSuccess)
             {
                 return Ok(response);
             }
             return BadRequest(response);
         }
+
+
+
 
 
         [HttpGet]

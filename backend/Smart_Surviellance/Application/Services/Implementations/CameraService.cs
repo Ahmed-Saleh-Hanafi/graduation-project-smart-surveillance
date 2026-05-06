@@ -1,10 +1,11 @@
-﻿using Application.Common;
+using Application.Common;
 using Application.Dto;
 using Application.Interfaces;
 using Application.Services.Interfaces;
 using Domain.Entities;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Text;
 
 
@@ -130,7 +131,7 @@ namespace Application.Services.Implementations
             }
 
             var userId = _currentUserService.UserId;
-            var allowedCameras = await _userCameraRepository.GetCameraIdsByUserIdAsync(userId);
+            var allowedCameras = (await _userCameraRepository.GetCameraIdsByUserIdAsync(userId)).Select(c => c.Id).ToList();
 
             var usercameras =  await _cameraRepository.GetAllCamerasAsync();
             var filteredCameras = usercameras .Where (c=>allowedCameras.Contains(c.Id))
@@ -158,7 +159,7 @@ namespace Application.Services.Implementations
 
             if (!_currentUserService.IsAdmin)
             {
-                var allowedIds = await _userCameraRepository.GetCameraIdsByUserIdAsync(_currentUserService.UserId);
+                var allowedIds = (await _userCameraRepository.GetCameraIdsByUserIdAsync(_currentUserService.UserId)).Select(c => c.Id).ToList();
                 if (!allowedIds.Contains(id))
                     return ApiResponse<CameraDto>.Fail("Access denied to this camera.");
             }
@@ -211,7 +212,7 @@ namespace Application.Services.Implementations
 
             if (!_currentUserService.IsAdmin)
             {
-                var allowedIds = await _userCameraRepository.GetCameraIdsByUserIdAsync(_currentUserService.UserId);
+                var allowedIds = (await _userCameraRepository.GetCameraIdsByUserIdAsync(_currentUserService.UserId)).Select(c => c.Id).ToList();
                 if (!allowedIds.Contains(id))
                     return ApiResponse<WebRTCDto>.Fail("Access denied to this camera.");
             }
@@ -237,7 +238,7 @@ namespace Application.Services.Implementations
         {
             if (!_currentUserService.IsAdmin)
             {
-                var allowedIds = await _userCameraRepository.GetCameraIdsByUserIdAsync(_currentUserService.UserId);
+                var allowedIds = (await _userCameraRepository.GetCameraIdsByUserIdAsync(_currentUserService.UserId)).Select(c => c.Id).ToList();
                 if (!allowedIds.Contains(id))
                     return ApiResponse<GetCameraDto>.Fail("Access denied to this camera.");
             }

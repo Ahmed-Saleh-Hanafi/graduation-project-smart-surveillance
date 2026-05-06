@@ -14,7 +14,7 @@ namespace Application.Services.Interfaces
         Task<ApiResponse<UserDto>> GetUserByEmail(string email);
         Task<ApiResponse<UserDto>> GetUserById(string id);
         Task<ApiResponse<bool>> DeleteUserAsync(string id);
-        Task<ApiResponse<bool>> UpdateUserAsync(CreateUserDto updateUserDto);
+        Task<ApiResponse<bool>> UpdateUserAsync(UpdateUserDto updateUserDto);
 
 
     }

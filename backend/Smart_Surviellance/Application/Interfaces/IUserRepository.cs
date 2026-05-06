@@ -17,6 +17,7 @@ namespace Application.Interfaces
         Task<User> GetByIdAsync(string id, string role);
         Task DeleteUserAsync(User user);
         Task UpdateUserAsync(User user);
+        Task ChangePassword(string userId, string newPassword);
 
     }
 }

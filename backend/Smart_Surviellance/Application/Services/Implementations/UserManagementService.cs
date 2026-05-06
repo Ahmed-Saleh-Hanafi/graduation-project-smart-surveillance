@@ -134,18 +134,30 @@ namespace Application.Services.Implementations
                 }, "User retrieved successfully");
             }
 
-        //public async Task<ApiResponse<bool>> UpdateUserAsync(CreateUserDto updateUserDto)
-        //{
-        //    if(updateUserDto == null)
-        //        return ApiResponse<bool>.Fail("User data is required");
+        public async Task<ApiResponse<bool>> UpdateUserAsync(UpdateUserDto updateUserDto)
+        {
 
-        //    var user = await _userRepository.GetByIdAsync(updateUserDto.Id, "User");
-        //    if (user == null)
-        //    {
-        //        return ApiResponse<bool>.Fail("User not found");
-        //    }   
+            
 
+            var user = await _userRepository.GetByIdAsync(updateUserDto.Id, "User");
+            if (user == null)
+                return ApiResponse<bool>.Fail("User not found");
 
-        //}
+            // Update user properties
+            user.UserName = updateUserDto.UserName;
+            user.Email = updateUserDto.Email;
+            user.FirstName = updateUserDto.FirstName;
+            user.LastName = updateUserDto.LastName;
+            
+
+            await _userRepository.UpdateUserAsync(user);
+
+            if (!string.IsNullOrEmpty(updateUserDto.password))
+            {
+                await _userRepository.ChangePassword(user.Id, updateUserDto.password);
+            }
+            return ApiResponse<bool>.Success(true, "User updated successfully");
+        }
     }
 }
+

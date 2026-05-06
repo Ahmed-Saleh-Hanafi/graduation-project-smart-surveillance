@@ -3,6 +3,7 @@ using Application.Dto;
 using Application.Interfaces;
 using Application.Services.Interfaces;
 using Domain.Entities;
+using Microsoft.AspNetCore.Http;
 using System;
 using System.Collections.Generic;
 using System.Text;
@@ -13,18 +14,31 @@ namespace Application.Services.Implementations
     {
         private readonly IDetectionRepository _detectionRepository;
         private readonly ICameraRepository _cameraRepository;
+        private readonly IImageService _imageService;
         
 
-        public DetectionService(IDetectionRepository detectionRepository, ICameraRepository cameraRepository)
+        public DetectionService(IDetectionRepository detectionRepository, ICameraRepository cameraRepository, IImageService imageService)
         {
             _detectionRepository = detectionRepository;
             _cameraRepository = cameraRepository;
-            
+            _imageService = imageService;
         }
 
-        public async Task<ApiResponse<DetectionDto>> CreateDetectionAsync(DetectionDto detectionDto)
+        public async Task<ApiResponse<CreateDetectionDto>> CreateDetectionAsync(CreateDetectionDto detectionDto)
         {
-            
+
+            var camera = await _cameraRepository.GetCameraByIdAsync(detectionDto.CameraId);
+            if (camera == null)
+            {
+                return ApiResponse<CreateDetectionDto>.Fail("Camera not found.");
+            }
+            if (detectionDto.SnapshotFile == null)
+            {
+                return ApiResponse<CreateDetectionDto>.Fail("Snapshot file is required.");
+            }
+
+            var FileUrl = await _imageService.SaveImageAsync(detectionDto.SnapshotFile);
+
 
             var detection = new Detection
             {
@@ -33,24 +47,31 @@ namespace Application.Services.Implementations
                 Description = detectionDto.Description,
                 Type = detectionDto.Type,
                 VideoUrl = detectionDto.VideoUrl,
-                SnapShotUrl = detectionDto.SnapShotUrl
+                SnapShotUrl = FileUrl,
             };
             await _detectionRepository.AddDetectionAsync(detection);
+            
 
-            return ApiResponse<DetectionDto>.Success(detectionDto, "Detection created successfully");
+            return ApiResponse<CreateDetectionDto>.Success(detectionDto, "Detection created successfully");
 
         }
+
+
+
+
+
 
         public async Task<ApiResponse<List<DetectionDto>>> GetAllDetectionsAsync()
         {
             var detections = await _detectionRepository.GetAllDetectionAsync();
 
-            var result = detections.Select(MapToDto).ToList();
+            
 
             if(detections == null || !detections.Any())
             {
                 return ApiResponse<List<DetectionDto>>.Fail("No detections found.");
             }
+            var result = detections.Select(MapToDto).ToList();
 
             return ApiResponse<List<DetectionDto>>.Success(result, "All detections retrieved successfully");
         }
@@ -68,12 +89,13 @@ namespace Application.Services.Implementations
 
             var detections = await _detectionRepository.GetByCameraAsync(cameraId);
 
-            var result = detections.Select(MapToDto).ToList();
+            
 
             if(detections == null || !detections.Any())
             {
                 return ApiResponse<List<DetectionDto>>.Fail("No detections found for the specified camera.");
-            } 
+            }
+            var result = detections.Select(MapToDto).ToList();
 
             return ApiResponse<List<DetectionDto>>.Success(result, "Detections retrieved successfully");
         }
@@ -82,12 +104,13 @@ namespace Application.Services.Implementations
         {
             var detections = await _detectionRepository.GetByDayAsync(date);
 
-            var result = detections.Select(MapToDto).ToList();
+           
 
             if(detections == null || !detections.Any())
             {
                 return ApiResponse<List<DetectionDto>>.Fail("No detections found in the specified date.");
             }
+            var result = detections.Select(MapToDto).ToList();
 
             return ApiResponse<List<DetectionDto>>.Success(result, "Detections retrieved successfully");
         }
@@ -104,6 +127,10 @@ namespace Application.Services.Implementations
                 CameraId = detection.CameraId,
                 DetectedAt = detection.DetectedAt,
                 Name = detection.Name,
+                Description = detection.Description,
+                Type = detection.Type,
+                VideoUrl = detection.VideoUrl,
+                SnapShotUrl = detection.SnapShotUrl
             };
         }
 

@@ -1,4 +1,4 @@
-﻿using Application.Common;
+using Application.Common;
 using Application.Dto;
 using Application.Interfaces;
 using Application.Services.Interfaces;
@@ -6,6 +6,7 @@ using Domain.Entities;
 using Microsoft.AspNetCore.Http;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Text;
 using Application.Common;
 
@@ -98,7 +99,7 @@ namespace Application.Services.Implementations
 
                 if (!_currentUserService.IsAdmin)
                 {
-                    var allowedIds = await _userCameraRepository.GetCameraIdsByUserIdAsync(_currentUserService.UserId);
+                    var allowedIds = (await _userCameraRepository.GetCameraIdsByUserIdAsync(_currentUserService.UserId)).Select(c => c.Id).ToList();
                     if (!allowedIds.Contains(cameraId))
                         return ApiResponse<List<FaceDto>>.Fail("Access denied to this camera.");
                 }
