@@ -62,6 +62,6 @@ async def get_all_faces(api_url: str) -> Dict[str, int]:
             faces_dict[face_url] = cam_id
 
         except KeyError as e:
-            raise KeyError(f"Missing required camera field: {e}")
-
+            raise KeyError(f"Missing required face field: {e}")
+        
     return faces_dict
