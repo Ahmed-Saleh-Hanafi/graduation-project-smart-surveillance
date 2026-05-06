@@ -5,7 +5,7 @@
 <head>
   <meta charset="utf-8" />
   <meta content="width=device-width, initial-scale=1.0" name="viewport" />
-  <title>Camera Configuration</title>
+  <title>Role management</title>
   <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&amp;display=swap"
     rel="stylesheet" />
@@ -144,9 +144,9 @@
           data-icon="dashboard">dashboard</span>
         Dashboard
       </a>
-      <a class="flex items-center gap-3 px-4 py-3 text-sm font-medium bg-blue-50 text-blue-700 border-l-4 border-blue-700 transition-colors duration-150 rounded-r-lg group"
+      <a class="flex items-center gap-3 px-4 py-3 text-sm font-medium text-slate-600 hover:bg-slate-100 transition-colors duration-150 rounded-lg group"
         href="/CameraConfiguration">
-        <span class="material-symbols-outlined text-blue-700" data-icon="videocam"
+        <span class="material-symbols-outlined text-slate-400 group-hover:text-blue-700" data-icon="videocam"
           style="font-variation-settings: 'FILL' 1;">videocam</span>
         Camera Config
       </a>
@@ -161,12 +161,13 @@
         <span class="material-symbols-outlined text-slate-400 group-hover:text-blue-700" data-icon="group">group</span>
         User Management
       </a>
-     
-      <a class="flex items-center gap-3 px-4 py-3 text-sm font-medium text-slate-600 hover:bg-slate-100 transition-colors duration-150 rounded-lg group"
+      <a class="flex items-center gap-3 px-4 py-3 text-sm font-medium bg-blue-50 text-blue-700 border-l-4 border-blue-700 transition-colors duration-150 rounded-r-lg group"
         href="/rolemanagement">
-        <span class="material-symbols-outlined text-slate-400 group-hover:text-blue-700" data-icon="key">key</span>
+        <span class="material-symbols-outlined text-blue-700" data-icon="key">key</span>
         Role Management
       </a>
+     
+      
       <a class="flex items-center gap-3 px-4 py-3 text-sm font-medium text-slate-600 hover:bg-slate-100 transition-colors duration-150 rounded-lg group"
         href="/Alerts">
         <span class="material-symbols-outlined text-slate-400 group-hover:text-blue-700"
@@ -178,99 +179,109 @@
 
   </aside>
   <!-- Main Content -->
-  <main class="ml-64 mt-16 p-8 min-h-screen bg-surface">
+ <main class="ml-64 mt-16 p-8 min-h-screen bg-gray-50">
 
-    <!-- HEADER -->
-    <div class="flex justify-between items-center mb-6">
-      <div>
-        <h1 class="text-3xl font-extrabold">Camera Configuration</h1>
-        <p class="text-sm text-on-surface-variant">Manage all cameras</p>
+  <h1 class="text-3xl font-bold mb-6">Role Management</h1>
+
+  <div class="space-y-4">
+
+    <div *ngFor="let user of users" class="bg-white rounded-xl shadow border">
+
+      <!-- HEADER -->
+      <div 
+        (click)="toggleUser(user.id!)"
+        class="flex justify-between items-center p-4 cursor-pointer hover:bg-gray-50 transition">
+
+        <div>
+          <h2 class="font-semibold text-lg">{{ user.userName }}</h2>
+          <p class="text-sm text-gray-500">{{ user.email }}</p>
+        </div>
+
+        <!-- سهم متحرك -->
+        <span 
+          class="material-symbols-outlined transition-transform duration-300"
+          [class.rotate-180]="openedUserId === user.id">
+          expand_more
+        </span>
+
       </div>
 
-      <button (click)="openCreate()" class="px-4 py-2 bg-primary text-white rounded shadow hover:bg-primary-container">
-        + Add Camera
-      </button>
-    </div>
+      <!-- DROPDOWN -->
+      <div *ngIf="openedUserId === user.id" class="p-4 border-t bg-gray-50">
 
-    <!-- TABLE -->
-    <div class="bg-white rounded-xl border overflow-hidden">
+        <!-- USER INFO -->
+        <div class="grid grid-cols-2 gap-4 mb-6">
+          <div class="bg-white p-3 rounded border">
+            <p class="text-sm text-gray-500">First Name</p>
+            <p class="font-semibold">{{ user.firstName }}</p>
+          </div>
 
-      <table class="w-full text-sm">
-        <thead class="bg-slate-100 text-xs uppercase">
-          <tr>
-            <th class="p-3 text-center">Id</th>
-            <th class="text-center">Name</th>
-            <th class="text-center">IpAddress</th>
-            <th class="text-center">Port</th>
-            <th class="text-center">StreamUrl</th>
-            <th class="text-center">Actions</th>
-          </tr>
-        </thead>
+          <div class="bg-white p-3 rounded border">
+            <p class="text-sm text-gray-500">Last Name</p>
+            <p class="font-semibold">{{ user.lastName }}</p>
+          </div>
+        </div>
 
-        <tbody>
-          <tr *ngFor="let cam of s; let i = index " class="border-t">
+        <!-- GRID -->
+        <div class="grid grid-cols-2 gap-6">
 
-            <td class="p-3 text-center">{{ cam.id }}</td>
-            <td class="text-center">{{ cam.name }}</td>
-            <td class="text-center">{{ cam.ipAddress }}</td>
-            <td class="text-center">{{ cam.port }}</td>
-            <td class="text-center">{{ cam.streamUrl }}</td>
+          <!-- ACCESS CAMERAS -->
+          <div>
+            <h3 class="font-semibold mb-3 text-green-600">
+              Accessible Cameras
+            </h3>
 
-            <td class="text-center space-x-2">
+            <div *ngIf="userCameras.length === 0" class="text-gray-400 text-sm">
+              No cameras assigned
+            </div>
 
-              <button (click)="openEdit(i)" class="px-3 py-1 bg-blue-500 text-white rounded text-xs">
-                Edit
+            <div *ngFor="let cam of userCameras" 
+                 class="flex justify-between items-center bg-white border p-2 rounded mb-2">
+
+              <span>{{ cam.name }}</span>
+
+              <button 
+                (click)="removeCamera(user.id!, cam.id); $event.stopPropagation()"
+                class="px-3 py-1 bg-red-500 hover:bg-red-600 text-white rounded text-xs transition">
+                Remove
               </button>
 
-              <button (click)="delete(cam.id)" class="px-3 py-1 bg-red-500 text-white rounded text-xs">
-                Delete
+            </div>
+          </div>
+
+          <!-- OTHER CAMERAS -->
+          <div>
+            <h3 class="font-semibold mb-3 text-blue-600">
+              Available Cameras
+            </h3>
+
+            <div *ngIf="otherCameras.length === 0" class="text-gray-400 text-sm">
+              All cameras assigned
+            </div>
+
+            <div *ngFor="let cam of otherCameras" 
+                 class="flex justify-between items-center bg-white border p-2 rounded mb-2">
+
+              <span>{{ cam.name }}</span>
+
+              <button 
+                (click)="addCamera(user.id!, cam.id); $event.stopPropagation()"
+                class="px-3 py-1 bg-green-500 hover:bg-green-600 text-white rounded text-xs transition">
+                Add
               </button>
 
-            </td>
+            </div>
+          </div>
 
-          </tr>
-        </tbody>
-
-      </table>
-
-    </div>
-
-  </main>
-
-  <!-- MODAL -->
-  <div *ngIf="isModalOpen" class="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-
-    <div class="bg-white w-[420px] p-6 rounded-xl shadow-lg">
-
-      <h2 class="text-lg font-bold mb-4">
-        {{ mode === 'create' ? 'Add Camera' : 'Edit Camera' }}
-      </h2>
-
-      <div class="space-y-3">
-
-        <input [(ngModel)]="form.name" placeholder="Name" class="w-full p-2 border rounded" />
-        <input [(ngModel)]="form.ipAddress" placeholder="IP Address" class="w-full p-2 border rounded" />
-        <input [(ngModel)]="form.port" placeholder="Port" class="w-full p-2 border rounded" type="number" />
-        <input [(ngModel)]="form.username" placeholder="Username" class="w-full p-2 border rounded" />
-        <input [(ngModel)]="form.password" type="password" placeholder="Password" class="w-full p-2 border rounded" />
-        <input [(ngModel)]="form.path" placeholder="path" class="w-full p-2 border rounded" />
-
-      </div>
-
-      <div class="flex justify-end gap-2 mt-4">
-
-        <button (click)="closeModal()" class="px-3 py-1">
-          Cancel
-        </button>
-
-        <button (click)="save()" class="px-3 py-1 bg-primary text-white rounded">
-          Save
-        </button>
+        </div>
 
       </div>
 
     </div>
+
   </div>
+
+</main>
 </body>
 
 </html>

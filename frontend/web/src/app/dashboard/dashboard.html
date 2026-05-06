@@ -115,9 +115,10 @@
             </div>
             <div class="flex items-center gap-4">
                 <a href="/Alerts">
-                <button class="p-2 text-slate-500 hover:bg-slate-100/50 transition-all duration-200 active:scale-95" >
-                    <span class="material-symbols-outlined" data-icon="notifications">notifications</span>
-                </button>
+                    <button
+                        class="p-2 text-slate-500 hover:bg-slate-100/50 transition-all duration-200 active:scale-95">
+                        <span class="material-symbols-outlined" data-icon="notifications">notifications</span>
+                    </button>
                 </a>
                 <button class="p-2 text-slate-500 hover:bg-slate-100/50 transition-all duration-200 active:scale-95">
                     <span class="material-symbols-outlined" data-icon="settings">settings</span>
@@ -164,11 +165,17 @@
                 User Management
             </a>
             <a class="flex items-center gap-3 px-4 py-3 text-sm font-medium text-slate-600 hover:bg-slate-100 transition-colors duration-150 rounded-lg group"
-        href="/Alerts">
-        <span class="material-symbols-outlined group-hover:text-blue-700"
-          data-icon="notifications">notifications</span>
-        Notification Management
-      </a>
+                href="/rolemanagement">
+                <span class="material-symbols-outlined text-slate-400 group-hover:text-blue-700"
+                    data-icon="key">key</span>
+                Role Management
+            </a>
+            <a class="flex items-center gap-3 px-4 py-3 text-sm font-medium text-slate-600 hover:bg-slate-100 transition-colors duration-150 rounded-lg group"
+                href="/Alerts">
+                <span class="material-symbols-outlined group-hover:text-blue-700"
+                    data-icon="notifications">notifications</span>
+                Notification Management
+            </a>
         </nav>
 
     </aside>
@@ -176,27 +183,35 @@
     <main class="ml-64 mt-16 p-8 min-h-screen bg-surface">
 
         <!-- Top Live Camera -->
-        <div class="bg-black rounded-2xl overflow-hidden relative mb-8">
+        <div class="bg-black rounded-2xl overflow-hidden relative mb-8 h-64">
 
-            <img *ngIf="!videoUrl" src="imgs/placeholder.jpg" class="w-full h-64 object-cover opacity-80" />
+            <img *ngIf="!videoReady" src="imgs/placeholder.jpg"
+                class="absolute inset-0 w-full h-full object-cover opacity-80" />
 
-            <video *ngIf="videoUrl" [src]="videoUrl" controls autoplay muted class="w-full h-64 object-cover">
+            <!-- ✅ FIX: WebRTC video element -->
+            <video #videoPlayer autoplay playsinline muted class="w-full h-64 object-cover">
             </video>
-
-            <div class="mt-4 flex gap-2">
-                <button *ngFor="let cam of cameras" (click)="selectCamera(cam.id)"
-                    class="px-3 py-1 bg-blue-500 text-white rounded">
-                    choose {{ cam.name }}
-                </button>
-            </div>
             <div class="absolute top-4 left-4 text-white">
                 <span class="bg-white/20 px-2 py-1 rounded text-xs">IDLE</span>
                 <h2 class="text-xl font-bold mt-2">Parking Lot</h2>
                 <p class="text-sm opacity-70">North parking · 720p</p>
             </div>
 
-        </div>
 
+
+
+        </div>
+        <div class="mt-4 flex gap-2">
+            <button *ngFor="let cam of cameras" (click)="selectCamera(cam.id)" class="group relative flex items-center gap-2 px-4 py-2 rounded-xl
+       bg-blue-600/90 hover:bg-blue-500
+       text-white text-sm font-medium
+       hover:scale-105 active:scale-95
+       transition-all duration-200 shadow-lg">
+                <span class="w-2 h-2 rounded-full bg-green-400 group-hover:animate-pulse"></span>
+
+                {{ cam.name }}
+            </button>
+        </div>
         <!-- Sensors Section -->
         <div>
             <div class="flex justify-between items-center mb-4">
