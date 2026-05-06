@@ -15,6 +15,8 @@ namespace Application.Interfaces
         Task<List<User>> GetAllUsersAsync(string role);
         Task<User> GetByIdAsync(string id);
         Task<User> GetByIdAsync(string id, string role);
+        Task DeleteUserAsync(User user);
+        Task UpdateUserAsync(User user);
 
     }
 }

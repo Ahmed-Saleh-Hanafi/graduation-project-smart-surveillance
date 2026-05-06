@@ -13,16 +13,33 @@ namespace Application.Services.Implementations
     {
         private readonly IDetectionRepository _detectionRepository;
         private readonly ICameraRepository _cameraRepository;
-        private readonly IPersonRepository _personRepository;
+        
 
-        public DetectionService(IDetectionRepository detectionRepository, ICameraRepository cameraRepository, IPersonRepository personRepository)
+        public DetectionService(IDetectionRepository detectionRepository, ICameraRepository cameraRepository)
         {
             _detectionRepository = detectionRepository;
             _cameraRepository = cameraRepository;
-            _personRepository = personRepository;
+            
         }
 
-        
+        public async Task<ApiResponse<DetectionDto>> CreateDetectionAsync(DetectionDto detectionDto)
+        {
+            
+
+            var detection = new Detection
+            {
+                Name = detectionDto.Name,
+                CameraId = detectionDto.CameraId,
+                Description = detectionDto.Description,
+                Type = detectionDto.Type,
+                VideoUrl = detectionDto.VideoUrl,
+                SnapShotUrl = detectionDto.SnapShotUrl
+            };
+            await _detectionRepository.AddDetectionAsync(detection);
+
+            return ApiResponse<DetectionDto>.Success(detectionDto, "Detection created successfully");
+
+        }
 
         public async Task<ApiResponse<List<DetectionDto>>> GetAllDetectionsAsync()
         {
@@ -75,54 +92,7 @@ namespace Application.Services.Implementations
             return ApiResponse<List<DetectionDto>>.Success(result, "Detections retrieved successfully");
         }
 
-        public async Task<ApiResponse<List<DetectionDto>>> GetDetectionsByPersonAndCameraAsync(int personId, int cameraId)
-        {
-            var person = await _personRepository.GetPersonByIdAsync(personId);
-
-            if (person == null)
-            {
-                return ApiResponse<List<DetectionDto>>.Fail("Person not found.");
-            }
-            var camera = await _cameraRepository.GetCameraByIdAsync(cameraId);
-
-            if (camera == null)
-            {
-                return ApiResponse<List<DetectionDto>>.Fail("Camera not found.");
-            }
-
-            var detections = await _detectionRepository.GetByPersonAndCameraAsync(personId, cameraId);
-
-            var result = detections.Select(MapToDto).ToList();
-
-            if(detections == null || !detections.Any())
-            {
-                return ApiResponse<List<DetectionDto>>.Fail("No detections found for the specified person and camera.");
-            }
-
-            return ApiResponse<List<DetectionDto>>.Success(result, "Detections retrieved successfully");
-        }
-
-        public async Task<ApiResponse<List<DetectionDto>>> GetDetectionsByPersonAsync(int personId)
-        {
-            var person = await _personRepository.GetPersonByIdAsync(personId);
-
-            if (person == null)
-            {
-                return ApiResponse<List<DetectionDto>>.Fail("Person not found.");
-            }
-
-            var detections = await _detectionRepository.GetByPersonAsync(personId);
-
-            var result = detections.Select(MapToDto).ToList();
-
-            if (detections == null || !detections.Any())
-            {
-                return ApiResponse<List<DetectionDto>>.Fail("No detections found for the specified person.");
-            }
-
-            return ApiResponse<List<DetectionDto>>.Success(result, "Detections retrieved successfully");
-        }
-
+        
 
 
 
@@ -132,7 +102,6 @@ namespace Application.Services.Implementations
             {
                 Id = detection.Id,
                 CameraId = detection.CameraId,
-                PersonId = detection.PersonId,
                 DetectedAt = detection.DetectedAt,
                 Name = detection.Name,
             };

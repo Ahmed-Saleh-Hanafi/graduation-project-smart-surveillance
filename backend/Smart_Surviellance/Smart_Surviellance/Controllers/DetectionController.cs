@@ -29,8 +29,6 @@ namespace Smart_Surviellance.Controllers
         }
 
 
-
-
         [HttpGet]
         public async Task<IActionResult> GetAllDetections()
         {
@@ -65,28 +63,9 @@ namespace Smart_Surviellance.Controllers
                 return Ok(response);
             }
             return BadRequest(response);
-        }
-        [HttpGet("CameraPerson/{personId}/{cameraId}")]
-        public async Task<IActionResult> GetDetectionsByPersonAndCameraAsync(int personId, int cameraId)
-        {
-            var response = await _detectionService.GetDetectionsByPersonAndCameraAsync(personId, cameraId);
-            if (response.IsSuccess)
-            {
-                return Ok(response);
-            }
-            return BadRequest(response);
-        }
+        }   
 
-        [HttpGet("person/{personId}")]
-        public async Task<IActionResult> GetDetectionsByPersonAsync(int personId)
-        {
-            var response = await _detectionService.GetDetectionsByPersonAsync(personId);
-            if (response.IsSuccess)
-            {
-                return Ok(response);
-            }
-            return BadRequest(response);
-        }
+       
 
 
 

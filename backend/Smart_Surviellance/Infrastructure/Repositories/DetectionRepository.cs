@@ -43,15 +43,6 @@ namespace Infrastructure.Repositories
                 .ToListAsync();
         }
 
-        public async Task<IEnumerable<Detection>> GetByPersonAndCameraAsync(int personId, int cameraId)
-        {
-            return await _context.Detections.Where(d => d.PersonId == personId && d.CameraId == cameraId).ToListAsync();
-        }
-
-        public async Task<IEnumerable<Detection>> GetByPersonAsync(int personId)
-        {
-            return await _context.Detections.Where(d => d.PersonId == personId).ToListAsync();
-            
-        }
+        
     }
 }
