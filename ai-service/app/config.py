@@ -12,6 +12,8 @@ class Settings:
     CAMERA_SOURCES = {
         
     }
+    # mode
+    MODE = 'test'
     
     # get the device that we need to run ai models
     PROVIDER_IDX = 0
@@ -29,8 +31,11 @@ class Settings:
     MAX_WAIT = 0.05
     
     DET_MODEL = "buffalo_l"
-    SIM_THRESHOLD = 0.55
-    PROCESS_FRAME = 5
-
+    TARGET_FPS = 3
+    FRAME_INTERVAL = 1.0 / TARGET_FPS
+    SIMILARITY_THRESHOLD = 0.4
+    
+    # path log files
+    LOG_PATH = r"D:\GitHub\graduation-project-smart-surveillance\ai-service\app\log_files"
 
 settings = Settings()

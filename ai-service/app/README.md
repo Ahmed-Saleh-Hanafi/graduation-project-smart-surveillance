@@ -42,6 +42,7 @@ ai-service/app
 │      ├── make_snapshot.py
 │      ├── normalize.py
 │      ├── traker.py
+|      |   logger.py
 │      └── validation.py
 |
 ├── tests/
