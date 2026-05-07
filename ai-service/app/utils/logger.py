@@ -38,7 +38,7 @@ def add_log(log_type: str, message: str) -> None :
     if not isinstance(message, str):
         raise TypeError('message must be str')
     
-    if type not in {'debug', 'info', 'warning', 'error', 'critical'}:
+    if log_type not in {'debug', 'info', 'warning', 'error', 'critical'}:
         raise ValueError("log_type must be one of them  ['debug', 'info', 'warning', 'error', 'critical']")
     if message == "":
         raise ValueError('message can not be empty')
