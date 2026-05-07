@@ -17,7 +17,7 @@ const STREAM_W  = width - 32;
 const H         = 20;
 const MIN_SZ    = 50;
 
-const BASE_URL = 'http://192.168.1.229:5198';
+const BASE_URL = 'http://localhost:5198';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 

@@ -14,7 +14,7 @@ import { getEvents, CameraEvent } from './live';
 
 const { width, height } = Dimensions.get('window');
 
-const BASE_URL = 'http://192.168.1.229:5198';
+const BASE_URL = 'http://localhost:5198';
 
 const formatDuration = (seconds: number) => {
   const m = Math.floor(seconds / 60);

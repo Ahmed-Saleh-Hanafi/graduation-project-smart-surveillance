@@ -22,6 +22,7 @@ trak = FaceDatabase()
 async def run_restricted_area_access(batch):
     for cam_id, frame, tim in batch:
         faces = models.face_detector.detect(frame)
+        print(tim)
         for face in faces:
             em = face.embedding
             em = normalize(em)
@@ -30,7 +31,8 @@ async def run_restricted_area_access(batch):
             if d < 0.35:
                 me2, d2 = trak.search(em)
                 print('d2', d2)
-                if d2 > 0.6: continue
+                
+                if d2!=None and d2 > 0.6: continue
                 
                 frame = draw(frame, face.bbox, d)
                 url = save_frame_and_get_url(frame)
@@ -43,5 +45,3 @@ async def run_restricted_area_access(batch):
                 await send_alert(alert)
             
             
-    
-    
