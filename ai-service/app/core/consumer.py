@@ -8,9 +8,8 @@ async def consumer():
     batch = []
 
     while True:
-        cam_id, frame = await frame_queue.get()
-        batch.append((cam_id, frame))
-        #print(frame)
+        cam_id, frame, tim = await frame_queue.get()
+        batch.append((cam_id, frame, tim))
         if len(batch) >= settings.BATCH_SIZE:
             await run_inference(batch.copy())
             batch.clear()

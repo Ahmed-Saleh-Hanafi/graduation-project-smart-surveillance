@@ -1,5 +1,5 @@
 import asyncio
-from typing import List, Tuple
+from typing import Tuple
 
-# (cam_id, frame)
-frame_queue: asyncio.Queue[Tuple[int, any]] = asyncio.Queue(maxsize=100)
+# (cam_id, frame, datatime)
+frame_queue: asyncio.Queue[Tuple[int, any, str]] = asyncio.Queue(maxsize=100)

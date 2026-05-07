@@ -1,21 +1,17 @@
 import faiss
 import numpy as np
-import json
 from app.config import settings
-from app.utils.validation import validate_path
-import os
 
 class FaceDatabase:
     def __init__(self):
         self.dimension = settings.EMB_DIM
         self.index = faiss.IndexFlatIP(self.dimension)
         self.metadata = {}
-
-    def save(self):
-        faiss.write_index(self.index, settings.FACE_DB_PATH)
-        with open(settings.META_PATH, "w") as f:
-            json.dump(self.metadata, f)
-    
+    def clear(self):
+        self.dimension = settings.EMB_DIM
+        self.index = faiss.IndexFlatIP(self.dimension)
+        self.metadata = {}
+        
     def add_face(self, cam_id, face_url, embedding):
         embedding = np.array([embedding]).astype("float32")
         self.index.add(embedding)
@@ -24,8 +20,6 @@ class FaceDatabase:
             "cam_id": cam_id,
             "face_url": face_url
         }
-        self.save()
-        
 
     def search(self, embedding, k=1):
         if self.index.ntotal == 0:
@@ -36,7 +30,6 @@ class FaceDatabase:
         if idx in self.metadata:
             return self.metadata[idx], float(D[0][0])
         return None, 0
-    
-    
+
 
 face_dp =FaceDatabase()
