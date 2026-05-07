@@ -37,7 +37,6 @@ async def camera_worker(cam_id: int, rtsp_url: str)-> None:
     # validation
     if not isinstance(cam_id, int):
         raise TypeError("cam_id must be an integer")
-
     if cam_id < 0:
         raise ValueError("cam_id must be >= 0")
 
@@ -59,8 +58,7 @@ async def camera_worker(cam_id: int, rtsp_url: str)-> None:
         )
     
     cap = cv2.VideoCapture(
-        0 if rtsp_url == 0 else rtsp_url,
-        cv2.CAP_DSHOW if rtsp_url == 0 else cv2.CAP_FFMPEG
+        0 if rtsp_url == 0 else rtsp_url
     )
     
     if not cap.isOpened():
