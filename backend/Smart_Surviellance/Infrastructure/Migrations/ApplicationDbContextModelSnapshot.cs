@@ -165,6 +165,41 @@ namespace Infrastructure.Migrations
                     b.ToTable("Detections");
                 });
 
+            modelBuilder.Entity("Domain.Entities.EventRecorded", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<int>("CameraId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateOnly>("RecordedAt")
+                        .HasColumnType("date");
+
+                    b.Property<DateTime>("RecordingEnd")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime>("RecordingStart")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("VideoUrl")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CameraId");
+
+                    b.ToTable("EventsRecorded");
+                });
+
             modelBuilder.Entity("Domain.Entities.Face", b =>
                 {
                     b.Property<int>("Id")
@@ -475,6 +510,17 @@ namespace Infrastructure.Migrations
                     b.Navigation("Camera");
                 });
 
+            modelBuilder.Entity("Domain.Entities.EventRecorded", b =>
+                {
+                    b.HasOne("Domain.Entities.Camera", "camera")
+                        .WithMany("EventsRecorded")
+                        .HasForeignKey("CameraId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("camera");
+                });
+
             modelBuilder.Entity("Domain.Entities.Face", b =>
                 {
                     b.HasOne("Domain.Entities.Camera", "Camera")
@@ -561,6 +607,8 @@ namespace Infrastructure.Migrations
                     b.Navigation("CameraPersonLists");
 
                     b.Navigation("Detections");
+
+                    b.Navigation("EventsRecorded");
 
                     b.Navigation("Faces");
 

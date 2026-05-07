@@ -9,7 +9,7 @@ import * as FileSystem from 'expo-file-system';
 import * as MediaLibrary from 'expo-media-library';
 import axios from 'axios';
 
-const BASE_URL = 'http://192.168.1.229:5198';
+const BASE_URL = 'http://localhost:5198';
 
 const api = axios.create({ baseURL: BASE_URL });
 

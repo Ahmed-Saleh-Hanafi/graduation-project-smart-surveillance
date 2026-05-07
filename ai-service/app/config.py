@@ -20,11 +20,11 @@ class Settings:
     DEVICE = get_provider(PROVIDER_IDX)
     
     # config of face 
-    FACE_DB_PATH = r"D:\GitHub\graduation-project-smart-surveillance\ai-service\app\data\database\faces.index"
-    META_PATH = r"D:\GitHub\graduation-project-smart-surveillance\ai-service\app\data\database\metadata.json"
+    FACE_DB_PATH = r"E:\Camguard\graduation-project-smart-surveillance\ai-service\app\data\database\faces.index"
+    META_PATH = r"E:\Camguard\graduation-project-smart-surveillance\ai-service\app\data\database\metadata.json"
     EMB_DIM = 512
-    ROOT_IMAGES = r"D:\GitHub\graduation-project-smart-surveillance\backend\Smart_Surviellance\Smart_Surviellance\wwwroot"
-    SNAPSHOT_IMAGES = r"D:\GitHub\graduation-project-smart-surveillance\ai-service\app\data\database\snapshots"
+    ROOT_IMAGES = r"E:\Camguard\graduation-project-smart-surveillance\backend\Smart_Surviellance\Smart_Surviellance\wwwroot"
+    SNAPSHOT_IMAGES = r"E:\Camguard\graduation-project-smart-surveillance\ai-service\app\data\database\snapshots"
     # config about processing stream
     FRAME_SIZE = (640, 640)
     BATCH_SIZE = 1
@@ -36,6 +36,6 @@ class Settings:
     SIMILARITY_THRESHOLD = 0.4
     
     # path log files
-    LOG_PATH = r"D:\GitHub\graduation-project-smart-surveillance\ai-service\app\log_files"
+    LOG_PATH = r"E:\Camguard\graduation-project-smart-surveillance\ai-service\app\log_files"
 
 settings = Settings()

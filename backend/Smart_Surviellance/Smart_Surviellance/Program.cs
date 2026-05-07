@@ -97,6 +97,7 @@ builder.Services.AddScoped<ICameraPersonRepository, CameraPersonRepository>();
 builder.Services.AddScoped<IDetectionRepository, DetectionRepository>();
 builder.Services.AddScoped<IUserCameraRepository, UserCameraRepository>();
 builder.Services.AddScoped<IFaceRepository, FaceRepository>();
+builder.Services.AddScoped<IEventRecordedRepository, EventRecordedRepository>();
 
 // Services
 builder.Services.AddScoped<IAuthService, AuthService>();
@@ -114,6 +115,8 @@ builder.Services.AddScoped<IUserManagmentService, UserManagementService>();
 builder.Services.AddScoped<IUserCameraService, UserCameraService>();
 builder.Services.AddScoped<ICurrentUserService, CurrentUserService>();
 builder.Services.AddScoped<IImageService, ImageService>();
+builder.Services.AddScoped<IEventRecordedService, EventRecordedService>();
+builder.Services.AddScoped<IVideoService, VideoService>();
 builder.Services.AddHttpContextAccessor();
 
 
