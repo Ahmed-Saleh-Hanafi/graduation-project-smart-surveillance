@@ -161,118 +161,113 @@
         <span class="material-symbols-outlined text-blue-700" data-icon="group">group</span>
         User Management
       </a>
-     
-      
+       <a class="flex items-center gap-3 px-4 py-3 text-sm font-medium text-slate-600 hover:bg-slate-100 transition-colors duration-150 rounded-lg group"
+                href="/rolemanagement">
+                <span class="material-symbols-outlined text-slate-400 group-hover:text-blue-700"
+                    data-icon="key">key</span>
+                Role Management
+            </a>
+      <a class="flex items-center gap-3 px-4 py-3 text-sm font-medium text-slate-600 hover:bg-slate-100 transition-colors duration-150 rounded-lg group"
+        href="/detectionmanagement">
+        <span class="material-symbols-outlined text-slate-400 group-hover:text-blue-700"
+          data-icon="radar">radar</span>
+        Detections
+      </a>
       <a class="flex items-center gap-3 px-4 py-3 text-sm font-medium text-slate-600 hover:bg-slate-100 transition-colors duration-150 rounded-lg group"
         href="/Alerts">
         <span class="material-symbols-outlined text-slate-400 group-hover:text-blue-700"
           data-icon="notifications">notifications</span>
         Notification Management
       </a>
-      
     </nav>
 
   </aside>
   <!-- Main Content -->
 
-<!-- Main Content -->
-<main class="ml-64 mt-16 p-8 min-h-screen bg-surface">
+  <main class="ml-64 mt-16 p-8 min-h-screen bg-surface">
 
-  <!-- HEADER -->
-  <div class="flex justify-between items-center mb-6">
-    <div>
-      <h1 class="text-3xl font-extrabold">User Management</h1>
-      <p class="text-sm text-on-surface-variant">Manage all users</p>
-    </div>
+    <!-- HEADER -->
+    <div class="flex justify-between items-center mb-6">
+      <div>
+        <h1 class="text-3xl font-extrabold">User Management</h1>
+        <p class="text-sm text-on-surface-variant">Manage all users</p>
+      </div>
 
-    <button (click)="openCreate()" 
-      class="px-4 py-2 bg-primary text-white rounded shadow hover:bg-primary-container">
-      + Add User
-    </button>
-  </div>
-
-  <!-- TABLE -->
-  <div class="bg-white rounded-xl border overflow-hidden">
-
-    <table class="w-full text-sm">
-      <thead class="bg-slate-100 text-xs uppercase">
-        <tr>
-          <th class="p-3 text-center">Id</th>
-          <th class="text-center">Email</th>
-          <th class="text-center">User Name</th>
-          <th class="text-center">First Name</th>
-          <th class="text-center">Last Name</th>
-        </tr>
-      </thead>
-
-      <tbody>
-        <tr *ngFor="let user of users" class="border-t">
-
-          <td class="p-3 text-center">{{ user.id }}</td>
-          <td class="text-center">{{ user.email }}</td>
-          <td class="text-center">{{ user.userName }}</td>
-          <td class="text-center">{{ user.firstName }}</td>
-          <td class="text-center">{{ user.lastName }}</td>
-
-        </tr>
-      </tbody>
-
-    </table>
-
-  </div>
-
-</main>
-
-<!-- MODAL -->
-<div *ngIf="isModalOpen" 
-     class="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-
-  <div class="bg-white w-[420px] p-6 rounded-xl shadow-lg">
-
-    <h2 class="text-lg font-bold mb-4">
-      Add User
-    </h2>
-
-    <div class="space-y-3">
-
-      <input [(ngModel)]="form.email" 
-             placeholder="Email" 
-             class="w-full p-2 border rounded" />
-
-      <input [(ngModel)]="form.password" 
-             type="password" 
-             placeholder="Password" 
-             class="w-full p-2 border rounded" />
-
-      <input [(ngModel)]="form.firstName" 
-             placeholder="First Name" 
-             class="w-full p-2 border rounded" />
-
-      <input [(ngModel)]="form.lastName" 
-             placeholder="Last Name" 
-             class="w-full p-2 border rounded" />
-
-      <input [(ngModel)]="form.userName" 
-             placeholder="User Name" 
-             class="w-full p-2 border rounded" />
-
-    </div>
-
-    <div class="flex justify-end gap-2 mt-4">
-
-      <button (click)="closeModal()" class="px-3 py-1">
-        Cancel
+      <button (click)="openCreate()" 
+        class="px-4 py-2 bg-primary text-white rounded shadow hover:bg-primary-container">
+        + Add User
       </button>
+    </div>
 
-      <button (click)="save()" 
-              class="px-3 py-1 bg-primary text-white rounded">
-        Save
-      </button>
+    <!-- TABLE -->
+    <div class="bg-white rounded-xl border overflow-hidden">
+
+      <table class="w-full text-sm">
+        <thead class="bg-slate-100 text-xs uppercase">
+          <tr>
+            <th class="p-3 text-center">Id</th>
+            <th class="text-center">Email</th>
+            <th class="text-center">User Name</th>
+            <th class="text-center">First Name</th>
+            <th class="text-center">Last Name</th>
+            <th class="text-center">Actions</th>
+          </tr>
+        </thead>
+
+        <tbody>
+          <tr *ngFor="let user of users" class="border-t">
+            <td class="p-3 text-center">{{ user.id }}</td>
+            <td class="text-center">{{ user.email }}</td>
+            <td class="text-center">{{ user.userName }}</td>
+            <td class="text-center">{{ user.firstName }}</td>
+            <td class="text-center">{{ user.lastName }}</td>
+            <td class="text-center space-x-2 py-2">
+              <button (click)="openEdit(user)" class="px-3 py-1 bg-blue-600 text-white rounded text-xs">
+                Edit
+              </button>
+              <button (click)="deleteUser(user)" class="px-3 py-1 bg-red-600 text-white rounded text-xs">
+                Delete
+              </button>
+            </td>
+          </tr>
+        </tbody>
+      </table>
 
     </div>
 
+  </main>
+
+  <!-- MODAL -->
+  <div *ngIf="isModalOpen" class="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+    <div class="bg-white w-[420px] p-6 rounded-xl shadow-lg">
+
+      <h2 class="text-lg font-bold mb-4">
+        {{ isEditMode ? 'Edit User' : 'Add User' }}
+      </h2>
+
+      <div class="space-y-3">
+        <input [(ngModel)]="form.email" placeholder="Email" class="w-full p-2 border rounded" />
+
+        <input [(ngModel)]="form.password" type="password" placeholder="Password"
+               class="w-full p-2 border rounded" />
+        <p *ngIf="isEditMode" class="text-xs text-slate-500">Leave password blank to keep current password.</p>
+
+        <input [(ngModel)]="form.firstName" placeholder="First Name" class="w-full p-2 border rounded" />
+        <input [(ngModel)]="form.lastName" placeholder="Last Name" class="w-full p-2 border rounded" />
+        <input [(ngModel)]="form.userName" placeholder="User Name" class="w-full p-2 border rounded" />
+      </div>
+
+      <div class="flex justify-end gap-2 mt-4">
+        <button (click)="closeModal()" class="px-3 py-1">
+          Cancel
+        </button>
+        <button (click)="save()" class="px-3 py-1 bg-primary text-white rounded">
+          {{ isEditMode ? 'Update' : 'Save' }}
+        </button>
+      </div>
+
+    </div>
   </div>
-</div>
 </body>
 
 </html>

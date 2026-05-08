@@ -169,6 +169,12 @@
      
       
       <a class="flex items-center gap-3 px-4 py-3 text-sm font-medium text-slate-600 hover:bg-slate-100 transition-colors duration-150 rounded-lg group"
+        href="/detectionmanagement">
+        <span class="material-symbols-outlined text-slate-400 group-hover:text-blue-700"
+          data-icon="radar">radar</span>
+        Detections
+      </a>
+      <a class="flex items-center gap-3 px-4 py-3 text-sm font-medium text-slate-600 hover:bg-slate-100 transition-colors duration-150 rounded-lg group"
         href="/Alerts">
         <span class="material-symbols-outlined text-slate-400 group-hover:text-blue-700"
           data-icon="notifications">notifications</span>
@@ -179,98 +185,129 @@
 
   </aside>
   <!-- Main Content -->
- <main class="ml-64 mt-16 p-8 min-h-screen bg-gray-50">
+  <main class="ml-64 mt-16 p-8 min-h-screen bg-gray-50">
 
-  <h1 class="text-3xl font-bold mb-6">Role Management</h1>
-
-  <div class="space-y-4">
-
-    <div *ngFor="let user of users" class="bg-white rounded-xl shadow border">
-
-      <!-- HEADER -->
-      <div 
-        (click)="toggleUser(user.id!)"
-        class="flex justify-between items-center p-4 cursor-pointer hover:bg-gray-50 transition">
-
-        <div>
-          <h2 class="font-semibold text-lg">{{ user.userName }}</h2>
-          <p class="text-sm text-gray-500">{{ user.email }}</p>
-        </div>
-
-        <!-- سهم متحرك -->
-        <span 
-          class="material-symbols-outlined transition-transform duration-300"
-          [class.rotate-180]="openedUserId === user.id">
-          expand_more
-        </span>
-
+    <!-- HEADER -->
+    <div class="mb-8 flex justify-between items-center">
+      <div>
+        <h1 class="text-4xl font-bold">Role Management</h1>
+        <p class="text-gray-500 text-sm mt-1">{{ users.length }} users</p>
       </div>
 
-      <!-- DROPDOWN -->
-      <div *ngIf="openedUserId === user.id" class="p-4 border-t bg-gray-50">
+      <button (click)="openCreate()" class="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-semibold shadow-md transition duration-200 flex items-center gap-2">
+        <span class="material-symbols-outlined text-xl">person_add</span>
+        Add User
+      </button>
+    </div>
 
-        <!-- USER INFO -->
-        <div class="grid grid-cols-2 gap-4 mb-6">
-          <div class="bg-white p-3 rounded border">
-            <p class="text-sm text-gray-500">First Name</p>
-            <p class="font-semibold">{{ user.firstName }}</p>
+    <!-- LOADING STATE -->
+    <div *ngIf="isLoading" class="flex items-center justify-center py-20">
+      <div class="text-center">
+        <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+        <p class="text-gray-500">Loading users and cameras...</p>
+      </div>
+    </div>
+
+    <!-- USERS GRID -->
+    <div *ngIf="!isLoading" class="space-y-4">
+      <div *ngFor="let user of users" class="bg-white rounded-2xl shadow-md border overflow-hidden">
+
+        <!-- USER CARD HEADER -->
+        <div class="p-6 border-b flex items-center justify-between hover:bg-gray-50 transition cursor-pointer"
+             (click)="toggleUser(user.id!)">
+
+          <!-- LEFT SIDE: Avatar + Info -->
+          <div class="flex items-center gap-4">
+            <!-- AVATAR -->
+            <div class="w-16 h-16 rounded-full bg-gradient-to-br from-blue-400 to-blue-600 flex items-center justify-center text-white font-bold text-xl">
+              {{ (user.userName.substring(0, 2) || 'U').toUpperCase() }}
+            </div>
+
+            <!-- INFO -->
+            <div>
+              <h2 class="text-lg font-bold">{{ user.firstName || '' }} {{ user.lastName || '' }}</h2>
+              <p class="text-sm text-gray-500">{{ user.email }}</p>
+              <p class="text-xs text-blue-600 mt-1">@{{ user.userName }}</p>
+            </div>
           </div>
 
-          <div class="bg-white p-3 rounded border">
-            <p class="text-sm text-gray-500">Last Name</p>
-            <p class="font-semibold">{{ user.lastName }}</p>
+          <!-- RIGHT SIDE: Actions + Toggle -->
+          <div class="flex items-center gap-3">
+            <!-- EDIT BUTTON -->
+            <button (click)="openEdit(user); $event.stopPropagation()" 
+                    class="p-2 text-blue-600 hover:bg-blue-50 rounded transition">
+              <span class="material-symbols-outlined text-xl">edit</span>
+            </button>
+
+            <!-- DELETE BUTTON -->
+            <button (click)="deleteUser(user); $event.stopPropagation()" 
+                    class="p-2 text-red-600 hover:bg-red-50 rounded transition">
+              <span class="material-symbols-outlined text-xl">delete</span>
+            </button>
+
+            <!-- TOGGLE ARROW -->
+            <button (click)="toggleUser(user.id!); $event.stopPropagation()"
+                    class="p-2 text-gray-600 hover:bg-gray-100 rounded transition">
+              <span class="material-symbols-outlined transition-transform duration-300"
+                    [class.rotate-180]="openedUserId === user.id">
+                expand_more
+              </span>
+            </button>
           </div>
+
         </div>
 
-        <!-- GRID -->
-        <div class="grid grid-cols-2 gap-6">
+        <!-- EXPANDED SECTION: Cameras -->
+        <div *ngIf="openedUserId === user.id" class="p-6 bg-gradient-to-b from-gray-50 to-white">
 
-          <!-- ACCESS CAMERAS -->
-          <div>
-            <h3 class="font-semibold mb-3 text-green-600">
-              Accessible Cameras
-            </h3>
+          <!-- TWO COLUMN LAYOUT -->
+          <div class="grid grid-cols-2 gap-8">
 
-            <div *ngIf="userCameras.length === 0" class="text-gray-400 text-sm">
-              No cameras assigned
+            <!-- ASSIGNED CAMERAS (LEFT) -->
+            <div>
+              <div class="flex items-center gap-2 mb-4">
+                <span class="w-3 h-3 rounded-full bg-green-500"></span>
+                <h3 class="font-bold text-lg">ASSIGNED</h3>
+                <span class="bg-green-100 text-green-700 px-2 py-1 rounded-full text-xs font-semibold">{{ userCameras.length }}</span>
+              </div>
+
+              <div *ngIf="userCameras.length === 0" class="text-gray-400 text-sm py-4">
+                No cameras assigned
+              </div>
+
+              <div *ngFor="let cam of userCameras" class="bg-white border border-green-200 rounded-lg p-3 mb-3 flex items-center justify-between">
+                <span class="font-medium text-sm">{{ cam.name }}</span>
+                <button (click)="removeCamera(user.id!, cam.id); $event.stopPropagation()"
+                        class="px-3 py-1 bg-red-500 hover:bg-red-600 text-white rounded text-xs font-semibold transition">
+                  Delete
+                </button>
+              </div>
             </div>
 
-            <div *ngFor="let cam of userCameras" 
-                 class="flex justify-between items-center bg-white border p-2 rounded mb-2">
+            <!-- NOT ASSIGNED CAMERAS (RIGHT) -->
+            <div>
+              <div class="flex items-center gap-2 mb-4">
+                <span class="w-3 h-3 rounded-full bg-blue-400"></span>
+                <h3 class="font-bold text-lg">NOT ASSIGNED</h3>
+                <span class="bg-blue-100 text-blue-700 px-2 py-1 rounded-full text-xs font-semibold">{{ otherCameras.length }}</span>
+              </div>
 
-              <span>{{ cam.name }}</span>
+              <div *ngIf="otherCameras.length === 0" class="text-gray-400 text-sm py-4">
+                All cameras assigned
+              </div>
 
-              <button 
-                (click)="removeCamera(user.id!, cam.id); $event.stopPropagation()"
-                class="px-3 py-1 bg-red-500 hover:bg-red-600 text-white rounded text-xs transition">
-                Remove
-              </button>
-
+              <div *ngFor="let cam of otherCameras" class="bg-white border border-blue-200 rounded-lg p-3 mb-3 flex items-center justify-between">
+                <div>
+                  <p class="font-medium text-sm">{{ cam.name }}</p>
+                  <p class="text-xs text-gray-500">{{ cam.ipAddress || 'localhost' }}</p>
+                </div>
+                <button (click)="addCamera(user.id!, cam.id); $event.stopPropagation()"
+                        class="px-3 py-1 bg-green-500 hover:bg-green-600 text-white rounded text-xs font-semibold transition">
+                  Assign
+                </button>
+              </div>
             </div>
-          </div>
 
-          <!-- OTHER CAMERAS -->
-          <div>
-            <h3 class="font-semibold mb-3 text-blue-600">
-              Available Cameras
-            </h3>
-
-            <div *ngIf="otherCameras.length === 0" class="text-gray-400 text-sm">
-              All cameras assigned
-            </div>
-
-            <div *ngFor="let cam of otherCameras" 
-                 class="flex justify-between items-center bg-white border p-2 rounded mb-2">
-
-              <span>{{ cam.name }}</span>
-
-              <button 
-                (click)="addCamera(user.id!, cam.id); $event.stopPropagation()"
-                class="px-3 py-1 bg-green-500 hover:bg-green-600 text-white rounded text-xs transition">
-                Add
-              </button>
-
-            </div>
           </div>
 
         </div>
@@ -279,9 +316,36 @@
 
     </div>
 
+  </main>
+
+  <!-- EDIT MODAL -->
+  <div *ngIf="isModalOpen" class="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+    <div class="bg-white w-[420px] p-6 rounded-xl shadow-lg">
+
+      <h2 class="text-lg font-bold mb-4">{{ isEditMode ? 'Edit User' : 'Add User' }}</h2>
+
+      <div class="space-y-3">
+        <input [(ngModel)]="editForm.email" placeholder="Email" class="w-full p-2 border rounded" />
+        <input [(ngModel)]="editForm.password" type="password" placeholder="Password"
+               class="w-full p-2 border rounded" />
+        <p class="text-xs text-slate-500">{{ isEditMode ? 'Leave password blank to keep current password.' : 'Password is required.' }}</p>
+        <input [(ngModel)]="editForm.firstName" placeholder="First Name" class="w-full p-2 border rounded" />
+        <input [(ngModel)]="editForm.lastName" placeholder="Last Name" class="w-full p-2 border rounded" />
+        <input [(ngModel)]="editForm.userName" placeholder="User Name" class="w-full p-2 border rounded" />
+      </div>
+
+      <div class="flex justify-end gap-2 mt-4">
+        <button (click)="closeModal()" class="px-3 py-1">
+          Cancel
+        </button>
+        <button (click)="save()" class="px-3 py-1 bg-primary text-white rounded">
+          {{ isEditMode ? 'Update' : 'Create' }}
+        </button>
+      </div>
+
+    </div>
   </div>
 
-</main>
 </body>
 
 </html>

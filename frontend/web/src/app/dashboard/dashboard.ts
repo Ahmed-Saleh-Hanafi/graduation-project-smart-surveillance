@@ -7,16 +7,17 @@ import { DashboardService } from '../services/dashboard.service';
   standalone: true,
   imports: [CommonModule],
   templateUrl: './dashboard.html',
-  styleUrl: './dashboard.css',
+  styleUrls: ['./dashboard.css'],
 })
 export class Dashboard implements OnInit {
 
   @ViewChild('videoPlayer') videoPlayer!: ElementRef<HTMLVideoElement>;
 
   cameras: any[] = [];
+  errorMessage: string | null = null;
+  loading = false;
   private pc!: RTCPeerConnection;
 
-  // 👇 مهم عشان الـ placeholder
   videoReady: boolean = false;
 
   constructor(private dashboardService: DashboardService) {}
@@ -26,9 +27,22 @@ export class Dashboard implements OnInit {
   }
 
   loadCameras() {
-    this.dashboardService.getCameras().subscribe(res => {
-      this.cameras = res.data;
-    });
+    this.loading = true;
+    this.errorMessage = null;
+
+    this.dashboardService.getCameras().subscribe(
+      res => {
+        console.log('Dashboard cameras response', res);
+        this.cameras = (res && (res.data ?? res)) || [];
+        this.loading = false;
+      },
+      error => {
+        console.error('Failed to load cameras', error);
+        this.errorMessage = 'Unable to load cameras. Check the API and browser console.';
+        this.cameras = [];
+        this.loading = false;
+      }
+    );
   }
 
   async selectCamera(id: number) {
@@ -38,7 +52,7 @@ export class Dashboard implements OnInit {
 
   async startWebRTC(id: number) {
 
-    // لو فيه اتصال قديم اقفله
+  
     if (this.pc) {
       this.pc.close();
     }
@@ -47,21 +61,18 @@ export class Dashboard implements OnInit {
 
     this.pc = new RTCPeerConnection();
 
-    // 🎥 استقبال الفيديو
     this.pc.ontrack = (event) => {
       const stream = event.streams[0];
 
       this.videoPlayer.nativeElement.srcObject = stream;
       this.videoPlayer.nativeElement.play();
 
-      this.videoReady = true; // 👈 الفيديو اشتغل
+      this.videoReady = true; 
     };
 
-    // 📡 create offer
     const offer = await this.pc.createOffer();
     await this.pc.setLocalDescription(offer);
 
-    // 📡 send to backend
     const answer = await this.dashboardService.startStream(id, offer);
 
     if (!answer) {
