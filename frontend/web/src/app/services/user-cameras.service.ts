@@ -10,18 +10,18 @@ export class UserCameraService {
 
   constructor(private http: HttpClient) {}
 
-  getUserCameras(userId: number) {
+  getUserCameras(userId: string | number) {
     return this.http.get(`${this.baseUrl}/user/${userId}/cameras`);
   }
 
-  add(userId: number, cameraId: number) {
+  add(userId: string | number, cameraId: number) {
     return this.http.post(
       `${this.baseUrl}/user/${userId}/camera/${cameraId}`,
       {}
     );
   }
 
-  remove(userId: number, cameraId: number) {
+  remove(userId: string | number, cameraId: number) {
     return this.http.delete(
       `${this.baseUrl}/user/${userId}/camera/${cameraId}`
     );
