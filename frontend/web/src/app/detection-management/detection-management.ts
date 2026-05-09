@@ -4,7 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { DetectionService, Detection } from '../services/detection.service';
 import { CameraService } from '../services/camera.service';
 import { of } from 'rxjs';
-import { catchError, map } from 'rxjs/operators';
+import { catchError, map, timeout, finalize } from 'rxjs/operators';
 
 interface CameraGroup {
   cameraId: number;
@@ -26,12 +26,15 @@ export class DetectionManagement implements OnInit {
   allDetections: Detection[] = [];
   cameras: any[] = [];
   loading = true;
+  detectionsLoading = false;
   errorMessage: string | null = null;
   filterDate: string = '';
 
-  // Modal state
-  selectedDetection: Detection | null = null;
-  isModalOpen = false;
+  // Camera modal state
+  selectedCamera: CameraGroup | null = null;
+  isCameraModalOpen = false;
+  modalFilterDate: string = '';
+  filteredDetections: Detection[] = [];
 
   constructor(
     private detectionService: DetectionService,
@@ -41,81 +44,63 @@ export class DetectionManagement implements OnInit {
   ngOnInit() {
     this.loadData();
   }
+loadData() {
+  this.loading = true;
+  this.errorMessage = null;
 
-  loadData() {
-    this.loading = true;
-    this.errorMessage = null;
+  this.cameraService.getAll().pipe(
+    timeout(10000),
+    map((res: any) => Array.isArray(res) ? res : res.data || []),
+    catchError(() => of([]))
+  ).subscribe((cameras: any[]) => {
 
-    this.cameraService.getAll().subscribe({
-      next: (cameraRes: any) => {
-        this.cameras = (cameraRes && (cameraRes.data ?? cameraRes)) || [];
-      },
-      error: () => {
-        this.cameras = [];
-        this.loadDetections();
-      },
-      complete: () => {
-        this.loadDetections();
-      }
+    this.cameras = cameras;
+
+    // اعمل الكروت بس فاضية من غير detections
+    this.cameraGroups = this.cameras.map(cam => ({
+      cameraId: cam.id,
+      cameraName: cam.name,
+      cameraIp: cam.ipAddress,
+      cameraPort: cam.port,
+      detections: []   // فاضي دلوقتي
+    }));
+
+    this.loading = false;
+  });
+}
+buildGroups() {
+
+  console.log('CAMERAS:', this.cameras);
+  console.log('DETECTIONS:', this.allDetections);
+
+  const groups: CameraGroup[] = [];
+
+  // اعمل كارت لكل كاميرا حتى لو مفيش detections
+  for (const cam of this.cameras || []) {
+
+    const cameraDetections = (this.allDetections || []).filter(
+      (d: any) => d.cameraId === cam.id
+    );
+
+    cameraDetections.sort(
+      (a: any, b: any) =>
+        new Date(b.detectedAt).getTime() -
+        new Date(a.detectedAt).getTime()
+    );
+
+    groups.push({
+      cameraId: cam.id,
+      cameraName: cam.name || `Camera ${cam.id}`,
+      cameraIp: cam.ipAddress || 'Unknown',
+      cameraPort: cam.port || 0,
+      detections: cameraDetections
     });
   }
 
-  private loadDetections() {
-    this.detectionService.getAll().subscribe({
-      next: (detRes: any) => {
-        this.allDetections = (detRes && (detRes.data ?? detRes)) || [];
-      },
-      error: () => {
-        // Backend returns 400 when no detections — treat as empty
-        this.allDetections = [];
-        this.buildGroups();
-        this.loading = false;
-      },
-      complete: () => {
-        this.buildGroups();
-        this.loading = false;
-      }
-    });
-  }
+  this.cameraGroups = groups;
 
-  buildGroups() {
-    const map = new Map<number, CameraGroup>();
-
-    // Always create a card for every camera
-    for (const cam of this.cameras) {
-      map.set(cam.id, {
-        cameraId: cam.id,
-        cameraName: cam.name || `Camera ${cam.id}`,
-        cameraIp: cam.ipAddress || 'Unknown',
-        cameraPort: cam.port || 0,
-        detections: [],
-      });
-    }
-
-    // Assign detections to their camera cards
-    for (const det of this.allDetections) {
-      if (!map.has(det.cameraId)) {
-        map.set(det.cameraId, {
-          cameraId: det.cameraId,
-          cameraName: `Camera ${det.cameraId}`,
-          cameraIp: 'Unknown',
-          cameraPort: 0,
-          detections: [],
-        });
-      }
-      map.get(det.cameraId)!.detections.push(det);
-    }
-
-    // Sort detections within each group by detectedAt descending
-    for (const group of map.values()) {
-      group.detections.sort(
-        (a, b) =>
-          new Date(b.detectedAt).getTime() - new Date(a.detectedAt).getTime()
-      );
-    }
-
-    this.cameraGroups = Array.from(map.values());
-  }
+  console.log('FINAL GROUPS:', this.cameraGroups);
+}
 
   get totalDetections(): number {
     return this.cameraGroups.reduce(
@@ -127,6 +112,61 @@ export class DetectionManagement implements OnInit {
   get totalCameras(): number {
     return this.cameraGroups.length;
   }
+
+  // --- Camera Modal ---
+
+openCamera(group: CameraGroup) {
+  this.selectedCamera = group;
+  this.modalFilterDate = '';
+  this.isCameraModalOpen = true;
+
+  // 🔥 هنا بقى نحمل الديتكشنز
+  this.detectionsLoading = true;
+
+  this.detectionService.getByCamera(group.cameraId).pipe(
+    map((res: any) => Array.isArray(res) ? res : res.data || []),
+    catchError(() => of([]))
+  ).subscribe((detections: Detection[]) => {
+
+    this.filteredDetections = detections;
+    this.selectedCamera!.detections = detections;
+
+    this.detectionsLoading = false;
+  });
+}
+
+  closeCameraModal() {
+    this.isCameraModalOpen = false;
+    this.selectedCamera = null;
+    this.filteredDetections = [];
+    this.modalFilterDate = '';
+  }
+
+  onModalFilterDate() {
+    if (!this.selectedCamera) return;
+    if (!this.modalFilterDate) {
+      this.filteredDetections = [...this.selectedCamera.detections];
+      return;
+    }
+    const filterDate = this.modalFilterDate; // YYYY-MM-DD
+    this.filteredDetections = this.selectedCamera.detections.filter(det => {
+      const detDate = new Date(det.detectedAt);
+      const detDateStr =
+        detDate.getFullYear() + '-' +
+        String(detDate.getMonth() + 1).padStart(2, '0') + '-' +
+        String(detDate.getDate()).padStart(2, '0');
+      return detDateStr === filterDate;
+    });
+  }
+
+  clearModalFilter() {
+    this.modalFilterDate = '';
+    if (this.selectedCamera) {
+      this.filteredDetections = [...this.selectedCamera.detections];
+    }
+  }
+
+  // --- Helpers ---
 
   formatTime(dateStr: string): string {
     const d = new Date(dateStr);
@@ -145,16 +185,6 @@ export class DetectionManagement implements OnInit {
   truncate(text: string, max: number): string {
     if (!text) return '';
     return text.length > max ? text.substring(0, max) + '...' : text;
-  }
-
-  openDetection(det: Detection) {
-    this.selectedDetection = det;
-    this.isModalOpen = true;
-  }
-
-  closeModal() {
-    this.isModalOpen = false;
-    this.selectedDetection = null;
   }
 
   getTypeColor(type: string): string {
@@ -189,6 +219,23 @@ export class DetectionManagement implements OnInit {
       'UnknownFace': '#f8fafc',
     };
     return colors[type] || '#eef2ff';
+  }
+
+  getTypeIcon(type: string): string {
+    const icons: Record<string, string> = {
+      'Intrusion': 'shield',
+      'Tampering': 'warning',
+      'FaceDetection': 'face',
+      'FaceDetected': 'face',
+      'MotionDetected': 'directions_run',
+      'MotionDetection': 'directions_run',
+      'VehicleDetected': 'directions_car',
+      'VehicleDetection': 'directions_car',
+      'ObjectLeft': 'inventory_2',
+      'Loitering': 'person_alert',
+      'UnknownFace': 'person_off',
+    };
+    return icons[type] || 'radar';
   }
 
   onFilterDate() {
