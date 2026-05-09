@@ -28,7 +28,6 @@ async def start(mode: str):
         cameras = await get_all_cameras(settings.BACKEND_CAMERAS_API)
         add_cameras(cameras)
         settings.BATCH_SIZE = len(cameras)
-        logging.info(f'Loaded {len(cameras)} cameras')
     except Exception as e:
         logging.error(f'Failed to load cameras: {e}')
         
@@ -46,7 +45,6 @@ async def start(mode: str):
             add_faces(faces)
         except Exception as e:
             logging.error(f'Failed to save faces in whithlist: {e}')
-        logging.info(f'Loading {len(faces)} faces and save them in whithlist is success')
     except Exception as e:
         logging.error(f"Failed to get faces from backend: {e}")
     
@@ -58,7 +56,6 @@ async def start(mode: str):
             asyncio.create_task(camera_worker(cam_id, url))
             for cam_id, url in settings.CAMERA_SOURCES.items()
         ]
-    logging.info(f'The mode is {settings.MODE}')
     logging.info( f'assign worker to each camera is success {len(workers)}')
     
     # consumer
