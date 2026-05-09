@@ -1,4 +1,6 @@
 import asyncio
+import logging
+import argparse
 from app.config import settings
 from app.comunication.cameras import get_all_cameras
 from app.comunication.faces import get_all_faces
@@ -8,13 +10,19 @@ from app.core.camera_worker import camera_worker
 from app.core.consumer import consumer
 from app.models.model_loader import models
 from app.utils.logger import setup_logs
-import logging
 
-async def start():
+async def start(mode: str):
+    # validation 
+    if not isinstance(mode, str):
+        raise TypeError('mode must be string')
+    if mode not in ['test', 'work']:
+        raise ValueError('mode must be test or work')
+    settings.MODE = mode
+    
     # setup log file
     setup_logs()
     logging.info("AI Service started")
-    
+    logging.info(f"Mode is {settings.MODE}")
     # get all cameras from backend and add them to settings.CAMERA_SOURCES {cam_id: rtsp_url}
     try:
         cameras = await get_all_cameras(settings.BACKEND_CAMERAS_API)
@@ -67,5 +75,8 @@ async def start():
         logging.error(f"Failed to assign run workers and consumer {e}")
 
 if __name__ == '__main__':
-    asyncio.run(start())
+    parser = argparse.ArgumentParser()
+    parser.add_argument('mode')             # mode {test, work}
+    args = parser.parse_args()
+    asyncio.run(start(args.mode))
     logging.info("AI Service is stoped")
