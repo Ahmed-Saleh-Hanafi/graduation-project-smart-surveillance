@@ -27,6 +27,7 @@ async def start(mode: str):
     try:
         cameras = await get_all_cameras(settings.BACKEND_CAMERAS_API)
         add_cameras(cameras)
+        settings.BATCH_SIZE = len(cameras)
         logging.info(f'Loaded {len(cameras)} cameras')
     except Exception as e:
         logging.error(f'Failed to load cameras: {e}')
