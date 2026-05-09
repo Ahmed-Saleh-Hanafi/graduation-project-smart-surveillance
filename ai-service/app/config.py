@@ -10,7 +10,7 @@ class Settings:
     BACKEND_ALERT_API = "http://localhost:5198/api/Detection"
     
     # Mapping of camera IDs to RTSP URLs that is acctive {cam_id: rtsp_url}
-    CAMERA_SOURCES = { }
+    CAMERA_SOURCES = {}
     
     # mode must be test or work
     MODE = 'test'     
