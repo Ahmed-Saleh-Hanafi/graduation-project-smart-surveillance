@@ -16,7 +16,7 @@
 
 /* Custom scrollbar for detection lists */
 .custom-scrollbar::-webkit-scrollbar {
-  width: 4px;
+  width: 5px;
 }
 
 .custom-scrollbar::-webkit-scrollbar-track {
@@ -45,5 +45,25 @@
 }
 
 .animate-modal-in {
-  animation: modal-in 0.2s ease-out;
+  animation: modal-in 0.25s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+/* Camera card hover glow effect */
+.camera-card::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  pointer-events: none;
+  background: radial-gradient(
+    600px circle at var(--mouse-x, 50%) var(--mouse-y, 50%),
+    rgba(99, 102, 241, 0.06),
+    transparent 40%
+  );
+}
+
+.camera-card:hover::after {
+  opacity: 1;
 }

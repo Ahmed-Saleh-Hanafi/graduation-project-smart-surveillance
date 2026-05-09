@@ -5,7 +5,7 @@ import { UserService, User, UpdateUserDto } from '../services/user.service';
 import { CameraService } from '../services/camera.service';
 import { UserCameraService } from '../services/user-cameras.service';
 import { ChangeDetectorRef } from '@angular/core';
-
+import { ShowCameraDataService } from '../services/show-camera-data.service';
 @Component({
   selector: 'app-role-management',
   standalone: true,
@@ -20,7 +20,7 @@ export class RoleManagement implements OnInit {
   userCameras: any[] = [];
   otherCameras: any[] = [];
 
-  openedUserId: string | null = null;
+  openedUserId: any = null;
   isEditMode = false;
   isModalOpen = false;
   editForm: User = this.emptyForm();
@@ -30,8 +30,9 @@ export class RoleManagement implements OnInit {
     private userService: UserService,
     private cameraService: CameraService,
     private userCameraService: UserCameraService,
-    private cdr: ChangeDetectorRef
-  ) {}
+    private cdr: ChangeDetectorRef,
+    private showCameraDataService: ShowCameraDataService
+  ) { }
 
   ngOnInit() {
     this.isLoading = true;
@@ -81,8 +82,8 @@ export class RoleManagement implements OnInit {
       this.cdr.detectChanges();
     }
   }
-
   toggleUser(userId: string) {
+
     if (this.openedUserId === userId) {
       this.openedUserId = null;
       return;
@@ -90,15 +91,34 @@ export class RoleManagement implements OnInit {
 
     this.openedUserId = userId;
 
-    this.userCameraService.getUserCameras(userId).subscribe((res: any) => {
-      this.userCameras = res.data || [];
-      this.otherCameras = this.cameras.filter(
-        c => !this.userCameras.some((uc: any) => uc.id === c.id)
-      );
-    });
-  }
+    this.userCameraService.getUserCameras(userId).subscribe({
+      next: (res: any) => {
 
-  addCamera(userId: string, cameraId: number) {
+        console.log('USER CAMERAS => ', res);
+
+        this.userCameras = [...(res.data || [])];
+
+        this.otherCameras = this.cameras.filter(
+          cam => !this.userCameras.some(
+            (uCam: any) => Number(uCam.id) === Number(cam.id)
+          )
+        );
+
+        console.log('ALL CAMERAS => ', this.cameras);
+        console.log('ASSIGNED => ', this.userCameras);
+        console.log('NOT ASSIGNED => ', this.otherCameras);
+
+        this.cdr.detectChanges();
+      },
+
+      error: (err) => {
+        console.log(err);
+        this.userCameras = [];
+        this.otherCameras = [...this.cameras];
+        this.cdr.detectChanges();
+      }
+    });
+  } addCamera(userId: string, cameraId: number) {
     this.userCameraService.add(userId, cameraId).subscribe(() => {
       this.refreshUser(userId);
     });
@@ -111,15 +131,28 @@ export class RoleManagement implements OnInit {
   }
 
   refreshUser(userId: string) {
-    this.userCameraService.getUserCameras(userId).subscribe((res: any) => {
-      this.userCameras = res.data || [];
-      this.otherCameras = this.cameras.filter(
-        c => !this.userCameras.some((uc: any) => uc.id === c.id)
-      );
-    });
-  }
 
-  openCreate() {
+    this.userCameraService.getUserCameras(userId).subscribe({
+      next: (res: any) => {
+
+        this.userCameras = Array.isArray(res)
+          ? res
+          : (res.data || []);
+
+      }
+    });
+
+    this.userCameraService.getUnassignedCameras(userId).subscribe({
+      next: (res: any) => {
+
+        this.otherCameras = Array.isArray(res)
+          ? res
+          : (res.data || []);
+
+      }
+    });
+
+  } openCreate() {
     this.isEditMode = false;
     this.editForm = this.emptyForm();
     this.isModalOpen = true;

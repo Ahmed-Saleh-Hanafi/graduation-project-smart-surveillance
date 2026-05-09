@@ -1,10 +1,9 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { CameraService, Camera,CameraView } from '../services/camera.service';
+import { CameraService, Camera, CameraView } from '../services/camera.service';
 import { ChangeDetectorRef } from '@angular/core';
 import { ShowCameraDataService } from '../services/show-camera-data.service';
-
 @Component({
   selector: 'app-camera-configuration',
   standalone: true,
@@ -15,108 +14,128 @@ import { ShowCameraDataService } from '../services/show-camera-data.service';
 export class CameraConfiguration implements OnInit {
 
   cameras: Camera[] = [];
-s: CameraView[]=[];
+
+  s: any[] = [];
+
   isModalOpen = false;
   mode: 'create' | 'edit' = 'create';
   selectedIndex: number | null = null;
 
   form: Camera = this.emptyForm();
 
-constructor(
-  private cameraService: CameraService,
-  private cdr: ChangeDetectorRef,
-  private showcameradata: ShowCameraDataService
-) {}
+  constructor(
+    private cameraService: CameraService,
+    private cdr: ChangeDetectorRef,
+  private showCameraDataService: ShowCameraDataService
+  ) {}
 
   ngOnInit() {
-  console.log("Component Loaded");
-  this.veiwCameras();
-}
+    console.log("Component Loaded");
+    this.veiwCameras();
+  }
+
 veiwCameras() {
-  this.showcameradata.getAll().subscribe({
+  this.showCameraDataService.getAll().subscribe({
     next: (res: any) => {
-this.s = res.data;      // 🔥 أجبر Angular يعمل refresh للـ UI
+
+      console.log("SUCCESS => ", res);
+
+      this.s = res.data || res;
+
+      console.log("CAMERAS => ", this.s);
+
       this.cdr.detectChanges();
     },
-    error: (err) => console.error(err)
-  });
-}
-  // تحميل البيانات من الباك
-loadCameras() {
-  this.cameraService.getAll().subscribe({
-    next: (res: any) => {
-this.cameras = res.data;      // 🔥 أجبر Angular يعمل refresh للـ UI
-      this.cdr.detectChanges();
-    },
-    error: (err) => console.error(err)
+
+    error: (err) => {
+      console.log("FULL ERROR => ", err);
+
+      if (err.error) {
+        console.log("ERROR BODY => ", err.error);
+      }
+
+      if (err.status) {
+        console.log("STATUS => ", err.status);
+      }
+    }
   });
 }
 
-  // فتح إنشاء
+  loadCameras() {
+    this.cameraService.getAll().subscribe({
+      next: (res: any) => {
+
+        this.cameras = res.data || res;
+
+        this.cdr.detectChanges();
+      },
+      error: (err) => console.error(err)
+    });
+  }
+
   openCreate() {
     this.mode = 'create';
     this.form = this.emptyForm();
     this.isModalOpen = true;
   }
 
-  // فتح تعديل
-openEdit(index: number) {
-  this.mode = 'edit';
+  openEdit(index: number) {
+    this.mode = 'edit';
 
-  const id = this.s[index].id; // 👈 من ال view
+    const id = this.s[index].id;
 
-  this.cameraService.lol(id).subscribe({
-    next: (res: any) => {
-      this.form = res.data; // 👈 full object جاهز للفورم
-      this.isModalOpen = true;
-    },
-    error: err => console.log(err)
-  });
-}
+    this.cameraService.lol(id).subscribe({
+      next: (res: any) => {
+        this.form = res.data;
+        this.isModalOpen = true;
+      },
+      error: err => console.log(err)
+    });
+  }
 
-  // إغلاق المودال
   closeModal() {
     this.isModalOpen = false;
   }
 
-  // حفظ (Create / Edit)
-save() {
-  const { id, ...payload } = this.form;
+  save() {
+    const { id, ...payload } = this.form;
 
-  payload.port = Number(payload.port);
+    payload.port = Number(payload.port);
 
-  if (this.mode === 'create') {
+    if (this.mode === 'create') {
 
-    this.cameraService.create(payload).subscribe({
-      next: () => this.veiwCameras(),
-      error: err => console.log(err)
-    });
+      this.cameraService.create(payload).subscribe({
+        next: () => {
+          this.veiwCameras();
+          this.closeModal();
+        },
+        error: err => console.log(err)
+      });
 
-  } else if (this.mode === 'edit' && id) {
+    } else if (this.mode === 'edit' && id) {
 
-    this.cameraService.update(id, payload).subscribe({
-      next: () => this.veiwCameras(),
-      error: err => console.log(err)
-    });
+      this.cameraService.update(id, payload).subscribe({
+        next: () => {
+          this.veiwCameras();
+          this.closeModal();
+        },
+        error: err => console.log(err)
+      });
 
+    }
   }
 
-  this.closeModal();
-}
+  delete(id?: number) {
+    if (!id) return;
 
-  // حذف
-delete(id?: number) {
-  if (!id) return;
-
-  if (confirm('Are you sure?')) {
-    this.cameraService.delete(id).subscribe({
-      next: () => this.veiwCameras(),
-      error: err => console.log(err)
-    });
+    if (confirm('Are you sure?')) {
+      this.cameraService.delete(id).subscribe({
+        next: () => this.veiwCameras(),
+        error: err => console.log(err)
+      });
+    }
   }
-}
 
-  // فورم فاضي
   emptyForm(): Camera {
     return {
       name: '',

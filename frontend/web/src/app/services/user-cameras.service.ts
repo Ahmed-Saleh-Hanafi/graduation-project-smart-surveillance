@@ -14,6 +14,12 @@ export class UserCameraService {
     return this.http.get(`${this.baseUrl}/user/${userId}/cameras`);
   }
 
+  getUnassignedCameras(userId: string | number) {
+    return this.http.get(
+      `${this.baseUrl}/user/${userId}/UnassignedCameras`
+    );
+  }
+
   add(userId: string | number, cameraId: number) {
     return this.http.post(
       `${this.baseUrl}/user/${userId}/camera/${cameraId}`,
