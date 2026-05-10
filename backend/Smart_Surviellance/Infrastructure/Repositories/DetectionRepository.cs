@@ -43,6 +43,21 @@ namespace Infrastructure.Repositories
                 .ToListAsync();
         }
 
-        
+        public async Task<Detection> GetByIdAsync(int detectionId)
+        {
+            return await _context.Detections.FindAsync(detectionId);
+        }
+
+        public async Task ResolveDetectionAsync(int detectionId)
+        {
+            
+                var detection = await _context.Detections.FindAsync(detectionId);
+                if (detection != null)
+                {
+                    detection.IsResolved = true;
+                    await _context.SaveChangesAsync();
+                }
+            
+        }
     }
 }

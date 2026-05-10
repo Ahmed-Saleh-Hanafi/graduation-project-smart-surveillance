@@ -14,5 +14,6 @@ namespace Application.Dto
         public int CameraId { get; set; }
         public DateTime DetectedAt { get; set; }
         public string? SnapShotUrl { get; set; }
+        public bool IsResolved { get; set; }
     }
 }

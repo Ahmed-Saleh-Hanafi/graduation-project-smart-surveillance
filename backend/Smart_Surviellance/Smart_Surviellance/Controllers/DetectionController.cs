@@ -30,7 +30,28 @@ namespace Smart_Surviellance.Controllers
             return BadRequest(response);
         }
 
+        [HttpPost("{detectionId}/resolve")]
+        public async Task<IActionResult> ResolveDetection(int detectionId)
+        {
+            var response = await _detectionService.ResolveDetectionAsync(detectionId);
+            if (response.IsSuccess)
+            {
+                return Ok(response);
+            }
+            return BadRequest(response);
+        }
 
+
+        //[HttpGet("{detectionId}")]
+        //public async Task<IActionResult> GetDetectionById(int detectionId)
+        //{
+        //    var response = await _detectionService.GetDetectionByIdAsync(detectionId);
+        //    if (response.IsSuccess)
+        //    {
+        //        return Ok(response);
+        //    }
+        //    return BadRequest(response);
+        //}
 
 
 
