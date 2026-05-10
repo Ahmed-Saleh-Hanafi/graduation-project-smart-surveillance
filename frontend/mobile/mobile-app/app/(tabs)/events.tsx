@@ -90,23 +90,25 @@ const fetchRecordingsByCameraAPI = async (cameraId: number): Promise<RecordingEv
     `/api/EventRecording/GetByCamera/${cameraId}`,
     { headers }
   );
-  if (!res.data.isSuccess) throw new Error(res.data.message);
+  if (res.data.isSuccess === false) throw new Error(res.data.message ?? 'Failed to load recordings');
 
-  return res.data.data.map((dto: EventRecordingDto) => {
-    const start    = new Date(dto.recordingStart);
-    const end      = new Date(dto.recordingEnd);
-    const duration = Math.round((end.getTime() - start.getTime()) / 1000);
-    const rawUrl   = dto.url ?? dto.videoUrl ?? dto.filePath ?? '';
-    return {
-      id:         String(dto.id),
-      type:       'recording',
-      cameraId:   String(dto.cameraId),
-      cameraName: dto.cameraName ?? dto.name,
-      timestamp:  start,
-      duration,
-      videoUrl:   buildAbsoluteUrl(rawUrl),
-    };
-  });
+  return (res.data.data ?? [])
+    .filter((dto: EventRecordingDto) => !!dto.recordingStart)
+    .map((dto: EventRecordingDto) => {
+      const start    = new Date(dto.recordingStart);
+      const end      = dto.recordingEnd ? new Date(dto.recordingEnd) : new Date();
+      const duration = Math.max(0, Math.round((end.getTime() - start.getTime()) / 1000));
+      const rawUrl   = dto.url ?? dto.videoUrl ?? dto.filePath ?? '';
+      return {
+        id:         String(dto.id),
+        type:       'recording' as const,
+        cameraId:   String(dto.cameraId),
+        cameraName: dto.cameraName ?? dto.name ?? 'Camera',
+        timestamp:  start,
+        duration,
+        videoUrl:   buildAbsoluteUrl(rawUrl),
+      };
+    });
 };
 
 // ─── Formatters ────────────────────────────────────────────────────────────
@@ -728,7 +730,7 @@ export default function EventsScreen() {
     <View style={styles.container}>
       {/* Camera selector */}
       <View style={styles.selectorCard}>
-        <Text style={styles.selectorLabel}>Cameras</Text>
+        <Text style={styles.selectorLabel}>Events</Text>
         <ScrollView
           horizontal
           showsHorizontalScrollIndicator={false}
