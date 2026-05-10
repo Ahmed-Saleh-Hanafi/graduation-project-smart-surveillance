@@ -15,13 +15,15 @@ namespace Application.Services.Implementations
         private readonly IDetectionRepository _detectionRepository;
         private readonly ICameraRepository _cameraRepository;
         private readonly IImageService _imageService;
+        private readonly IAlertNotifier _alertNotifier; 
         
 
-        public DetectionService(IDetectionRepository detectionRepository, ICameraRepository cameraRepository, IImageService imageService)
+        public DetectionService(IDetectionRepository detectionRepository, ICameraRepository cameraRepository, IImageService imageService, IAlertNotifier alertNotifier)
         {
             _detectionRepository = detectionRepository;
             _cameraRepository = cameraRepository;
             _imageService = imageService;
+            _alertNotifier = alertNotifier;
         }
 
         public async Task<ApiResponse<CreateDetectionDto>> CreateDetectionAsync(CreateDetectionDto detectionDto)
@@ -32,7 +34,22 @@ namespace Application.Services.Implementations
             {
                 return ApiResponse<CreateDetectionDto>.Fail("Camera not found.");
             }
-           
+
+            //face , abnormal , weapon
+
+            if(detectionDto.Type == "face")
+            {
+                detectionDto.Description = $"Unknown Face Has been Detected by {camera.Name} camera with id {camera.Id}";
+            }
+            if (detectionDto.Type == "abnormal")
+            {
+                detectionDto.Description = $"Abnormal Behavior Has been Detected by {camera.Name} camera with id {camera.Id}";
+            } 
+            if (detectionDto.Type == "weapon")
+            {
+                detectionDto.Description = $"Weapon Has been Detected by {camera.Name} camera with id {camera.Id}";
+            }
+
 
 
             var detection = new Detection
@@ -44,16 +61,20 @@ namespace Application.Services.Implementations
                 VideoUrl = detectionDto.VideoUrl,
                 SnapShotUrl = detectionDto.SnapshotUrl,
             };
-            await _detectionRepository.AddDetectionAsync(detection);
-            
+
+            var New_detection= await _detectionRepository.AddDetectionAsync(detection);
+
+
+
+            await _alertNotifier.SendDetectionAlertAsync(MapToDto(New_detection));
+
+
+
 
 
             return ApiResponse<CreateDetectionDto>.Success(detectionDto, "Detection created successfully");
 
         }
-
-
-
 
 
 
