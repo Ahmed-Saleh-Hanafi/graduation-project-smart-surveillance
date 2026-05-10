@@ -131,27 +131,23 @@ export class RoleManagement implements OnInit {
   }
 
   refreshUser(userId: string) {
-
     this.userCameraService.getUserCameras(userId).subscribe({
       next: (res: any) => {
+        this.userCameras = Array.isArray(res) ? res : (res.data || []);
 
-        this.userCameras = Array.isArray(res)
-          ? res
-          : (res.data || []);
+        this.otherCameras = this.cameras.filter(
+          cam => !this.userCameras.some(
+            (uCam: any) => Number(uCam.id) === Number(cam.id)
+          )
+        );
 
+        this.cdr.detectChanges();
+      },
+      error: (err) => {
+        console.error(err);
+        this.cdr.detectChanges();
       }
     });
-
-    this.userCameraService.getUnassignedCameras(userId).subscribe({
-      next: (res: any) => {
-
-        this.otherCameras = Array.isArray(res)
-          ? res
-          : (res.data || []);
-
-      }
-    });
-
   } openCreate() {
     this.isEditMode = false;
     this.editForm = this.emptyForm();
