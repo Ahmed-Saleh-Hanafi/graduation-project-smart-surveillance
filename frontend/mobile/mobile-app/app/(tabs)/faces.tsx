@@ -8,7 +8,7 @@ import {
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import axios from 'axios';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -21,9 +21,8 @@ interface Camera {
 }
 
 interface Face {
-  id: string;          // kept as string in UI; API uses integer faceId
+  id: string;
   name: string;
-  role: string;
   imageUrl: string;
   createdAt: string;
   cameraId: number;
@@ -31,82 +30,100 @@ interface Face {
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
-const BASE_URL = 'http://localhost:5198';
+const BASE_URL = 'http://192.168.1.229:5198';
 
 // ─── API helpers ──────────────────────────────────────────────────────────────
 
-const authHeader = async () => {
-  const token = await AsyncStorage.getItem('userToken');
-  return token ? { Authorization: `Bearer ${token}` } : {};
+const authHeader = async (): Promise<Record<string, string>> => {
+  try {
+    const token = await AsyncStorage.getItem('userToken');
+    if (token) return { Authorization: `Bearer ${token}` };
+    return {};
+  } catch {
+    return {};
+  }
 };
 
-/** POST /api/Face/add-face  – multipart form */
+/** POST /api/Face/add-face  – multipart form (fetch-based, Android-safe) */
 const apiAddFace = async (
   cameraId: number,
   name: string,
   imageUri: string,
-): Promise<{ id: number; imageUrl: string }> => {
+): Promise<void> => {
   const headers = await authHeader();
 
-  const form = new FormData();
-  form.append('CameraId', String(cameraId));
-  form.append('Name',     name);
-
-  // React-Native FormData accepts the file as a plain object
   const filename  = imageUri.split('/').pop() ?? 'photo.jpg';
   const extension = filename.split('.').pop()?.toLowerCase() ?? 'jpg';
   const mimeType  = extension === 'png' ? 'image/png' : 'image/jpeg';
 
+  const form = new FormData();
+  form.append('CameraId', String(cameraId));
+  form.append('Name',     name);
   (form as any).append('file', {
     uri:  imageUri,
     name: filename,
     type: mimeType,
   });
 
-  const res = await axios.post(
-    `${BASE_URL}/api/Face/add-face`,
-    form,
-    {
-      headers: {
-        ...headers,
-        'Content-Type': 'multipart/form-data',
-      },
+  const response = await fetch(`${BASE_URL}/api/Face/add-face`, {
+    method:  'POST',
+    headers: {
+      ...headers,
+      Accept: 'application/json',
     },
-  );
+    body: form,
+  });
 
-  // Return whatever the server gives back; fall back gracefully
-  const data = res.data?.data ?? res.data ?? {};
-  return {
-    id:       data.id       ?? data.faceId ?? 0,
-    imageUrl: data.imageUrl ?? data.snapShotUrl ?? imageUri,
-  };
+  const text = await response.text();
+
+  if (!response.ok) {
+    console.error('apiAddFace server error:', response.status, text);
+    throw new Error(text || `Server error ${response.status}`);
+  }
 };
 
 /** GET /api/Face/get-faces/{cameraId} */
 const apiFetchFaces = async (cameraId: number): Promise<Face[]> => {
   const headers = await authHeader();
-  const res = await axios.get(
-    `${BASE_URL}/api/Face/get-faces/${cameraId}`,
-    { headers },
-  );
-  const list: any[] = res.data?.data ?? res.data ?? [];
-  return list.map(f => ({
-    id:        String(f.id ?? f.faceId ?? Date.now()),
-    name:      f.name      ?? 'Unknown',
-    role:      f.role      ?? '',
-    imageUrl:  f.imageUrl  ?? f.snapShotUrl ?? '',
-    createdAt: f.createdAt ?? new Date().toISOString(),
-    cameraId,
-  }));
+
+  const response = await fetch(`${BASE_URL}/api/Face/get-faces/${cameraId}`, {
+    headers: { ...headers, Accept: 'application/json' },
+  });
+
+  if (!response.ok) throw new Error(`Fetch faces failed: ${response.status}`);
+
+  const data = await response.json();
+  const list: any[] = data?.data ?? data ?? [];
+
+  return list.map(f => {
+    const rawUrl = f.url ?? f.imageUrl ?? f.snapShotUrl ?? '';
+    const fixedUrl =
+      rawUrl && !rawUrl.startsWith('http')
+        ? `${BASE_URL}/${rawUrl.replace(/\\/g, '/').replace(/^\/+/, '')}`
+        : rawUrl;
+    return {
+      id:        String(f.id ?? f.faceId ?? Date.now()),
+      name:      f.name      ?? 'Unknown',
+      imageUrl:  fixedUrl,
+      createdAt: f.createdAt ?? new Date().toISOString(),
+      cameraId,
+    };
+  });
 };
 
 /** DELETE /api/Face/delete-face/{faceId} */
 const apiDeleteFace = async (faceId: string): Promise<void> => {
   const headers = await authHeader();
-  await axios.delete(
-    `${BASE_URL}/api/Face/delete-face/${faceId}`,
-    { headers },
-  );
+
+  const response = await fetch(`${BASE_URL}/api/Face/delete-face/${faceId}`, {
+    method:  'DELETE',
+    headers: { ...headers, Accept: 'application/json' },
+  });
+
+  if (!response.ok) {
+    const text = await response.text();
+    throw new Error(text || `Delete failed: ${response.status}`);
+  }
 };
 
 // ─── CameraChip ───────────────────────────────────────────────────────────────
@@ -140,14 +157,19 @@ const CameraChip = ({
 
 // ─── FaceCard ─────────────────────────────────────────────────────────────────
 
-const FaceCard = ({ face, onDelete }: { face: Face; onDelete: (face: Face) => void }) => (
+const FaceCard = ({
+  face, onDelete,
+}: {
+  face: Face;
+  onDelete: (face: Face) => void;
+}) => (
   <View style={styles.card}>
-    <Image source={{ uri: face.imageUrl }} style={styles.avatar} />
+    <Image source={{ uri: face.imageUrl }} style={styles.avatar} resizeMode="cover" />
     <View style={styles.cardInfo}>
       <Text style={styles.cardName} numberOfLines={1}>{face.name}</Text>
-      <Text style={styles.cardRole} numberOfLines={1}>{face.role}</Text>
       <Text style={styles.cardDate}>
-        Added {new Date(face.createdAt).toLocaleDateString('en-US', {
+        Added{' '}
+        {new Date(face.createdAt).toLocaleDateString('en-US', {
           month: 'short', day: 'numeric', year: 'numeric',
         })}
       </Text>
@@ -168,26 +190,25 @@ interface AddFaceModalProps {
   visible: boolean;
   cameraName: string;
   onClose: () => void;
-  onSave: (name: string, role: string, imageUri: string) => Promise<void>;
+  onSave: (name: string, imageUri: string) => Promise<void>;
   isSaving: boolean;
+  bottomInset: number;
 }
 
 const AddFaceModal: React.FC<AddFaceModalProps> = ({
-  visible, cameraName, onClose, onSave, isSaving,
+  visible, cameraName, onClose, onSave, isSaving, bottomInset,
 }) => {
   const [name,     setName]     = useState('');
-  const [role,     setRole]     = useState('');
   const [imageUri, setImageUri] = useState<string | null>(null);
-  const [errors,   setErrors]   = useState<{ name?: string; role?: string; image?: string }>({});
+  const [errors,   setErrors]   = useState<{ name?: string; image?: string }>({});
 
-  const reset      = () => { setName(''); setRole(''); setImageUri(null); setErrors({}); };
+  const reset       = () => { setName(''); setImageUri(null); setErrors({}); };
   const handleClose = () => { reset(); onClose(); };
 
   const validate = () => {
     const e: typeof errors = {};
     if (!imageUri)    e.image = 'A face photo is required.';
     if (!name.trim()) e.name  = 'Full name is required.';
-    if (!role.trim()) e.role  = 'Job title / role is required.';
     setErrors(e);
     return Object.keys(e).length === 0;
   };
@@ -198,8 +219,13 @@ const AddFaceModal: React.FC<AddFaceModalProps> = ({
         text: 'Camera',
         onPress: async () => {
           const { status } = await ImagePicker.requestCameraPermissionsAsync();
-          if (status !== 'granted') { Alert.alert('Permission required', 'Please allow camera access.'); return; }
-          const r = await ImagePicker.launchCameraAsync({ allowsEditing: true, aspect: [1, 1], quality: 0.8 });
+          if (status !== 'granted') {
+            Alert.alert('Permission required', 'Please allow camera access.');
+            return;
+          }
+          const r = await ImagePicker.launchCameraAsync({
+            allowsEditing: true, aspect: [1, 1], quality: 0.8,
+          });
           if (!r.canceled) setImageUri(r.assets[0].uri);
         },
       },
@@ -207,9 +233,13 @@ const AddFaceModal: React.FC<AddFaceModalProps> = ({
         text: 'Photo Library',
         onPress: async () => {
           const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
-          if (status !== 'granted') { Alert.alert('Permission required', 'Please allow photo library access.'); return; }
+          if (status !== 'granted') {
+            Alert.alert('Permission required', 'Please allow photo library access.');
+            return;
+          }
           const r = await ImagePicker.launchImageLibraryAsync({
-            mediaTypes: ImagePicker.MediaTypeOptions.Images, allowsEditing: true, aspect: [1, 1], quality: 0.8,
+            mediaTypes: ImagePicker.MediaType.Images,
+            allowsEditing: true, aspect: [1, 1], quality: 0.8,
           });
           if (!r.canceled) setImageUri(r.assets[0].uri);
         },
@@ -220,18 +250,18 @@ const AddFaceModal: React.FC<AddFaceModalProps> = ({
 
   const handleSave = async () => {
     if (!validate()) return;
-    await onSave(name.trim(), role.trim(), imageUri!);
+    await onSave(name.trim(), imageUri!);
     reset();
   };
 
   return (
     <Modal animationType="slide" transparent visible={visible} onRequestClose={handleClose}>
-      <Pressable style={styles.overlay} onPress={handleClose}>
-        <KeyboardAvoidingView
-          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-          style={styles.sheet}
-        >
-          <Pressable onPress={e => e.stopPropagation()}>
+      <KeyboardAvoidingView
+        style={{ flex: 1 }}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      >
+        <Pressable style={styles.overlay} onPress={handleClose}>
+        <Pressable style={[styles.sheet, { paddingBottom: bottomInset + 20 }]} onPress={e => e.stopPropagation()}>
             <View style={styles.sheetHandle} />
 
             {/* Header */}
@@ -278,21 +308,9 @@ const AddFaceModal: React.FC<AddFaceModalProps> = ({
               value={name}
               onChangeText={setName}
               autoCapitalize="words"
-              returnKeyType="next"
-            />
-            {errors.name && <Text style={styles.fieldError}>{errors.name}</Text>}
-
-            {/* Role */}
-            <Text style={styles.fieldLabel}>Job Title / Role *</Text>
-            <TextInput
-              style={[styles.input, errors.role && styles.inputError]}
-              placeholder="e.g. Security Manager"
-              placeholderTextColor="#AEAEB2"
-              value={role}
-              onChangeText={setRole}
               returnKeyType="done"
             />
-            {errors.role && <Text style={styles.fieldError}>{errors.role}</Text>}
+            {errors.name && <Text style={styles.fieldError}>{errors.name}</Text>}
 
             {/* Save */}
             <TouchableOpacity
@@ -303,12 +321,11 @@ const AddFaceModal: React.FC<AddFaceModalProps> = ({
             >
               {isSaving
                 ? <ActivityIndicator color="#fff" />
-                : <Text style={styles.saveBtnText}>Save Identity</Text>
-              }
+                : <Text style={styles.saveBtnText}>Save Identity</Text>}
             </TouchableOpacity>
           </Pressable>
-        </KeyboardAvoidingView>
-      </Pressable>
+        </Pressable>
+      </KeyboardAvoidingView>
     </Modal>
   );
 };
@@ -316,26 +333,27 @@ const AddFaceModal: React.FC<AddFaceModalProps> = ({
 // ─── Main Screen ──────────────────────────────────────────────────────────────
 
 export default function FacesScreen() {
-  const [cameras,     setCameras]     = useState<Camera[]>([]);
-  const [loadingCams, setLoadingCams] = useState(true);
-  const [selectedCam, setSelectedCam] = useState<Camera | null>(null);
-
-  // faces per camera, loaded from API
-  const [allFaces,    setAllFaces]    = useState<Record<number, Face[]>>({});
-  const [loadingFaces,setLoadingFaces]= useState(false);
-
-  const [modalOpen,   setModalOpen]   = useState(false);
-  const [isSaving,    setIsSaving]    = useState(false);
+  const insets = useSafeAreaInsets();
+  const [cameras,      setCameras]      = useState<Camera[]>([]);
+  const [loadingCams,  setLoadingCams]  = useState(true);
+  const [selectedCam,  setSelectedCam]  = useState<Camera | null>(null);
+  const [allFaces,     setAllFaces]     = useState<Record<number, Face[]>>({});
+  const [loadingFaces, setLoadingFaces] = useState(false);
+  const [modalOpen,    setModalOpen]    = useState(false);
+  const [isSaving,     setIsSaving]     = useState(false);
 
   // ── Fetch cameras ────────────────────────────────────────────────────────
   const fetchCameras = useCallback(async () => {
     setLoadingCams(true);
     try {
       const headers = await authHeader();
-      const res     = await axios.get(`${BASE_URL}/api/Camera`, { headers });
-      const data: Camera[] = res.data.data ?? [];
-      setCameras(data);
-      setSelectedCam(prev => prev ?? (data[0] ?? null));
+      const response = await fetch(`${BASE_URL}/api/Camera`, {
+        headers: { ...headers, Accept: 'application/json' },
+      });
+      const data = await response.json();
+      const list: Camera[] = data?.data ?? [];
+      setCameras(list);
+      setSelectedCam(prev => prev ?? (list[0] ?? null));
     } catch (e) {
       console.error('Failed to fetch cameras:', e);
     } finally {
@@ -365,31 +383,15 @@ export default function FacesScreen() {
   const currentFaces: Face[] = selectedCam ? (allFaces[selectedCam.id] ?? []) : [];
 
   // ── Save face ─────────────────────────────────────────────────────────────
-  const handleSave = async (name: string, role: string, imageUri: string) => {
+  const handleSave = async (name: string, imageUri: string) => {
     if (!selectedCam) return;
     setIsSaving(true);
     try {
-      const result = await apiAddFace(selectedCam.id, name, imageUri);
-
-      const newFace: Face = {
-        id:        String(result.id),
-        name,
-        role,                               // role is stored locally (API has no role field)
-        imageUrl:  result.imageUrl || imageUri,
-        createdAt: new Date().toISOString(),
-        cameraId:  selectedCam.id,
-      };
-
-      setAllFaces(prev => ({
-        ...prev,
-        [selectedCam.id]: [newFace, ...(prev[selectedCam.id] ?? [])],
-      }));
+      await apiAddFace(selectedCam.id, name, imageUri);
       setModalOpen(false);
+      await fetchFacesForCamera(selectedCam);
     } catch (e: any) {
-      Alert.alert(
-        'Upload Failed',
-        e?.response?.data?.message ?? 'Could not register face. Please try again.',
-      );
+      Alert.alert('Upload Failed', e?.message ?? 'Could not register face. Please try again.');
     } finally {
       setIsSaving(false);
     }
@@ -403,7 +405,7 @@ export default function FacesScreen() {
       [
         { text: 'Cancel', style: 'cancel' },
         {
-          text: 'Remove',
+          text:  'Remove',
           style: 'destructive',
           onPress: async () => {
             try {
@@ -414,16 +416,13 @@ export default function FacesScreen() {
                 [selectedCam.id]: (prev[selectedCam.id] ?? []).filter(f => f.id !== face.id),
               }));
             } catch (e: any) {
-              Alert.alert(
-                'Delete Failed',
-                e?.response?.data?.message ?? 'Could not delete face. Please try again.',
-              );
+              Alert.alert('Delete Failed', e?.message ?? 'Could not delete face. Please try again.');
             }
           },
         },
       ],
     );
-  }, [allFaces, selectedCam]);
+  }, [selectedCam]);
 
   // ── Loading cameras ───────────────────────────────────────────────────────
   if (loadingCams) {
@@ -481,14 +480,15 @@ export default function FacesScreen() {
         <FlatList
           data={currentFaces}
           keyExtractor={item => item.id}
-          contentContainerStyle={styles.listContent}
+          contentContainerStyle={[styles.listContent, { paddingBottom: insets.bottom + 32 }]}
           ListHeaderComponent={
             selectedCam ? (
               <View style={styles.listHeader}>
                 <View>
                   <Text style={styles.listTitle}>{selectedCam.name}</Text>
                   <Text style={styles.listSub}>
-                    {currentFaces.length} {currentFaces.length === 1 ? 'face' : 'faces'} registered
+                    {currentFaces.length}{' '}
+                    {currentFaces.length === 1 ? 'face' : 'faces'} registered
                   </Text>
                 </View>
                 <TouchableOpacity
@@ -524,6 +524,7 @@ export default function FacesScreen() {
           onClose={() => setModalOpen(false)}
           onSave={handleSave}
           isSaving={isSaving}
+          bottomInset={insets.bottom}
         />
       )}
     </View>
@@ -562,10 +563,10 @@ const styles = StyleSheet.create({
     borderRadius: 20, backgroundColor: '#F2F2F7',
     borderWidth: 0.5, borderColor: 'rgba(0,0,0,0.08)',
   },
-  chipActive:         { backgroundColor: '#1C1C1E', borderColor: '#1C1C1E' },
-  chipDot:            { width: 6, height: 6, borderRadius: 3 },
-  chipText:           { fontSize: 13, fontWeight: '600', color: '#AEAEB2' },
-  chipTextActive:     { color: '#fff' },
+  chipActive:          { backgroundColor: '#1C1C1E', borderColor: '#1C1C1E' },
+  chipDot:             { width: 6, height: 6, borderRadius: 3 },
+  chipText:            { fontSize: 13, fontWeight: '600', color: '#AEAEB2' },
+  chipTextActive:      { color: '#fff' },
   chipBadge: {
     backgroundColor: 'rgba(0,0,0,0.08)', borderRadius: 10,
     paddingHorizontal: 6, paddingVertical: 1,
@@ -598,11 +599,10 @@ const styles = StyleSheet.create({
   avatar:   { width: 58, height: 58, borderRadius: 14, backgroundColor: '#F2F2F7' },
   cardInfo: { flex: 1, marginLeft: 12 },
   cardName: { fontSize: 15, fontWeight: '700', color: '#1C1C1E' },
-  cardRole: { fontSize: 12, color: '#AEAEB2', marginTop: 2 },
   cardDate: { fontSize: 11, color: '#C7C7CC', marginTop: 4 },
   deleteBtn: {
     width: 36, height: 36, borderRadius: 18,
-    backgroundColor: '#FFF5F5', justifyContent: 'center', alignItems: 'center',
+    backgroundColor: '#E5E5EA', justifyContent: 'center', alignItems: 'center',
   },
 
   emptyState: { alignItems: 'center', paddingTop: 60, gap: 8 },
@@ -620,7 +620,6 @@ const styles = StyleSheet.create({
     backgroundColor: '#fff',
     borderTopLeftRadius: 24, borderTopRightRadius: 24,
     paddingHorizontal: 20, paddingTop: 12,
-    paddingBottom: Platform.OS === 'ios' ? 8 : 20,
   },
   sheetHandle: {
     width: 36, height: 4, borderRadius: 2,

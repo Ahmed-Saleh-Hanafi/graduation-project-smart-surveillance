@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>CamGuard — User & Camera Management</title>
+  <link rel="stylesheet" href="user_management.css"/>
+</head>
+<body>
+
+<!-- TOAST CONTAINER -->
+<div class="toast-container" id="toast-container"></div>
+
+<!-- HEADER -->
+<header class="top-bar">
+  <div class="top-bar-left">
+    <div class="logo-icon">CG</div>
+    <div>
+      <h1>CamGuard</h1>
+      <span class="subtitle">User &amp; Camera Management</span>
+    </div>
+  </div>
+  <div class="top-bar-right">
+    <div class="config-field">
+      <label for="api-url">API URL</label>
+      <input id="api-url" type="text" value="http://localhost:5198"/>
+    </div>
+    <div class="config-field" style="flex:1.3">
+      <label for="auth-token">Bearer Token</label>
+      <input id="auth-token" type="text" placeholder="Paste JWT (optional)"/>
+    </div>
+  </div>
+</header>
+
+<!-- MAIN -->
+<main class="container">
+
+  <!-- TOOLBAR -->
+  <div class="toolbar">
+    <div class="toolbar-left">
+      <h2>User Management</h2>
+      <span class="user-count" id="user-count">0 users</span>
+    </div>
+    <div class="toolbar-right">
+      <button class="btn btn-outline" onclick="loadAllUsers()">↻ Refresh</button>
+      <button class="btn btn-primary" onclick="openModal('create-user-modal')">+ New User</button>
+    </div>
+  </div>
+
+  <!-- USER LIST -->
+  <div class="user-list" id="user-list">
+    <div class="empty-state">
+      <div class="empty-icon">👥</div>
+      <p>Click <strong>Refresh</strong> to load users from the API</p>
+    </div>
+  </div>
+
+</main>
+
+<!-- CREATE USER MODAL -->
+<div class="modal-overlay" id="create-user-modal">
+  <div class="modal">
+    <div class="modal-header"><h3>Create New User</h3><button class="modal-close" onclick="closeModal('create-user-modal')">×</button></div>
+    <div class="modal-body">
+      <div class="form-row">
+        <div class="form-group"><label>First Name</label><input id="cu-firstname" placeholder="John"/></div>
+        <div class="form-group"><label>Last Name</label><input id="cu-lastname" placeholder="Doe"/></div>
+      </div>
+      <div class="form-group"><label>Username</label><input id="cu-username" placeholder="johndoe"/></div>
+      <div class="form-group"><label>Email</label><input id="cu-email" type="email" placeholder="john@example.com"/></div>
+      <div class="form-group"><label>Password</label><input id="cu-password" type="password" placeholder="Min 6 characters"/></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" onclick="closeModal('create-user-modal')">Cancel</button>
+      <button class="btn btn-primary" onclick="createUser()">Create User</button>
+    </div>
+  </div>
+</div>
+
+<!-- EDIT USER MODAL -->
+<div class="modal-overlay" id="edit-user-modal">
+  <div class="modal">
+    <div class="modal-header"><h3>Edit User</h3><button class="modal-close" onclick="closeModal('edit-user-modal')">×</button></div>
+    <div class="modal-body">
+      <input type="hidden" id="eu-id"/>
+      <div class="form-row">
+        <div class="form-group"><label>First Name</label><input id="eu-firstname"/></div>
+        <div class="form-group"><label>Last Name</label><input id="eu-lastname"/></div>
+      </div>
+      <div class="form-group"><label>Username</label><input id="eu-username"/></div>
+      <div class="form-group"><label>Email</label><input id="eu-email" type="email"/></div>
+      <div class="form-group"><label>New Password (optional)</label><input id="eu-password" type="password" placeholder="Leave blank to keep"/></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" onclick="closeModal('edit-user-modal')">Cancel</button>
+      <button class="btn btn-primary" onclick="updateUser()">Save Changes</button>
+    </div>
+  </div>
+</div>
+
+<script src="user_management.js"></script>
+</body>
+</html>
