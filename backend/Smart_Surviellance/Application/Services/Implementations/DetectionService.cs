@@ -111,9 +111,28 @@ namespace Application.Services.Implementations
             return ApiResponse<List<DetectionDto>>.Success(result, "Detections retrieved successfully");
         }
 
-        
+        public async Task<ApiResponse<DetectionDto>> ResolveDetectionAsync(int id)
+        {
+            var detection = await _detectionRepository.GetByIdAsync(id);
+            if (detection == null)
+            {
+                return ApiResponse<DetectionDto>.Fail("Detection not found.");
+            }
+
+            if (detection.IsResolved)
+            {
+                return ApiResponse<DetectionDto>.Fail("Detection is already resolved.");
+            }
+
+            await _detectionRepository.ResolveDetectionAsync(id);
+
+            var detectionDto = MapToDto(detection);
+            detectionDto.IsResolved = true;
 
 
+
+            return ApiResponse<DetectionDto>.Success(detectionDto, "Detection resolved successfully.");
+        }
 
         private DetectionDto MapToDto(Detection detection)
         {
@@ -126,7 +145,9 @@ namespace Application.Services.Implementations
                 Description = detection.Description,
                 Type = detection.Type,
                 VideoUrl = detection.VideoUrl,
-                SnapShotUrl = detection.SnapShotUrl
+                SnapShotUrl = detection.SnapShotUrl,
+                IsResolved = detection.IsResolved
+
             };
         }
 
