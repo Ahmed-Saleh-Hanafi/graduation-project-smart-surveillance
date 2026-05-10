@@ -14,7 +14,9 @@ namespace Domain.Entities
         public string Type { get; set; }
         public string Description { get; set; }
         public string? VideoUrl { get; set; }
-        public Camera Camera { get; set; }        
+        public Camera Camera { get; set; }
+        
+        public bool IsResolved { get; set; } = false;
 
     }
 }

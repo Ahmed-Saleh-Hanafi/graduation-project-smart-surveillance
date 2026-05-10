@@ -107,7 +107,7 @@ builder.Services.AddScoped<ICameraService, CameraService>();
 builder.Services.AddScoped<IMediaMTXConfiqService, MediaMTXConfigService>();
 builder.Services.AddScoped<IAlertService, AlertService>();
 builder.Services.AddScoped<IAlertNotifier, AlertNotifier>();
-builder.Services.AddScoped<IFaceProcessingService,FaceProcessingService>();
+builder.Services.AddScoped<IFaceProcessingService, FaceProcessingService>();
 builder.Services.AddScoped<IFaceService, FaceService>();
 builder.Services.AddScoped<IPersonService, PersonService>();
 builder.Services.AddScoped<IDetectionService, DetectionService>();
