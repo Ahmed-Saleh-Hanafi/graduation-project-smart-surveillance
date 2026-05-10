@@ -17,10 +17,12 @@ namespace Infrastructure.Repositories
             _context = context;
         }
 
-        public async Task AddDetectionAsync(Detection detection)
+        public async Task <Detection> AddDetectionAsync(Detection detection)
         {
             await _context.Detections.AddAsync(detection);
             await _context.SaveChangesAsync();
+            return detection;
+           
         }
 
         public async Task<IEnumerable<Detection>> GetAllDetectionAsync()

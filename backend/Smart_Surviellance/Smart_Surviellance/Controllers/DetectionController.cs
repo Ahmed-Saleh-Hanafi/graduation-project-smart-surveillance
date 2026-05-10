@@ -42,6 +42,7 @@ namespace Smart_Surviellance.Controllers
         }
 
 
+
         //[HttpGet("{detectionId}")]
         //public async Task<IActionResult> GetDetectionById(int detectionId)
         //{
