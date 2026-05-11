@@ -4,10 +4,11 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import {
   View, Text, StyleSheet, ScrollView,
   TouchableOpacity, Dimensions, Animated, Easing, Modal, Pressable,
-  PanResponder, Alert, ActivityIndicator,
+  PanResponder, Alert, ActivityIndicator, Share, Platform,
 } from 'react-native';
+import { WebView } from 'react-native-webview';
+import { Audio } from 'expo-av';
 import * as FileSystem from 'expo-file-system/legacy';
-import * as Sharing from 'expo-sharing';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 
@@ -17,7 +18,9 @@ const STREAM_W  = width - 32;
 const H         = 20;
 const MIN_SZ    = 50;
 
-const BASE_URL = 'http://192.168.1.229:5198';
+const BASE_URL   = 'http://192.168.1.229:5198';
+const GO2RTC_HOST = '192.168.1.229';   // ← نفس الـ IP
+const GO2RTC_PORT = 1984;              // ← default go2rtc port
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -32,6 +35,7 @@ type Camera = {
   status?: CameraStatus;
   location?: string;
   res?: string;
+  webRTCUrl?: string;
 };
 
 type SensorKey = 'gas' | 'motion' | 'temperature' | 'sound';
@@ -41,25 +45,25 @@ type Sensor = {
   history: number[]; description: string; thresholds: { safe: number; warn: number };
 };
 
+export type EventRecording = {
+  id: number;
+  name: string;
+  cameraId: number;
+  cameraName?: string;
+  recordingStart: string;
+  recordingEnd?: string;
+  videoUrl?: string;
+};
+
+let _eventsStore: EventRecording[] = [];
+export const getEvents      = () => _eventsStore;
+export const setEventsStore = (e: EventRecording[]) => { _eventsStore = e; };
+
 type Detection = {
   id: string; name: string; confidence: number;
   bbox: { x: number; y: number; w: number; h: number };
   isBlocked: boolean;
 };
-
-export type CameraEvent = {
-  id: string;
-  type: 'recording' | 'snapshot';
-  cameraId: number;
-  cameraName: string;
-  timestamp: Date;
-  duration?: number;
-  label: string;
-};
-
-let _eventsStore: CameraEvent[] = [];
-export const getEvents = () => _eventsStore;
-export const addEvent  = (e: CameraEvent) => { _eventsStore = [e, ..._eventsStore]; };
 
 type Zone = { id: string; x: number; y: number; w: number; h: number };
 
@@ -82,9 +86,9 @@ const makeSensors = (): Sensor[] => [
     thresholds: { safe: 3, warn: 8 },
   },
   {
-    key: 'temperature', icon: 'thermometer', label: 'Temperature', value: 0, unit: '°C',
-    status: 'Loading…', statusColor: '#AEAEB2', bg: '#FFF3E0', color: '#FF9500', max: 50,
-    history: [0, 0, 0, 0, 0, 0],
+    key: 'temperature', icon: 'thermometer', label: 'Temperature', value: 22, unit: '°C',
+    status: 'Stable', statusColor: '#FF9500', bg: '#FFF3E0', color: '#FF9500', max: 50,
+    history: [22, 22, 22, 22, 22, 22],
     description: 'DHT22 measures ambient temperature. Optimal range 18–26°C.',
     thresholds: { safe: 26, warn: 35 },
   },
@@ -96,6 +100,342 @@ const makeSensors = (): Sensor[] => [
     thresholds: { safe: 40, warn: 80 },
   },
 ];
+
+// ─── Helpers ──────────────────────────────────────────────────────────────────
+
+const getAuthHeader = async () => {
+  const token = await AsyncStorage.getItem('userToken');
+  return token ? { Authorization: `Bearer ${token}` } : {};
+};
+
+// ─── go2rtc URL builder ───────────────────────────────────────────────────────
+// go2rtc stream names: حسب config.yaml بتاعك
+// لو اسم الكاميرا مثلاً "Front Door" → stream name = "front_door"
+const buildGo2RTCUrl = (cameraName: string, token?: string | null): string => {
+  // نظّف الاسم عشان يطابق go2rtc stream name
+  const streamName = cameraName
+    .toLowerCase()
+    .trim()
+    .replace(/\s+/g, '_')
+    .replace(/[^a-z0-9_-]/g, '');
+
+  // go2rtc WebRTC HTML page — دي الـ URL الصح
+  let url = `http://${GO2RTC_HOST}:${GO2RTC_PORT}/webrtc.html?src=${streamName}`;
+
+  // لو فيه token، نضيفه كـ query param
+  if (token) {
+    url += `&token=${encodeURIComponent(token)}`;
+  }
+
+  return url;
+};
+
+// ─── go2rtc API check (هل الـ stream موجود؟) ──────────────────────────────────
+const checkGo2RTCStream = async (streamName: string): Promise<boolean> => {
+  try {
+    const res = await fetch(
+      `http://${GO2RTC_HOST}:${GO2RTC_PORT}/api/streams`,
+      { signal: AbortSignal.timeout(3000) }
+    );
+    const data = await res.json();
+    return streamName in data;
+  } catch {
+    return false; // لو go2rtc مش شغال أو مش reachable
+  }
+};
+
+// ─── WebRTC URL Hook ──────────────────────────────────────────────────────────
+
+const useWebRTCUrl = (camera: Camera | null) => {
+  const [webRTCUrl,     setWebRTCUrl]     = useState<string | null>(null);
+  const [loading,       setLoading]       = useState(false);
+  const [error,         setError]         = useState<string | null>(null);
+  const [streamExists,  setStreamExists]  = useState<boolean | null>(null);
+
+  useEffect(() => {
+    if (!camera) { setWebRTCUrl(null); return; }
+
+    let cancelled = false;
+
+    const init = async () => {
+      setLoading(true);
+      setError(null);
+
+      try {
+        // نبني الـ URL مباشرة من go2rtc على port 1984 — نتجاهل الـ backend خالص
+        // لأن الـ backend بيرجع port 8889 اللي مش صح
+        const streamName = camera.name
+          .toLowerCase().trim()
+          .replace(/\s+/g, '_')
+          .replace(/[^a-z0-9_-]/g, '');
+
+        // تحقق إن الـ stream موجود في go2rtc
+        const exists = await checkGo2RTCStream(streamName);
+        if (!cancelled) setStreamExists(exists);
+
+        if (exists) {
+          if (!cancelled) {
+            setWebRTCUrl(`http://${GO2RTC_HOST}:${GO2RTC_PORT}/webrtc.html?src=${streamName}`);
+          }
+        } else {
+          // جرب باسم تاني — camera_{id}
+          const altName = `camera_${camera.id}`;
+          const altExists = await checkGo2RTCStream(altName);
+          if (!cancelled) {
+            if (altExists) {
+              setWebRTCUrl(`http://${GO2RTC_HOST}:${GO2RTC_PORT}/webrtc.html?src=${altName}`);
+            } else {
+              // خد أول stream موجود في go2rtc
+              try {
+                const res = await fetch(`http://${GO2RTC_HOST}:${GO2RTC_PORT}/api/streams`, { signal: AbortSignal.timeout(3000) });
+                const streams = await res.json();
+                const keys = Object.keys(streams);
+                if (keys.length > 0) {
+                  setWebRTCUrl(`http://${GO2RTC_HOST}:${GO2RTC_PORT}/webrtc.html?src=${keys[0]}`);
+                  setError(`Using stream "${keys[0]}" — rename it to "${streamName}" in go2rtc config`);
+                } else {
+                  setError('No streams found in go2rtc. Check your config.yaml');
+                  setWebRTCUrl(null);
+                }
+              } catch {
+                setWebRTCUrl(null);
+              }
+            }
+          }
+        }
+      } catch (e: any) {
+        if (!cancelled) {
+          setError('Could not connect to go2rtc on port 1984');
+          setWebRTCUrl(null);
+        }
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    };
+
+    init();
+    return () => { cancelled = true; };
+  }, [camera?.id, camera?.name]);
+
+  return { webRTCUrl, loading, error, streamExists };
+};
+
+// ─── go2rtc WebView HTML injector ─────────────────────────────────────────────
+// بدل ما نفتح الـ webrtc.html page مباشرة، ندي go2rtc JS API
+// عشان نتحكم في الـ stream بشكل أحسن داخل WebView
+
+const buildWebRTCInlineHTML = (streamName: string, token?: string | null): string => {
+  const wsUrl = `ws://${GO2RTC_HOST}:${GO2RTC_PORT}/api/ws?src=${streamName}${token ? `&token=${encodeURIComponent(token)}` : ''}`;
+  const whepUrl = `http://${GO2RTC_HOST}:${GO2RTC_PORT}/api/whep?src=${streamName}${token ? `&token=${encodeURIComponent(token)}` : ''}`;
+
+  return `<!DOCTYPE html>
+<html>
+<head>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { background: #000; width: 100vw; height: 100vh; overflow: hidden; display: flex; align-items: center; justify-content: center; }
+  video { width: 100%; height: 100%; object-fit: contain; }
+  #status { position: absolute; top: 8px; left: 8px; color: rgba(255,255,255,0.5); font-size: 10px; font-family: monospace; background: rgba(0,0,0,0.5); padding: 3px 7px; border-radius: 4px; }
+  #err { position: absolute; bottom: 8px; left: 8px; right: 8px; color: #FF9500; font-size: 10px; font-family: monospace; background: rgba(0,0,0,0.7); padding: 4px 8px; border-radius: 4px; display:none; text-align:center; }
+</style>
+</head>
+<body>
+<video id="video" autoplay playsinline muted></video>
+<div id="status">Connecting…</div>
+<div id="err"></div>
+<script>
+const video   = document.getElementById('video');
+const status  = document.getElementById('status');
+const errBox  = document.getElementById('err');
+let pc = null;
+let retries = 0;
+
+function showErr(msg) {
+  errBox.style.display = 'block';
+  errBox.textContent = msg;
+}
+
+async function startWHEP() {
+  try {
+    pc = new RTCPeerConnection({
+      iceServers: [],
+      iceTransportPolicy: 'all',
+      bundlePolicy: 'max-bundle',
+    });
+
+    pc.ontrack = (e) => {
+      status.textContent = 'Connected ✓';
+      if (e.streams && e.streams[0]) {
+        video.srcObject = e.streams[0];
+      }
+    };
+
+    pc.oniceconnectionstatechange = () => {
+      status.textContent = 'ICE: ' + pc.iceConnectionState;
+      if (pc.iceConnectionState === 'failed' || pc.iceConnectionState === 'disconnected') {
+        scheduleRetry();
+      }
+    };
+
+    // Add transceivers (receive only)
+    pc.addTransceiver('video', { direction: 'recvonly' });
+    pc.addTransceiver('audio', { direction: 'recvonly' });
+
+    const offer = await pc.createOffer();
+    await pc.setLocalDescription(offer);
+
+    // Wait for ICE gathering
+    await new Promise((resolve) => {
+      if (pc.iceGatheringState === 'complete') { resolve(); return; }
+      const check = () => {
+        if (pc.iceGatheringState === 'complete') { pc.removeEventListener('icegatheringstatechange', check); resolve(); }
+      };
+      pc.addEventListener('icegatheringstatechange', check);
+      setTimeout(resolve, 3000); // timeout fallback
+    });
+
+    const sdp = pc.localDescription;
+
+    const resp = await fetch('${whepUrl}', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/sdp' },
+      body: sdp.sdp,
+    });
+
+    if (!resp.ok) {
+      throw new Error('WHEP failed: ' + resp.status + ' ' + await resp.text());
+    }
+
+    const answer = await resp.text();
+    await pc.setRemoteDescription({ type: 'answer', sdp: answer });
+    errBox.style.display = 'none';
+
+  } catch (e) {
+    status.textContent = 'Error';
+    showErr(e.message || 'Connection failed');
+    scheduleRetry();
+  }
+}
+
+function scheduleRetry() {
+  if (retries >= 5) { showErr('Max retries reached'); return; }
+  retries++;
+  const delay = Math.min(1000 * retries, 5000);
+  status.textContent = 'Retrying in ' + (delay/1000) + 's…';
+  if (pc) { try { pc.close(); } catch(_) {} pc = null; }
+  setTimeout(startWHEP, delay);
+}
+
+// Start on load
+startWHEP();
+</script>
+</body>
+</html>`;
+};
+
+// ─── WebRTC Stream Component ──────────────────────────────────────────────────
+
+const WebRTCStream = ({
+  camera,
+  style,
+}: {
+  camera: Camera;
+  style?: object;
+}) => {
+  const [streamUrl, setStreamUrl] = useState<string | null>(null);
+  const [error,     setError]     = useState(false);
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      const streamName = camera.name
+        .toLowerCase().trim()
+        .replace(/\s+/g, '_')
+        .replace(/[^a-z0-9_-]/g, '');
+
+      // تحقق من go2rtc streams API عشان نلاقي الاسم الصح
+      try {
+        const res  = await fetch(`http://${GO2RTC_HOST}:${GO2RTC_PORT}/api/streams`, { signal: AbortSignal.timeout(3000) });
+        const data = await res.json();
+        const keys = Object.keys(data);
+
+        let chosen = streamName;
+        if (!(streamName in data)) {
+          // جرب camera_{id}
+          const altName = `camera_${camera.id}`;
+          if (altName in data) {
+            chosen = altName;
+          } else if (keys.length > 0) {
+            // خد أول stream موجود
+            chosen = keys[0];
+          }
+        }
+
+        if (!cancelled) setStreamUrl(`http://${GO2RTC_HOST}:${GO2RTC_PORT}/webrtc.html?src=${chosen}`);
+      } catch {
+        // go2rtc API مش accessible — جرب مباشرة
+        if (!cancelled) setStreamUrl(`http://${GO2RTC_HOST}:${GO2RTC_PORT}/webrtc.html?src=${streamName}`);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [camera.id, camera.name]);
+
+  if (!streamUrl) {
+    return (
+      <View style={[{ flex: 1, backgroundColor: '#000', alignItems: 'center', justifyContent: 'center', gap: 8 }, style]}>
+        <ActivityIndicator color="#00FF88" />
+        <Text style={{ color: 'rgba(0,255,136,0.5)', fontSize: 10, fontFamily: 'monospace' }}>Connecting to go2rtc…</Text>
+      </View>
+    );
+  }
+
+  if (error) {
+    return (
+      <View style={[{ flex: 1, backgroundColor: '#0A0A0A', alignItems: 'center', justifyContent: 'center', gap: 8 }, style]}>
+        <Ionicons name="videocam-off-outline" size={32} color="rgba(255,255,255,0.1)" />
+        <Text style={{ color: 'rgba(255,255,255,0.3)', fontSize: 10, fontFamily: 'monospace' }}>Stream unavailable</Text>
+        <TouchableOpacity
+          onPress={() => { setError(false); setStreamUrl(null); }}
+          style={{ marginTop: 4, backgroundColor: 'rgba(0,255,136,0.1)', paddingHorizontal: 14, paddingVertical: 6, borderRadius: 20 }}
+        >
+          <Text style={{ color: '#00FF88', fontSize: 11, fontWeight: '700' }}>Retry</Text>
+        </TouchableOpacity>
+      </View>
+    );
+  }
+
+  return (
+    <WebView
+      source={{ uri: streamUrl }}
+      style={[{ flex: 1, backgroundColor: '#000' }, style]}
+      allowsInlineMediaPlayback
+      mediaPlaybackRequiresUserAction={false}
+      javaScriptEnabled
+      domStorageEnabled
+      originWhitelist={['*']}
+      mixedContentMode="always"
+      scrollEnabled={false}
+      showsHorizontalScrollIndicator={false}
+      showsVerticalScrollIndicator={false}
+      onError={(e) => {
+        console.warn('WebRTC stream error:', e.nativeEvent.description);
+        setError(true);
+      }}
+      onHttpError={(e) => {
+        console.warn('WebRTC HTTP error:', e.nativeEvent.statusCode);
+        if (e.nativeEvent.statusCode >= 400) setError(true);
+      }}
+      renderLoading={() => (
+        <View style={[StyleSheet.absoluteFill, { backgroundColor: '#000', alignItems: 'center', justifyContent: 'center', gap: 8 }]}>
+          <ActivityIndicator color="#00FF88" size="large" />
+          <Text style={{ color: 'rgba(0,255,136,0.5)', fontSize: 10, fontFamily: 'monospace' }}>Loading stream…</Text>
+        </View>
+      )}
+      startInLoadingState
+    />
+  );
+};
 
 // ─── Clock ────────────────────────────────────────────────────────────────────
 
@@ -150,11 +490,7 @@ const ZoneBox = ({
       onPanResponderGrant: () => { snap.current = zone; },
       onPanResponderMove: (_, gs) => {
         const s = snap.current;
-        onUpdate({
-          ...s,
-          x: clamp(s.x + gs.dx, 0, cW - s.w),
-          y: clamp(s.y + gs.dy, 0, cH - s.h),
-        });
+        onUpdate({ ...s, x: clamp(s.x + gs.dx, 0, cW - s.w), y: clamp(s.y + gs.dy, 0, cH - s.h) });
       },
     })
   ).current;
@@ -168,20 +504,16 @@ const ZoneBox = ({
       const s = snap.current;
       let nx = s.x, ny = s.y, nw = s.w, nh = s.h;
       if (corner === 'tl') {
-        nx = clamp(s.x + dx, 0, s.x + s.w - MIN_SZ);
-        ny = clamp(s.y + dy, 0, s.y + s.h - MIN_SZ);
+        nx = clamp(s.x + dx, 0, s.x + s.w - MIN_SZ); ny = clamp(s.y + dy, 0, s.y + s.h - MIN_SZ);
         nw = s.w - (nx - s.x); nh = s.h - (ny - s.y);
       } else if (corner === 'tr') {
         ny = clamp(s.y + dy, 0, s.y + s.h - MIN_SZ);
-        nw = clamp(s.w + dx, MIN_SZ, cW - s.x);
-        nh = s.h - (ny - s.y);
+        nw = clamp(s.w + dx, MIN_SZ, cW - s.x); nh = s.h - (ny - s.y);
       } else if (corner === 'bl') {
         nx = clamp(s.x + dx, 0, s.x + s.w - MIN_SZ);
-        nw = s.w - (nx - s.x);
-        nh = clamp(s.h + dy, MIN_SZ, cH - s.y);
+        nw = s.w - (nx - s.x); nh = clamp(s.h + dy, MIN_SZ, cH - s.y);
       } else {
-        nw = clamp(s.w + dx, MIN_SZ, cW - s.x);
-        nh = clamp(s.h + dy, MIN_SZ, cH - s.y);
+        nw = clamp(s.w + dx, MIN_SZ, cW - s.x); nh = clamp(s.h + dy, MIN_SZ, cH - s.y);
       }
       onUpdate({ ...s, x: nx, y: ny, w: nw, h: nh });
     },
@@ -196,34 +528,21 @@ const ZoneBox = ({
 
   return (
     <View style={{ position: 'absolute', left: zone.x, top: zone.y, width: zone.w, height: zone.h }}>
-      <View
-        {...bodyPan.panHandlers}
-        style={{
-          position: 'absolute',
-          top: H / 2, left: H / 2, right: H / 2, bottom: H / 2,
-          borderWidth: 1.5, borderColor: '#00FF88', borderStyle: 'dashed',
-          backgroundColor: 'rgba(0,255,136,0.07)',
-          alignItems: 'center', justifyContent: 'center',
-        }}
-      >
-        {editMode && (
-          <Ionicons name="move-outline" size={11} color="rgba(0,255,136,0.5)" style={{ marginTop: 3 }} />
-        )}
+      <View {...bodyPan.panHandlers} style={{
+        position: 'absolute', top: H / 2, left: H / 2, right: H / 2, bottom: H / 2,
+        borderWidth: 1.5, borderColor: '#00FF88', borderStyle: 'dashed',
+        backgroundColor: 'rgba(0,255,136,0.07)', alignItems: 'center', justifyContent: 'center',
+      }}>
+        {editMode && <Ionicons name="move-outline" size={11} color="rgba(0,255,136,0.5)" />}
       </View>
       {editMode && (
-        <TouchableOpacity
-          style={styles.zoneDeleteBtn}
-          onPress={() => onDelete(zone.id)}
-          hitSlop={{ top: 10, left: 10, right: 10, bottom: 10 }}
-        >
+        <TouchableOpacity style={styles.zoneDeleteBtn} onPress={() => onDelete(zone.id)}>
           <Ionicons name="close" size={10} color="#fff" />
         </TouchableOpacity>
       )}
       {editMode && [
-        { pan: tlPan, pos: { top: 0,    left: 0    } },
-        { pan: trPan, pos: { top: 0,    right: 0   } },
-        { pan: blPan, pos: { bottom: 0, left: 0    } },
-        { pan: brPan, pos: { bottom: 0, right: 0   } },
+        { pan: tlPan, pos: { top: 0, left: 0 } }, { pan: trPan, pos: { top: 0, right: 0 } },
+        { pan: blPan, pos: { bottom: 0, left: 0 } }, { pan: brPan, pos: { bottom: 0, right: 0 } },
       ].map(({ pan, pos }, i) => (
         <View key={i} {...pan.panHandlers} style={[styles.cornerHandle, pos]}>
           <Ionicons name="resize-outline" size={10} color="#fff" />
@@ -235,71 +554,46 @@ const ZoneBox = ({
 
 // ─── DrawCanvas ───────────────────────────────────────────────────────────────
 
-const DrawCanvas = ({
-  zones, cW, cH, onAdd,
-}: {
-  zones: Zone[]; cW: number; cH: number;
-  onAdd: (z: Zone) => void;
+const DrawCanvas = ({ zones, cW, cH, onAdd }: {
+  zones: Zone[]; cW: number; cH: number; onAdd: (z: Zone) => void;
 }) => {
   const start = useRef<{ x: number; y: number } | null>(null);
   const [draft, setDraft] = useState<{ x: number; y: number; w: number; h: number } | null>(null);
   const draftRef = useRef(draft);
   useEffect(() => { draftRef.current = draft; }, [draft]);
 
-  const pan = useRef(
-    PanResponder.create({
-      onStartShouldSetPanResponder: () => true,
-      onMoveShouldSetPanResponder:  () => true,
-      onPanResponderGrant: (e) => {
-        const { locationX: lx, locationY: ly } = e.nativeEvent;
-        start.current = { x: clamp(lx, 0, cW), y: clamp(ly, 0, cH) };
-        setDraft({ x: start.current.x, y: start.current.y, w: 0, h: 0 });
-      },
-      onPanResponderMove: (_, gs) => {
-        if (!start.current) return;
-        const sx = start.current.x, sy = start.current.y;
-        const ex = clamp(sx + gs.dx, 0, cW);
-        const ey = clamp(sy + gs.dy, 0, cH);
-        setDraft({
-          x: Math.min(sx, ex), y: Math.min(sy, ey),
-          w: Math.abs(ex - sx), h: Math.abs(ey - sy),
-        });
-      },
-      onPanResponderRelease: () => {
-        const d = draftRef.current;
-        if (d && d.w >= MIN_SZ && d.h >= MIN_SZ) {
-          onAdd({ id: makeZoneId(), ...d });
-        }
-        start.current = null;
-        setDraft(null);
-      },
-    })
-  ).current;
+  const pan = useRef(PanResponder.create({
+    onStartShouldSetPanResponder: () => true,
+    onMoveShouldSetPanResponder:  () => true,
+    onPanResponderGrant: (e) => {
+      const { locationX: lx, locationY: ly } = e.nativeEvent;
+      start.current = { x: clamp(lx, 0, cW), y: clamp(ly, 0, cH) };
+      setDraft({ x: start.current.x, y: start.current.y, w: 0, h: 0 });
+    },
+    onPanResponderMove: (_, gs) => {
+      if (!start.current) return;
+      const sx = start.current.x, sy = start.current.y;
+      const ex = clamp(sx + gs.dx, 0, cW), ey = clamp(sy + gs.dy, 0, cH);
+      setDraft({ x: Math.min(sx, ex), y: Math.min(sy, ey), w: Math.abs(ex - sx), h: Math.abs(ey - sy) });
+    },
+    onPanResponderRelease: () => {
+      const d = draftRef.current;
+      if (d && d.w >= MIN_SZ && d.h >= MIN_SZ) onAdd({ id: makeZoneId(), ...d });
+      start.current = null; setDraft(null);
+    },
+  })).current;
 
   return (
     <View style={[StyleSheet.absoluteFill, { zIndex: 15 }]} {...pan.panHandlers}>
       {zones.map(z => (
-        <View key={`ghost_${z.id}`} pointerEvents="none" style={{
-          position: 'absolute', left: z.x, top: z.y, width: z.w, height: z.h,
-        }}>
-          <View style={{
-            flex: 1, margin: H / 2, borderWidth: 1.5,
-            borderColor: '#00FF88', borderStyle: 'dashed',
-            backgroundColor: 'rgba(0,255,136,0.07)',
-          }} />
+        <View key={`ghost_${z.id}`} pointerEvents="none" style={{ position: 'absolute', left: z.x, top: z.y, width: z.w, height: z.h }}>
+          <View style={{ flex: 1, margin: H / 2, borderWidth: 1.5, borderColor: '#00FF88', borderStyle: 'dashed', backgroundColor: 'rgba(0,255,136,0.07)' }} />
         </View>
       ))}
       {draft && draft.w > 4 && draft.h > 4 && (
-        <View pointerEvents="none" style={{
-          position: 'absolute',
-          left: draft.x, top: draft.y, width: draft.w, height: draft.h,
-          borderWidth: 1.5, borderColor: '#FF9500', borderStyle: 'dashed',
-          backgroundColor: 'rgba(255,149,0,0.08)',
-        }}>
+        <View pointerEvents="none" style={{ position: 'absolute', left: draft.x, top: draft.y, width: draft.w, height: draft.h, borderWidth: 1.5, borderColor: '#FF9500', borderStyle: 'dashed', backgroundColor: 'rgba(255,149,0,0.08)' }}>
           {draft.w >= MIN_SZ && draft.h >= MIN_SZ && (
-            <View style={styles.draftLabel}>
-              <Text style={styles.draftLabelText}>{Math.round(draft.w)} × {Math.round(draft.h)}</Text>
-            </View>
+            <View style={styles.draftLabel}><Text style={styles.draftLabelText}>{Math.round(draft.w)} × {Math.round(draft.h)}</Text></View>
           )}
         </View>
       )}
@@ -318,9 +612,7 @@ const DrawCanvas = ({
 const RecordingTimer = ({ startTime }: { startTime: Date }) => {
   const [elapsed, setElapsed] = useState(0);
   useEffect(() => {
-    const id = setInterval(() => {
-      setElapsed(Math.floor((Date.now() - startTime.getTime()) / 1000));
-    }, 1000);
+    const id = setInterval(() => setElapsed(Math.floor((Date.now() - startTime.getTime()) / 1000)), 1000);
     return () => clearInterval(id);
   }, [startTime]);
   const mm = String(Math.floor(elapsed / 60)).padStart(2, '0');
@@ -333,50 +625,32 @@ const RecordingTimer = ({ startTime }: { startTime: Date }) => {
   );
 };
 
-// ─── Pro Stream Overlay ───────────────────────────────────────────────────────
-// Renders the professional CCTV HUD on top of the video feed
+// ─── Stream HUD ───────────────────────────────────────────────────────────────
 
 const StreamHUD = ({
-  camera,
-  detections,
-  zones,
-  zoneMode,
-  isRecording,
-  recordingStart,
-  onZoneAdd,
-  onZoneUpdate,
-  onZoneDelete,
-  onExpand,
+  camera, detections, zones, zoneMode, isRecording, recordingStart,
+  onZoneAdd, onZoneUpdate, onZoneDelete, onExpand,
+  webRTCReady,
 }: {
-  camera: Camera;
-  detections: Detection[];
-  zones: Zone[];
-  zoneMode: ZoneMode;
-  isRecording: boolean;
-  recordingStart: Date | null;
-  onZoneAdd: (z: Zone) => void;
-  onZoneUpdate: (z: Zone) => void;
-  onZoneDelete: (id: string) => void;
-  onExpand: () => void;
+  camera: Camera; detections: Detection[]; zones: Zone[]; zoneMode: ZoneMode;
+  isRecording: boolean; recordingStart: Date | null;
+  onZoneAdd: (z: Zone) => void; onZoneUpdate: (z: Zone) => void;
+  onZoneDelete: (id: string) => void; onExpand: () => void;
+  webRTCReady: boolean;
 }) => {
-  const scanAnim = useRef(new Animated.Value(0)).current;
+  const scanAnim  = useRef(new Animated.Value(0)).current;
   const blinkAnim = useRef(new Animated.Value(1)).current;
 
   useEffect(() => {
-    const loop = Animated.loop(
-      Animated.timing(scanAnim, { toValue: 1, duration: 3000, easing: Easing.linear, useNativeDriver: true })
-    );
-    loop.start();
-    return () => loop.stop();
+    const loop = Animated.loop(Animated.timing(scanAnim, { toValue: 1, duration: 3000, easing: Easing.linear, useNativeDriver: true }));
+    loop.start(); return () => loop.stop();
   }, []);
 
   useEffect(() => {
-    const loop = Animated.loop(
-      Animated.sequence([
-        Animated.timing(blinkAnim, { toValue: 0, duration: 600, useNativeDriver: true }),
-        Animated.timing(blinkAnim, { toValue: 1, duration: 600, useNativeDriver: true }),
-      ])
-    );
+    const loop = Animated.loop(Animated.sequence([
+      Animated.timing(blinkAnim, { toValue: 0, duration: 600, useNativeDriver: true }),
+      Animated.timing(blinkAnim, { toValue: 1, duration: 600, useNativeDriver: true }),
+    ]));
     if (isRecording) loop.start();
     else { loop.stop(); blinkAnim.setValue(1); }
     return () => loop.stop();
@@ -385,40 +659,30 @@ const StreamHUD = ({
   return (
     <View style={streamStyles.hudRoot}>
 
-      {/* Scanlines overlay */}
+      {/* ── WebRTC Stream (bottom layer) ── */}
+      <WebRTCStream camera={camera} style={StyleSheet.absoluteFillObject} />
+
+      {/* ── HUD Overlays ── */}
       <View style={streamStyles.scanlines} pointerEvents="none">
-        {Array.from({ length: 12 }).map((_, i) => (
-          <View key={i} style={streamStyles.scanlineRow} />
-        ))}
+        {Array.from({ length: 12 }).map((_, i) => <View key={i} style={streamStyles.scanlineRow} />)}
       </View>
+      <Animated.View pointerEvents="none" style={[streamStyles.movingScan, {
+        transform: [{ translateY: scanAnim.interpolate({ inputRange: [0, 1], outputRange: [-STREAM_H / 2, STREAM_H / 2] }) }],
+      }]} />
 
-      {/* Moving scan line */}
-      <Animated.View
-        pointerEvents="none"
-        style={[streamStyles.movingScan, {
-          transform: [{
-            translateY: scanAnim.interpolate({
-              inputRange: [0, 1],
-              outputRange: [-STREAM_H / 2, STREAM_H / 2],
-            }),
-          }],
-        }]}
-      />
-
-      {/* Corner brackets */}
+      {/* Corners */}
       {[
-        { top: 8, left: 8, rotate: '0deg' },
-        { top: 8, right: 8, rotate: '90deg' },
+        { top: 8,  left: 8,  rotate: '0deg'   },
+        { top: 8,  right: 8, rotate: '90deg'  },
         { bottom: 8, left: 8, rotate: '-90deg' },
         { bottom: 8, right: 8, rotate: '180deg' },
       ].map((pos, i) => (
         <View key={i} pointerEvents="none" style={[streamStyles.bracket, pos]}>
-          <View style={streamStyles.bracketH} />
-          <View style={streamStyles.bracketV} />
+          <View style={streamStyles.bracketH} /><View style={streamStyles.bracketV} />
         </View>
       ))}
 
-      {/* Top-left: Camera ID + REC */}
+      {/* Top-left */}
       <View style={streamStyles.topLeft} pointerEvents="none">
         <View style={streamStyles.camIdPill}>
           <View style={[streamStyles.statusDotTiny, { backgroundColor: camera.status === 'IDLE' ? '#FF9500' : '#00FF88' }]} />
@@ -431,32 +695,24 @@ const StreamHUD = ({
         )}
       </View>
 
-      {/* Top-right: Clock + Resolution */}
+      {/* Top-right */}
       <View style={streamStyles.topRight} pointerEvents="none">
         <LiveClock />
         <Text style={streamStyles.resText}>{camera.res ?? '1080p'} · 30fps</Text>
       </View>
 
-      {/* Bottom-left: Camera name + IP */}
+      {/* Bottom-left */}
       <View style={streamStyles.bottomLeft} pointerEvents="none">
         <Text style={streamStyles.camNameHud} numberOfLines={1}>{camera.name.toUpperCase()}</Text>
         <Text style={streamStyles.camSubHud}>{camera.ipAddress}:{camera.port}</Text>
       </View>
 
-      {/* Bottom-right: AI detection count */}
+      {/* Bottom-right */}
       <View style={streamStyles.bottomRight} pointerEvents="none">
         {detections.length > 0 && (
-          <View style={[streamStyles.detCountBadge, {
-            borderColor: detections.some(d => d.isBlocked) ? '#FF3B30' : '#00FF88',
-          }]}>
-            <Ionicons
-              name="person-outline"
-              size={10}
-              color={detections.some(d => d.isBlocked) ? '#FF3B30' : '#00FF88'}
-            />
-            <Text style={[streamStyles.detCountText, {
-              color: detections.some(d => d.isBlocked) ? '#FF3B30' : '#00FF88',
-            }]}>
+          <View style={[streamStyles.detCountBadge, { borderColor: detections.some(d => d.isBlocked) ? '#FF3B30' : '#00FF88' }]}>
+            <Ionicons name="person-outline" size={10} color={detections.some(d => d.isBlocked) ? '#FF3B30' : '#00FF88'} />
+            <Text style={[streamStyles.detCountText, { color: detections.some(d => d.isBlocked) ? '#FF3B30' : '#00FF88' }]}>
               {detections.length} detected
             </Text>
           </View>
@@ -467,26 +723,29 @@ const StreamHUD = ({
             <Text style={streamStyles.zoneBadgeText}>{zones.length} zone{zones.length !== 1 ? 's' : ''}</Text>
           </View>
         )}
+        <View style={streamStyles.webrtcBadge}>
+          <View style={[streamStyles.webrtcDot, { backgroundColor: webRTCReady ? '#00FF88' : '#FF9500' }]} />
+          <Text style={[streamStyles.webrtcBadgeText, { color: webRTCReady ? '#00FF88' : '#FF9500' }]}>
+            {webRTCReady ? 'WebRTC' : 'Connecting'}
+          </Text>
+        </View>
       </View>
 
       {/* Detection boxes */}
       {detections.map(det => (
         <View key={det.id} pointerEvents="none" style={[streamStyles.detBox, {
-          left: `${det.bbox.x * 100}%` as any,
-          top:  `${det.bbox.y * 100}%` as any,
+          left:   `${det.bbox.x * 100}%` as any,
+          top:    `${det.bbox.y * 100}%` as any,
           width:  `${det.bbox.w * 100}%` as any,
           height: `${det.bbox.h * 100}%` as any,
           borderColor: det.isBlocked ? '#FF3B30' : '#00FF88',
         }]}>
-          {/* Corner accents on detection box */}
           <View style={[streamStyles.detCorner, { top: -1, left: -1, borderTopWidth: 2, borderLeftWidth: 2, borderColor: det.isBlocked ? '#FF3B30' : '#00FF88' }]} />
           <View style={[streamStyles.detCorner, { top: -1, right: -1, borderTopWidth: 2, borderRightWidth: 2, borderColor: det.isBlocked ? '#FF3B30' : '#00FF88' }]} />
           <View style={[streamStyles.detCorner, { bottom: -1, left: -1, borderBottomWidth: 2, borderLeftWidth: 2, borderColor: det.isBlocked ? '#FF3B30' : '#00FF88' }]} />
           <View style={[streamStyles.detCorner, { bottom: -1, right: -1, borderBottomWidth: 2, borderRightWidth: 2, borderColor: det.isBlocked ? '#FF3B30' : '#00FF88' }]} />
           <View style={[streamStyles.detLabel, { backgroundColor: det.isBlocked ? 'rgba(255,59,48,0.85)' : 'rgba(0,255,136,0.85)' }]}>
-            <Text style={streamStyles.detLabelText}>
-              {det.isBlocked ? '✕ ' : '✓ '}{det.name.toUpperCase()}
-            </Text>
+            <Text style={streamStyles.detLabelText}>{det.isBlocked ? '✕ ' : '✓ '}{det.name.toUpperCase()}</Text>
             <Text style={streamStyles.detConfText}>{Math.round(det.confidence * 100)}%</Text>
           </View>
         </View>
@@ -495,37 +754,15 @@ const StreamHUD = ({
       {/* Zones */}
       {zones.map(z =>
         zoneMode === 'off' ? (
-          <View key={z.id} pointerEvents="none" style={{
-            position: 'absolute', left: z.x, top: z.y, width: z.w, height: z.h,
-          }}>
-            <View style={{
-              flex: 1, margin: H / 2, borderWidth: 1.5,
-              borderColor: '#00FF88', borderStyle: 'dashed',
-              backgroundColor: 'rgba(0,255,136,0.06)',
-            }} />
+          <View key={z.id} pointerEvents="none" style={{ position: 'absolute', left: z.x, top: z.y, width: z.w, height: z.h }}>
+            <View style={{ flex: 1, margin: H / 2, borderWidth: 1.5, borderColor: '#00FF88', borderStyle: 'dashed', backgroundColor: 'rgba(0,255,136,0.06)' }} />
           </View>
         ) : (
-          <ZoneBox
-            key={z.id} zone={z}
-            cW={STREAM_W} cH={STREAM_H}
-            editMode={zoneMode === 'edit'}
-            onDelete={onZoneDelete}
-            onUpdate={onZoneUpdate}
-          />
+          <ZoneBox key={z.id} zone={z} cW={STREAM_W} cH={STREAM_H} editMode={zoneMode === 'edit'} onDelete={onZoneDelete} onUpdate={onZoneUpdate} />
         )
       )}
-
-      {zoneMode === 'draw' && (
-        <DrawCanvas zones={zones} cW={STREAM_W} cH={STREAM_H} onAdd={onZoneAdd} />
-      )}
-
-      {/* Expand tap target */}
-      {zoneMode === 'off' && (
-        <Pressable
-          style={[StyleSheet.absoluteFill, { zIndex: 5 }]}
-          onPress={onExpand}
-        />
-      )}
+      {zoneMode === 'draw' && <DrawCanvas zones={zones} cW={STREAM_W} cH={STREAM_H} onAdd={onZoneAdd} />}
+      {zoneMode === 'off' && <Pressable style={[StyleSheet.absoluteFill, { zIndex: 5 }]} onPress={onExpand} />}
     </View>
   );
 };
@@ -543,22 +780,24 @@ const CameraInfoSheet = ({ camera, onClose }: { camera: Camera; onClose: () => v
     ]).start();
   }, []);
 
-  const dismiss = () => {
-    Animated.parallel([
-      Animated.timing(slideAnim, { toValue: 400, duration: 240, easing: Easing.in(Easing.cubic), useNativeDriver: true }),
-      Animated.timing(fadeAnim,  { toValue: 0,   duration: 200, useNativeDriver: true }),
-    ]).start(onClose);
-  };
+  const dismiss = () => Animated.parallel([
+    Animated.timing(slideAnim, { toValue: 400, duration: 240, easing: Easing.in(Easing.cubic), useNativeDriver: true }),
+    Animated.timing(fadeAnim,  { toValue: 0,   duration: 200, useNativeDriver: true }),
+  ]).start(onClose);
+
+  const streamName = camera.name.toLowerCase().trim().replace(/\s+/g, '_').replace(/[^a-z0-9_-]/g, '');
+  const go2rtcUrl  = buildGo2RTCUrl(camera.name);
 
   const rows = [
-    { label: 'IP Address',  value: camera.ipAddress },
-    { label: 'Port',        value: String(camera.port) },
-    { label: 'Stream URL',  value: camera.streamUrl },
-    { label: 'Status',      value: camera.status ?? 'LIVE', highlight: true },
-    { label: 'Location',    value: camera.location ?? '—' },
-    { label: 'Resolution',  value: camera.res ?? '1080p' },
-    { label: 'Frame rate',  value: '30 fps' },
-    { label: 'Last event',  value: '2 min ago' },
+    { label: 'IP Address',    value: camera.ipAddress },
+    { label: 'Port',          value: String(camera.port) },
+    { label: 'Stream URL',    value: camera.streamUrl },
+    { label: 'go2rtc stream', value: streamName },
+    { label: 'WebRTC URL',    value: go2rtcUrl },
+    { label: 'Status',        value: camera.status ?? 'LIVE', highlight: true },
+    { label: 'Location',      value: camera.location ?? '—' },
+    { label: 'Resolution',    value: camera.res ?? '1080p' },
+    { label: 'Frame rate',    value: '30 fps' },
   ];
 
   return (
@@ -568,32 +807,17 @@ const CameraInfoSheet = ({ camera, onClose }: { camera: Camera; onClose: () => v
         <View style={styles.sheetHandle} />
         <View style={styles.sheetHeaderRow}>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
-            <View style={styles.sheetCamThumb}>
-              <Ionicons name="videocam" size={16} color="rgba(255,255,255,0.3)" />
-            </View>
-            <View>
-              <Text style={styles.sheetTitle}>{camera.name}</Text>
-              <Text style={styles.sheetSub}>{camera.ipAddress}</Text>
-            </View>
+            <View style={styles.sheetCamThumb}><Ionicons name="videocam" size={16} color="rgba(255,255,255,0.3)" /></View>
+            <View><Text style={styles.sheetTitle}>{camera.name}</Text><Text style={styles.sheetSub}>{camera.ipAddress}</Text></View>
           </View>
-          <TouchableOpacity style={styles.closeBtn} onPress={dismiss}>
-            <Ionicons name="close" size={16} color="#1C1C1E" />
-          </TouchableOpacity>
+          <TouchableOpacity style={styles.closeBtn} onPress={dismiss}><Ionicons name="close" size={16} color="#1C1C1E" /></TouchableOpacity>
         </View>
         <ScrollView showsVerticalScrollIndicator={false}>
           <View style={styles.infoCard}>
             {rows.map((r, i) => (
               <View key={r.label} style={[styles.infoRow, i < rows.length - 1 && styles.infoRowBorder]}>
                 <Text style={styles.infoLabel}>{r.label}</Text>
-                <Text
-                  style={[
-                    styles.infoValue,
-                    r.highlight && { color: (camera.status ?? 'LIVE') === 'LIVE' ? '#34C759' : '#AEAEB2', fontWeight: '700' },
-                  ]}
-                  numberOfLines={1}
-                >
-                  {r.value}
-                </Text>
+                <Text style={[styles.infoValue, r.highlight && { color: (camera.status ?? 'LIVE') === 'LIVE' ? '#34C759' : '#AEAEB2', fontWeight: '700' }]} numberOfLines={1}>{r.value}</Text>
               </View>
             ))}
           </View>
@@ -607,10 +831,10 @@ const CameraInfoSheet = ({ camera, onClose }: { camera: Camera; onClose: () => v
 // ─── Camera Options Sheet ─────────────────────────────────────────────────────
 
 const CameraOptionsSheet = ({
-  camera, onClose, onRecordToggle, onSnapshot, isRecording, recordingStart,
+  camera, onClose, onRecordToggle, isRecording, recordingStart, isSaving,
 }: {
   camera: Camera; onClose: () => void; onRecordToggle: () => void;
-  onSnapshot: () => void; isRecording: boolean; recordingStart: Date | null;
+  isRecording: boolean; recordingStart: Date | null; isSaving: boolean;
 }) => {
   const slideAnim = useRef(new Animated.Value(400)).current;
   const fadeAnim  = useRef(new Animated.Value(0)).current;
@@ -622,12 +846,10 @@ const CameraOptionsSheet = ({
     ]).start();
   }, []);
 
-  const dismiss = () => {
-    Animated.parallel([
-      Animated.timing(slideAnim, { toValue: 400, duration: 240, easing: Easing.in(Easing.cubic), useNativeDriver: true }),
-      Animated.timing(fadeAnim,  { toValue: 0,   duration: 200, useNativeDriver: true }),
-    ]).start(onClose);
-  };
+  const dismiss = () => Animated.parallel([
+    Animated.timing(slideAnim, { toValue: 400, duration: 240, easing: Easing.in(Easing.cubic), useNativeDriver: true }),
+    Animated.timing(fadeAnim,  { toValue: 0,   duration: 200, useNativeDriver: true }),
+  ]).start(onClose);
 
   return (
     <Animated.View style={[styles.overlay, { opacity: fadeAnim }]}>
@@ -640,35 +862,22 @@ const CameraOptionsSheet = ({
           <TouchableOpacity
             style={[styles.optionRow, styles.optionRowBorder]}
             onPress={() => { onRecordToggle(); dismiss(); }}
+            disabled={isSaving}
             activeOpacity={0.7}
           >
             <View style={[styles.optionIconBg, { backgroundColor: '#FF3B3018' }]}>
-              <MaterialCommunityIcons
-                name={isRecording ? 'stop-circle-outline' : 'record-circle-outline'}
-                size={18} color="#FF3B30"
-              />
+              {isSaving
+                ? <ActivityIndicator size="small" color="#FF3B30" />
+                : <MaterialCommunityIcons name={isRecording ? 'stop-circle-outline' : 'record-circle-outline'} size={18} color="#FF3B30" />
+              }
             </View>
             <View style={{ flex: 1 }}>
-              <Text style={styles.optionLabel}>{isRecording ? 'Stop recording' : 'Start recording'}</Text>
-              <Text style={styles.optionSub}>{isRecording ? 'Save clip to events' : 'Save clip to storage'}</Text>
+              <Text style={styles.optionLabel}>{isSaving ? 'Saving…' : isRecording ? 'Stop recording' : 'Start recording'}</Text>
+              <Text style={styles.optionSub}>{isRecording ? 'Save clip to server events' : 'Save clip to server storage'}</Text>
             </View>
-            {isRecording && recordingStart
+            {isRecording && recordingStart && !isSaving
               ? <RecordingTimer startTime={recordingStart} />
               : <Ionicons name="chevron-forward" size={14} color="#AEAEB2" />}
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={styles.optionRow}
-            onPress={() => { onSnapshot(); dismiss(); }}
-            activeOpacity={0.7}
-          >
-            <View style={[styles.optionIconBg, { backgroundColor: '#34C75918' }]}>
-              <Ionicons name="download-outline" size={18} color="#34C759" />
-            </View>
-            <View style={{ flex: 1 }}>
-              <Text style={styles.optionLabel}>Download snapshot</Text>
-              <Text style={styles.optionSub}>Save current frame to events</Text>
-            </View>
-            <Ionicons name="chevron-forward" size={14} color="#AEAEB2" />
           </TouchableOpacity>
         </View>
         <View style={{ height: 100 }} />
@@ -679,17 +888,20 @@ const CameraOptionsSheet = ({
 
 // ─── Fullscreen Modal ─────────────────────────────────────────────────────────
 
-const FullscreenView = ({ camera, zones, onClose }: {
-  camera: Camera; zones: Zone[]; onClose: () => void;
+const FullscreenView = ({
+  camera, zones, isRecording, recordingStart, onClose,
+  onRecordToggle, isSaving,
+}: {
+  camera: Camera; zones: Zone[]; isRecording: boolean; recordingStart: Date | null;
+  onClose: () => void; onRecordToggle: () => void; isSaving: boolean;
 }) => {
-  const fadeAnim = useRef(new Animated.Value(0)).current;
+  const fadeAnim     = useRef(new Animated.Value(0)).current;
   const [ctrlVisible, setCtrlVisible] = useState(true);
-  const [isMuted, setIsMuted] = useState(false);
-  const [isAIOn, setIsAIOn]   = useState(true);
-  const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [isMuted,     setIsMuted]     = useState(true); // WebView stream يبدأ muted
 
   const scanAnim  = useRef(new Animated.Value(0)).current;
   const blinkAnim = useRef(new Animated.Value(1)).current;
+  const timer     = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const scheduleHide = () => {
     if (timer.current) clearTimeout(timer.current);
@@ -699,26 +911,28 @@ const FullscreenView = ({ camera, zones, onClose }: {
   useEffect(() => {
     Animated.timing(fadeAnim, { toValue: 1, duration: 250, useNativeDriver: true }).start();
     scheduleHide();
-
-    const loop = Animated.loop(
-      Animated.timing(scanAnim, { toValue: 1, duration: 3000, easing: Easing.linear, useNativeDriver: true })
-    );
+    const loop = Animated.loop(Animated.timing(scanAnim, { toValue: 1, duration: 3000, easing: Easing.linear, useNativeDriver: true }));
     loop.start();
-
-    const blink = Animated.loop(
-      Animated.sequence([
-        Animated.timing(blinkAnim, { toValue: 0, duration: 700, useNativeDriver: true }),
-        Animated.timing(blinkAnim, { toValue: 1, duration: 700, useNativeDriver: true }),
-      ])
-    );
+    const blink = Animated.loop(Animated.sequence([
+      Animated.timing(blinkAnim, { toValue: 0, duration: 700, useNativeDriver: true }),
+      Animated.timing(blinkAnim, { toValue: 1, duration: 700, useNativeDriver: true }),
+    ]));
     blink.start();
-
     return () => {
       if (timer.current) clearTimeout(timer.current);
-      loop.stop();
-      blink.stop();
+      loop.stop(); blink.stop();
     };
   }, []);
+
+  const handleShare = async () => {
+    try {
+      const streamName = camera.name.toLowerCase().trim().replace(/\s+/g, '_').replace(/[^a-z0-9_-]/g, '');
+      await Share.share({
+        message: `📡 Live Feed: ${camera.name}\n🔗 http://${GO2RTC_HOST}:${GO2RTC_PORT}/webrtc.html?src=${streamName}\n📍 ${camera.location ?? '—'}\n🕐 ${new Date().toLocaleString()}`,
+        title: `Live Feed — ${camera.name}`,
+      });
+    } catch (_) {}
+  };
 
   const dismiss = () =>
     Animated.timing(fadeAnim, { toValue: 0, duration: 200, useNativeDriver: true }).start(onClose);
@@ -730,58 +944,29 @@ const FullscreenView = ({ camera, zones, onClose }: {
     <Modal visible transparent animationType="none" statusBarTranslucent>
       <Animated.View style={[fsStyles.container, { opacity: fadeAnim }]}>
 
-        {/* Video area */}
+        {/* Video */}
         <Pressable
           style={fsStyles.videoArea}
           onPress={() => { setCtrlVisible(v => !v); scheduleHide(); }}
         >
-          {/* Scanlines */}
-          <View style={fsStyles.scanlines} pointerEvents="none">
-            {Array.from({ length: 16 }).map((_, i) => (
-              <View key={i} style={fsStyles.scanlineRow} />
-            ))}
-          </View>
+          <WebRTCStream camera={camera} style={StyleSheet.absoluteFillObject} />
 
-          {/* Moving scan */}
-          <Animated.View
-            pointerEvents="none"
-            style={[fsStyles.movingScan, {
-              transform: [{
-                translateY: scanAnim.interpolate({
-                  inputRange: [0, 1],
-                  outputRange: [-(height * 0.36), height * 0.36],
-                }),
-              }],
-            }]}
-          />
+          <Animated.View pointerEvents="none" style={[fsStyles.movingScan, {
+            transform: [{ translateY: scanAnim.interpolate({ inputRange: [0, 1], outputRange: [-(height * 0.36), height * 0.36] }) }],
+          }]} />
 
-          {/* Corner brackets */}
           {[
-            { top: 16, left: 16, rotate: '0deg' },
-            { top: 16, right: 16, rotate: '90deg' },
-            { bottom: 80, left: 16, rotate: '-90deg' },
-            { bottom: 80, right: 16, rotate: '180deg' },
+            { top: 16, left: 16, rotate: '0deg' }, { top: 16, right: 16, rotate: '90deg' },
+            { bottom: 80, left: 16, rotate: '-90deg' }, { bottom: 80, right: 16, rotate: '180deg' },
           ].map((pos, i) => (
             <View key={i} pointerEvents="none" style={[fsStyles.bracket, pos]}>
-              <View style={fsStyles.bracketH} />
-              <View style={fsStyles.bracketV} />
+              <View style={fsStyles.bracketH} /><View style={fsStyles.bracketV} />
             </View>
           ))}
 
-          <Ionicons name="videocam-outline" size={56} color="rgba(255,255,255,0.04)" />
-
-          {/* Detection zones scaled to fullscreen */}
           {zones.map(z => (
-            <View key={z.id} pointerEvents="none" style={{
-              position: 'absolute',
-              left: z.x * scaleX, top: z.y * scaleY,
-              width: z.w * scaleX, height: z.h * scaleY,
-            }}>
-              <View style={{
-                flex: 1, borderWidth: 1.5,
-                borderColor: '#00FF88', borderStyle: 'dashed',
-                backgroundColor: 'rgba(0,255,136,0.07)',
-              }} />
+            <View key={z.id} pointerEvents="none" style={{ position: 'absolute', left: z.x * scaleX, top: z.y * scaleY, width: z.w * scaleX, height: z.h * scaleY }}>
+              <View style={{ flex: 1, borderWidth: 1.5, borderColor: '#00FF88', borderStyle: 'dashed', backgroundColor: 'rgba(0,255,136,0.07)' }} />
             </View>
           ))}
         </Pressable>
@@ -792,62 +977,73 @@ const FullscreenView = ({ camera, zones, onClose }: {
             <TouchableOpacity style={fsStyles.iconBtn} onPress={dismiss}>
               <Ionicons name="chevron-down" size={20} color="white" />
             </TouchableOpacity>
-
             <View style={fsStyles.topCenter}>
-              {/* Live indicator */}
               <Animated.View style={[fsStyles.liveDot, { opacity: blinkAnim }]} />
               <Text style={fsStyles.liveLabel}>LIVE</Text>
               <Text style={fsStyles.camNameFs}>{camera.name.toUpperCase()}</Text>
+              <View style={fsStyles.webrtcPill}>
+                <Text style={fsStyles.webrtcPillText}>WebRTC</Text>
+              </View>
             </View>
-
-            <View style={fsStyles.topRight}>
-              <LiveClock />
-            </View>
+            <View style={fsStyles.topRight}><LiveClock /></View>
           </View>
         )}
 
-        {/* Bottom control bar */}
+        {/* Bottom bar */}
         {ctrlVisible && (
           <View style={fsStyles.bottomBar}>
-            {/* Camera info */}
             <View style={fsStyles.bottomInfo}>
               <Text style={fsStyles.camIdFs}>CAM {String(camera.id).padStart(2, '0')}</Text>
               <Text style={fsStyles.camSubFs}>{camera.ipAddress} · {camera.res ?? '1080p'}</Text>
             </View>
-
-            {/* Tool buttons */}
             <View style={fsStyles.toolRow}>
+
+              {/* Mute — note: WebView stream مش ممكن نتحكم فيه من برا بسهولة */}
               <TouchableOpacity
-                style={[fsStyles.toolBtn, isMuted && fsStyles.toolBtnActive]}
-                onPress={() => setIsMuted(v => !v)}
+                style={[fsStyles.toolBtn, !isMuted && fsStyles.toolBtnGreen]}
+                onPress={() => {
+                  setIsMuted(v => !v);
+                  Alert.alert('Note', 'Audio control requires go2rtc stream config with audio enabled.');
+                }}
+                activeOpacity={0.7}
               >
-                <Ionicons name={isMuted ? 'volume-mute-outline' : 'volume-medium-outline'} size={18} color={isMuted ? '#FF3B30' : 'white'} />
-                <Text style={[fsStyles.toolLabel, isMuted && { color: '#FF3B30' }]}>Audio</Text>
+                <Ionicons name={isMuted ? 'volume-mute-outline' : 'volume-high'} size={18} color={isMuted ? 'rgba(255,255,255,0.4)' : '#00FF88'} />
+                <Text style={[fsStyles.toolLabel, !isMuted && { color: '#00FF88' }]}>
+                  {isMuted ? 'Muted' : 'Audio'}
+                </Text>
               </TouchableOpacity>
 
+              {/* Record */}
               <TouchableOpacity
-                style={[fsStyles.toolBtn, isAIOn && fsStyles.toolBtnGreen]}
-                onPress={() => setIsAIOn(v => !v)}
+                style={[fsStyles.toolBtn, isRecording && fsStyles.toolBtnRec]}
+                onPress={onRecordToggle}
+                disabled={isSaving}
+                activeOpacity={0.7}
               >
-                <Ionicons name="scan-outline" size={18} color={isAIOn ? '#00FF88' : 'white'} />
-                <Text style={[fsStyles.toolLabel, isAIOn && { color: '#00FF88' }]}>AI</Text>
+                {isSaving
+                  ? <ActivityIndicator size="small" color="#FF3B30" />
+                  : <MaterialCommunityIcons name={isRecording ? 'stop-circle' : 'record-circle-outline'} size={18} color={isRecording ? '#FF3B30' : 'white'} />
+                }
+                <Text style={[fsStyles.toolLabel, isRecording && { color: '#FF3B30' }]}>
+                  {isSaving ? 'Saving…' : isRecording ? 'Stop' : 'Record'}
+                </Text>
               </TouchableOpacity>
 
-              <TouchableOpacity style={fsStyles.toolBtn}>
-                <Ionicons name="camera-outline" size={18} color="white" />
-                <Text style={fsStyles.toolLabel}>Snap</Text>
-              </TouchableOpacity>
-
-              <TouchableOpacity style={fsStyles.toolBtn}>
-                <MaterialCommunityIcons name="record-circle-outline" size={18} color="white" />
-                <Text style={fsStyles.toolLabel}>Record</Text>
-              </TouchableOpacity>
-
-              <TouchableOpacity style={fsStyles.toolBtn}>
+              {/* Share */}
+              <TouchableOpacity style={fsStyles.toolBtn} onPress={handleShare} activeOpacity={0.7}>
                 <Ionicons name="share-outline" size={18} color="white" />
                 <Text style={fsStyles.toolLabel}>Share</Text>
               </TouchableOpacity>
+
             </View>
+
+            {isRecording && recordingStart && (
+              <View style={fsStyles.recBar}>
+                <View style={fsStyles.recBarDot} />
+                <Text style={fsStyles.recBarText}>Recording — </Text>
+                <RecordingTimer startTime={recordingStart} />
+              </View>
+            )}
           </View>
         )}
       </Animated.View>
@@ -868,18 +1064,13 @@ const SensorDetail = ({ sensor, onClose }: { sensor: Sensor; onClose: () => void
     ]).start();
   }, []);
 
-  const dismiss = () => {
-    Animated.parallel([
-      Animated.timing(slideAnim, { toValue: 400, duration: 240, easing: Easing.in(Easing.cubic), useNativeDriver: true }),
-      Animated.timing(fadeAnim,  { toValue: 0,   duration: 200, useNativeDriver: true }),
-    ]).start(onClose);
-  };
+  const dismiss = () => Animated.parallel([
+    Animated.timing(slideAnim, { toValue: 400, duration: 240, easing: Easing.in(Easing.cubic), useNativeDriver: true }),
+    Animated.timing(fadeAnim,  { toValue: 0,   duration: 200, useNativeDriver: true }),
+  ]).start(onClose);
 
   const pct = Math.min(100, Math.round((sensor.value / sensor.max) * 100));
-  const barColor =
-    sensor.value <= sensor.thresholds.safe ? '#34C759' :
-    sensor.value <= sensor.thresholds.warn ? '#FF9500' : '#FF3B30';
-
+  const barColor = sensor.value <= sensor.thresholds.safe ? '#34C759' : sensor.value <= sensor.thresholds.warn ? '#FF9500' : '#FF3B30';
   const readings = [
     { label: 'Current',       value: `${sensor.value} ${sensor.unit}` },
     { label: 'Min (session)', value: `${Math.min(...sensor.history)} ${sensor.unit}` },
@@ -963,46 +1154,45 @@ type ZoneMode   = 'off' | 'draw' | 'edit';
 export default function LiveScreen() {
   const navigation = useNavigation<any>();
 
-  // ── Camera + location state from API ─────────────────────────────────────
-  const [cameras, setCameras]           = useState<Camera[]>([]);
-  const [locations, setLocations]       = useState<string[]>(['All']);
-  const [loadingCams, setLoadingCams]   = useState(true);
-  const [activeCamera, setActiveCamera] = useState<Camera | null>(null);
+  const [cameras,       setCameras]       = useState<Camera[]>([]);
+  const [locations,     setLocations]     = useState<string[]>(['All']);
+  const [loadingCams,   setLoadingCams]   = useState(true);
+  const [activeCamera,  setActiveCamera]  = useState<Camera | null>(null);
   const [selectedLocation, setSelectedLocation] = useState('All');
 
-  // ── Other state ──────────────────────────────────────────────────────────
-  const [sensors, setSensors]       = useState<Sensor[]>(makeSensors());
+  const [sensors,      setSensors]      = useState<Sensor[]>(makeSensors());
   const [activeSensor, setActiveSensor] = useState<Sensor | null>(null);
-  const [activeSheet, setActiveSheet]   = useState<ActiveSheet>(null);
-  const [detections, setDetections]     = useState<Detection[]>([]);
+  const [activeSheet,  setActiveSheet]  = useState<ActiveSheet>(null);
+  const [detections,   setDetections]   = useState<Detection[]>([]);
   const [alertVisible, setAlertVisible] = useState(false);
-  const [blockedFace, setBlockedFace]   = useState<Detection | null>(null);
-  const [zones, setZones]               = useState<Record<number, Zone[]>>({});
-  const [zoneMode, setZoneMode]         = useState<ZoneMode>('off');
-  const [recordings, setRecordings]     = useState<Record<number, Date>>({});
+  const [blockedFace,  setBlockedFace]  = useState<Detection | null>(null);
+  const [zones,        setZones]        = useState<Record<number, Zone[]>>({});
+  const [zoneMode,     setZoneMode]     = useState<ZoneMode>('off');
+
+  const [recordings, setRecordings] = useState<Record<number, { start: Date; serverId?: number }>>({});
+  const [savingIds,  setSavingIds]  = useState<Set<number>>(new Set());
+
+  // ── WebRTC status for active camera ────────────────────────────────────
+  const { webRTCUrl, loading: webRTCLoading, error: webRTCError } = useWebRTCUrl(activeCamera);
+  const [webRTCReady, setWebRTCReady] = useState(false);
+
+  // Mark ready once URL is available
+  useEffect(() => { setWebRTCReady(!!webRTCUrl); }, [webRTCUrl]);
 
   const isRecording    = activeCamera ? !!recordings[activeCamera.id] : false;
-  const recordingStart = activeCamera ? (recordings[activeCamera.id] ?? null) : null;
+  const isSaving       = activeCamera ? savingIds.has(activeCamera.id) : false;
+  const recordingStart = activeCamera ? (recordings[activeCamera.id]?.start ?? null) : null;
 
-  // ── Fetch cameras + derive locations from API ────────────────────────────
+  // ── Fetch cameras ──────────────────────────────────────────────────────
   const fetchCameras = async () => {
     try {
-      const token = await AsyncStorage.getItem('userToken');
-      const res = await axios.get(`${BASE_URL}/api/Camera`, {
-        headers: token ? { Authorization: `Bearer ${token}` } : {},
-      });
+      const headers = await getAuthHeader();
+      const res = await axios.get(`${BASE_URL}/api/Camera`, { headers });
       const data: Camera[] = res.data.data ?? [];
       setCameras(data);
-
-      // Build unique location list from camera data
-      const locs = Array.from(
-        new Set(data.map(c => c.location).filter(Boolean) as string[])
-      ).sort();
+      const locs = Array.from(new Set(data.map(c => c.location).filter(Boolean) as string[])).sort();
       setLocations(['All', ...locs]);
-
-      if (data.length > 0 && !activeCamera) {
-        setActiveCamera(data[0]);
-      }
+      if (data.length > 0 && !activeCamera) setActiveCamera(data[0]);
     } catch (e) {
       console.error('Failed to fetch cameras:', e);
     } finally {
@@ -1016,121 +1206,125 @@ export default function LiveScreen() {
     return () => clearInterval(interval);
   }, []);
 
-  // ── Zone handlers ────────────────────────────────────────────────────────
+  // ── Zone handlers ──────────────────────────────────────────────────────
   const handleZoneUpdate = (z: Zone) => {
     if (!activeCamera) return;
-    setZones(prev => ({
-      ...prev,
-      [activeCamera.id]: prev[activeCamera.id]?.map(p => p.id === z.id ? z : p) || [],
-    }));
+    setZones(prev => ({ ...prev, [activeCamera.id]: prev[activeCamera.id]?.map(p => p.id === z.id ? z : p) || [] }));
   };
   const handleZoneAdd = (z: Zone) => {
     if (!activeCamera) return;
-    setZones(prev => ({
-      ...prev,
-      [activeCamera.id]: [...(prev[activeCamera.id] || []), z],
-    }));
+    setZones(prev => ({ ...prev, [activeCamera.id]: [...(prev[activeCamera.id] || []), z] }));
   };
   const handleZoneDelete = (id: string) => {
     if (!activeCamera) return;
-    setZones(prev => ({
-      ...prev,
-      [activeCamera.id]: (prev[activeCamera.id] || []).filter(z => z.id !== id),
-    }));
+    setZones(prev => ({ ...prev, [activeCamera.id]: (prev[activeCamera.id] || []).filter(z => z.id !== id) }));
   };
+  const cycleZoneMode = () => setZoneMode(m => m === 'off' ? 'draw' : m === 'draw' ? 'edit' : 'off');
 
-  const cycleZoneMode = () =>
-    setZoneMode(m => m === 'off' ? 'draw' : m === 'draw' ? 'edit' : 'off');
-
-  // ── Record toggle ────────────────────────────────────────────────────────
-  const handleRecordToggle = () => {
+  // ── Record Toggle ──────────────────────────────────────────────────────
+  const handleRecordToggle = async () => {
     if (!activeCamera) return;
     const camId = activeCamera.id;
+
     if (!recordings[camId]) {
-      setRecordings(prev => ({ ...prev, [camId]: new Date() }));
-    } else {
-      const start    = recordings[camId];
-      const duration = Math.floor((Date.now() - start.getTime()) / 1000);
-      addEvent({
-        id: `rec_${Date.now()}`, type: 'recording',
-        cameraId: camId, cameraName: activeCamera.name,
-        timestamp: start, duration,
-        label: `Recording · ${activeCamera.name} · ${duration}s`,
+      const start = new Date();
+      try {
+        const headers = await getAuthHeader();
+        const formData = new FormData();
+        const params = new URLSearchParams({
+          Name: `Recording · ${activeCamera.name} · ${start.toISOString()}`,
+          CameraId: String(camId),
+          RecordingStart: start.toISOString(),
+          RecordingEnd: '',
+        });
+        const res = await axios.post(
+          `${BASE_URL}/api/EventRecording/CreateEventRecorded?${params.toString()}`,
+          formData,
+          { headers: { ...headers, 'Content-Type': 'multipart/form-data' } }
+        );
+        const serverId: number | undefined = res.data?.data?.id;
+        setRecordings(prev => ({ ...prev, [camId]: { start, serverId } }));
+      } catch (_) {
+        setRecordings(prev => ({ ...prev, [camId]: { start } }));
+      }
+      return;
+    }
+
+    const rec = recordings[camId];
+    const end = new Date();
+    const duration = Math.floor((end.getTime() - rec.start.getTime()) / 1000);
+
+    setSavingIds(prev => new Set(prev).add(camId));
+
+    try {
+      const headers = await getAuthHeader();
+      let videoUri: string | null = null;
+      try {
+        const clipUrl = `${BASE_URL}/api/Camera/${camId}/clip?start=${rec.start.toISOString()}&end=${end.toISOString()}`;
+        const localPath = FileSystem.cacheDirectory + `clip_${camId}_${Date.now()}.mp4`;
+        const dlResult = await FileSystem.downloadAsync(clipUrl, localPath, { headers });
+        if (dlResult.status === 200) videoUri = dlResult.uri;
+      } catch (_) {}
+
+      const formData = new FormData();
+      if (videoUri) {
+        formData.append('VideoFile', { uri: videoUri, name: `clip_${camId}_${Date.now()}.mp4`, type: 'video/mp4' } as any);
+      }
+
+      const params = new URLSearchParams({
+        Name: `Recording · ${activeCamera.name} · ${duration}s`,
+        CameraId: String(camId),
+        RecordingStart: rec.start.toISOString(),
+        RecordingEnd: end.toISOString(),
       });
-      setRecordings(prev => { const n = { ...prev }; delete n[camId]; return n; });
+
+      await axios.post(
+        `${BASE_URL}/api/EventRecording/CreateEventRecorded?${params.toString()}`,
+        formData,
+        { headers: { ...headers, 'Content-Type': 'multipart/form-data' } }
+      );
+
+      try {
+        const evRes = await axios.get(`${BASE_URL}/api/EventRecording/GetAllEventRecorded`, { headers });
+        setEventsStore(evRes.data?.data ?? []);
+      } catch (_) {}
+
       Alert.alert(
-        'Recording saved',
+        '✅ Recording saved',
         `${duration}s clip from ${activeCamera.name} saved to Events.`,
         [
           { text: 'View Events', onPress: () => navigation.navigate('events') },
           { text: 'OK', style: 'cancel' },
         ]
       );
+    } catch (e) {
+      Alert.alert('Error', 'Could not save recording to server.');
+      console.error('Recording save error:', e);
+    } finally {
+      setRecordings(prev => { const n = { ...prev }; delete n[camId]; return n; });
+      setSavingIds(prev => { const s = new Set(prev); s.delete(camId); return s; });
     }
   };
 
-  // ── Snapshot ─────────────────────────────────────────────────────────────
-  const handleSnapshot = async () => {
-    if (!activeCamera) return;
-    try {
-      const token    = await AsyncStorage.getItem('userToken');
-      const localUri = FileSystem.cacheDirectory + `snapshot_${Date.now()}.jpg`;
-      const result   = await FileSystem.downloadAsync(
-        `${BASE_URL}/api/Camera/${activeCamera.id}/snapshot`,
-        localUri,
-        { headers: token ? { Authorization: `Bearer ${token}` } : {} }
-      );
-      if (result.status !== 200) {
-        Alert.alert('Failed', 'Could not fetch snapshot from camera.');
-        return;
-      }
-      addEvent({
-        id: `snap_${Date.now()}`, type: 'snapshot',
-        cameraId: activeCamera.id, cameraName: activeCamera.name,
-        timestamp: new Date(), label: `Snapshot · ${activeCamera.name}`,
-      });
-      const isAvailable = await Sharing.isAvailableAsync();
-      if (isAvailable) {
-        await Sharing.shareAsync(result.uri, { mimeType: 'image/jpeg', dialogTitle: 'Save Snapshot' });
-      } else {
-        Alert.alert('Snapshot saved', 'Saved to Events.', [
-          { text: 'View Events', onPress: () => navigation.navigate('events') },
-          { text: 'OK', style: 'cancel' },
-        ]);
-      }
-    } catch (error) {
-      console.error('Snapshot error:', error);
-      Alert.alert('Error', 'Could not save snapshot.');
-    }
-  };
-
-  // ── Sensor simulation ─────────────────────────────────────────────────────
+  // ── Sensor simulation ──────────────────────────────────────────────────
   useEffect(() => {
     const id = setInterval(() => {
       setSensors(prev => prev.map(s => {
         if (s.key === 'temperature') {
           const v = Math.round(Math.max(18, Math.min(40, s.value + (Math.random() - 0.5) * 1.5)));
-          return { ...s, value: v, history: [...s.history.slice(1), v],
-            status: v <= s.thresholds.safe ? 'Stable' : v <= s.thresholds.warn ? 'High' : 'Critical',
-            statusColor: v > s.thresholds.warn ? '#FF3B30' : '#FF9500' };
+          return { ...s, value: v, history: [...s.history.slice(1), v], status: v <= s.thresholds.safe ? 'Stable' : v <= s.thresholds.warn ? 'High' : 'Critical', statusColor: v > s.thresholds.warn ? '#FF3B30' : '#FF9500' };
         }
         if (s.key === 'sound') {
           const v = Math.round(Math.max(0, Math.min(120, s.value + (Math.random() - 0.5) * 6)));
-          return { ...s, value: v, history: [...s.history.slice(1), v],
-            status: v <= 40 ? 'Quiet' : v <= 80 ? 'Noisy' : 'Alert!',
-            statusColor: v <= 40 ? '#007AFF' : v <= 80 ? '#FF9500' : '#FF3B30' };
+          return { ...s, value: v, history: [...s.history.slice(1), v], status: v <= 40 ? 'Quiet' : v <= 80 ? 'Noisy' : 'Alert!', statusColor: v <= 40 ? '#007AFF' : v <= 80 ? '#FF9500' : '#FF3B30' };
         }
         if (s.key === 'motion') {
           const v = Math.max(0, Math.round(Math.random() * 3));
-          return { ...s, value: v, history: [...s.history.slice(1), v],
-            status: v === 0 ? 'Clear' : v <= 3 ? 'Active' : 'Alert!',
-            statusColor: v === 0 ? '#34C759' : v <= 3 ? '#FF9500' : '#FF3B30' };
+          return { ...s, value: v, history: [...s.history.slice(1), v], status: v === 0 ? 'Clear' : v <= 3 ? 'Active' : 'Alert!', statusColor: v === 0 ? '#34C759' : v <= 3 ? '#FF9500' : '#FF3B30' };
         }
         if (s.key === 'gas') {
           const v = Math.round(Math.max(0, Math.min(500, s.value + (Math.random() - 0.5) * 5)));
-          return { ...s, value: v, history: [...s.history.slice(1), v],
-            status: v <= 50 ? 'Normal' : v <= 150 ? 'Warning' : 'Danger!',
-            statusColor: v <= 50 ? '#34C759' : v <= 150 ? '#FF9500' : '#FF3B30' };
+          return { ...s, value: v, history: [...s.history.slice(1), v], status: v <= 50 ? 'Normal' : v <= 150 ? 'Warning' : 'Danger!', statusColor: v <= 50 ? '#34C759' : v <= 150 ? '#FF9500' : '#FF3B30' };
         }
         return s;
       }));
@@ -1138,16 +1332,13 @@ export default function LiveScreen() {
     return () => clearInterval(id);
   }, []);
 
-  // ── Poll detections ───────────────────────────────────────────────────────
+  // ── Poll detections ────────────────────────────────────────────────────
   useEffect(() => {
     if (!activeCamera) return;
     const poll = async () => {
       try {
-        const token = await AsyncStorage.getItem('userToken');
-        const res   = await axios.get(
-          `${BASE_URL}/api/Detection/latest?cameraId=${activeCamera.id}`,
-          { headers: token ? { Authorization: `Bearer ${token}` } : {} }
-        );
+        const headers = await getAuthHeader();
+        const res = await axios.get(`${BASE_URL}/api/Detection/latest?cameraId=${activeCamera.id}`, { headers });
         const data: Detection[] = res.data.data ?? [];
         setDetections(data);
         const blocked = data.find(d => d.isBlocked);
@@ -1159,16 +1350,11 @@ export default function LiveScreen() {
     return () => clearInterval(id);
   }, [activeCamera?.id]);
 
-  // ── Filtered cameras ──────────────────────────────────────────────────────
-  const filteredCameras = selectedLocation === 'All'
-    ? cameras
-    : cameras.filter(c => c.location === selectedLocation);
-
+  // ── Filtered cameras ───────────────────────────────────────────────────
+  const filteredCameras = selectedLocation === 'All' ? cameras : cameras.filter(c => c.location === selectedLocation);
   const zoneBtnColor = zoneMode === 'draw' ? '#FF9500' : zoneMode === 'edit' ? '#FF3B30' : undefined;
-  const zoneBtnIcon  = zoneMode === 'draw' ? 'pencil-outline' : 'crop-outline';
   const currentZones = activeCamera ? (zones[activeCamera.id] || []) : [];
 
-  // ── Loading / empty states ────────────────────────────────────────────────
   if (loadingCams) {
     return (
       <View style={styles.loadingContainer}>
@@ -1190,7 +1376,6 @@ export default function LiveScreen() {
     );
   }
 
-  // ── Render ────────────────────────────────────────────────────────────────
   return (
     <View style={styles.container}>
       <ScrollView
@@ -1198,31 +1383,26 @@ export default function LiveScreen() {
         contentContainerStyle={styles.scrollContent}
         scrollEnabled={zoneMode === 'off'}
       >
-        {/* Location filter — from API */}
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          style={styles.filterList}
-          contentContainerStyle={styles.filterContent}
-        >
+
+        {/* Location filter */}
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.filterList} contentContainerStyle={styles.filterContent}>
           {locations.map(loc => (
-            <TouchableOpacity
-              key={loc}
-              style={[styles.chip, selectedLocation === loc && styles.chipActive]}
-              onPress={() => setSelectedLocation(loc)}
-              activeOpacity={0.7}
-            >
-              <Text style={[styles.chipText, selectedLocation === loc && styles.chipTextActive]}>
-                {loc}
-              </Text>
+            <TouchableOpacity key={loc} style={[styles.chip, selectedLocation === loc && styles.chipActive]} onPress={() => setSelectedLocation(loc)} activeOpacity={0.7}>
+              <Text style={[styles.chipText, selectedLocation === loc && styles.chipTextActive]}>{loc}</Text>
               {loc !== 'All' && (
-                <Text style={[styles.chipCount, selectedLocation === loc && styles.chipCountActive]}>
-                  {cameras.filter(c => c.location === loc).length}
-                </Text>
+                <Text style={[styles.chipCount, selectedLocation === loc && styles.chipCountActive]}>{cameras.filter(c => c.location === loc).length}</Text>
               )}
             </TouchableOpacity>
           ))}
         </ScrollView>
+
+        {/* go2rtc connection warning */}
+        {webRTCError && (
+          <View style={styles.go2rtcWarning}>
+            <Ionicons name="warning-outline" size={14} color="#FF9500" />
+            <Text style={styles.go2rtcWarningText} numberOfLines={2}>{webRTCError}</Text>
+          </View>
+        )}
 
         {/* Main stream */}
         <View style={styles.streamCard}>
@@ -1238,51 +1418,35 @@ export default function LiveScreen() {
               onZoneUpdate={handleZoneUpdate}
               onZoneDelete={handleZoneDelete}
               onExpand={() => setActiveSheet('fullscreen')}
+              webRTCReady={webRTCReady}
             />
           </View>
 
-          {/* Stream footer */}
           <View style={styles.streamFooter}>
             <View style={{ flex: 1, marginRight: 8 }}>
               <View style={styles.livePill}>
                 <View style={[styles.statusDot, { backgroundColor: '#00FF88' }]} />
                 <Text style={styles.liveText}>LIVE</Text>
-                {isRecording && <View style={styles.recDotSmall} />}
-                {isRecording && <Text style={[styles.liveText, { color: '#FF3B30' }]}>REC</Text>}
+                {isRecording && <><View style={styles.recDotSmall} /><Text style={[styles.liveText, { color: '#FF3B30' }]}>REC</Text></>}
+                <View style={[styles.recDotSmall, { backgroundColor: webRTCReady ? '#007AFF' : '#FF9500' }]} />
+                <Text style={[styles.liveText, { color: webRTCReady ? '#007AFF' : '#FF9500' }]}>
+                  {webRTCLoading ? 'Connecting…' : webRTCReady ? 'WebRTC' : 'stream'}
+                </Text>
               </View>
               <Text style={styles.camName} numberOfLines={1}>{activeCamera.name}</Text>
-              <Text style={styles.camSub}>
-                {activeCamera.ipAddress} · port {activeCamera.port}
-                {activeCamera.location ? ` · ${activeCamera.location}` : ''}
-              </Text>
+              <Text style={styles.camSub}>{activeCamera.ipAddress} · port {activeCamera.port}{activeCamera.location ? ` · ${activeCamera.location}` : ''}</Text>
             </View>
             <View style={styles.streamActions}>
-              <TouchableOpacity
-                style={[styles.actionBtn, activeSheet === 'info' && styles.actionBtnActive]}
-                onPress={() => setActiveSheet(p => p === 'info' ? null : 'info')}
-                activeOpacity={0.7}
-              >
+              <TouchableOpacity style={[styles.actionBtn, activeSheet === 'info' && styles.actionBtnActive]} onPress={() => setActiveSheet(p => p === 'info' ? null : 'info')} activeOpacity={0.7}>
                 <Ionicons name="information-circle-outline" size={18} color="white" />
               </TouchableOpacity>
-              <TouchableOpacity
-                style={styles.actionBtn}
-                onPress={() => setActiveSheet('fullscreen')}
-                activeOpacity={0.7}
-              >
+              <TouchableOpacity style={styles.actionBtn} onPress={() => setActiveSheet('fullscreen')} activeOpacity={0.7}>
                 <Ionicons name="expand-outline" size={18} color="white" />
               </TouchableOpacity>
-              <TouchableOpacity
-                style={[styles.actionBtn, zoneMode !== 'off' && { backgroundColor: (zoneBtnColor ?? '#fff') + '30' }]}
-                onPress={cycleZoneMode}
-                activeOpacity={0.7}
-              >
-                <Ionicons name={zoneBtnIcon as any} size={18} color={zoneMode !== 'off' ? zoneBtnColor : 'white'} />
+              <TouchableOpacity style={[styles.actionBtn, zoneMode !== 'off' && { backgroundColor: (zoneBtnColor ?? '#fff') + '30' }]} onPress={cycleZoneMode} activeOpacity={0.7}>
+                <Ionicons name={zoneMode === 'draw' ? 'pencil-outline' : 'crop-outline'} size={18} color={zoneMode !== 'off' ? zoneBtnColor : 'white'} />
               </TouchableOpacity>
-              <TouchableOpacity
-                style={[styles.actionBtn, activeSheet === 'options' && styles.actionBtnActive]}
-                onPress={() => setActiveSheet(p => p === 'options' ? null : 'options')}
-                activeOpacity={0.7}
-              >
+              <TouchableOpacity style={[styles.actionBtn, activeSheet === 'options' && styles.actionBtnActive]} onPress={() => setActiveSheet(p => p === 'options' ? null : 'options')} activeOpacity={0.7}>
                 <Ionicons name="ellipsis-horizontal" size={18} color="white" />
               </TouchableOpacity>
             </View>
@@ -1306,40 +1470,24 @@ export default function LiveScreen() {
           {Object.keys(recordings).length > 0 && (
             <View style={styles.recCountBadge}>
               <View style={styles.recCountDot} />
-              <Text style={styles.recCountText}>
-                {Object.keys(recordings).length} recording{Object.keys(recordings).length > 1 ? 's' : ''}
-              </Text>
+              <Text style={styles.recCountText}>{Object.keys(recordings).length} recording{Object.keys(recordings).length > 1 ? 's' : ''}</Text>
             </View>
           )}
         </View>
 
         {filteredCameras.length === 0 ? (
-          <View style={styles.noCamsBox}>
-            <Text style={styles.noCamsText}>No cameras in "{selectedLocation}"</Text>
-          </View>
+          <View style={styles.noCamsBox}><Text style={styles.noCamsText}>No cameras in "{selectedLocation}"</Text></View>
         ) : (
-          <ScrollView
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            style={styles.camScroll}
-            contentContainerStyle={{ paddingRight: 16 }}
-          >
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.camScroll} contentContainerStyle={{ paddingRight: 16 }}>
             {filteredCameras.map(cam => (
-              <TouchableOpacity
-                key={cam.id}
-                style={[styles.camThumb, activeCamera.id === cam.id && styles.camThumbActive]}
-                onPress={() => setActiveCamera(cam)}
-                activeOpacity={0.8}
-              >
+              <TouchableOpacity key={cam.id} style={[styles.camThumb, activeCamera.id === cam.id && styles.camThumbActive]} onPress={() => setActiveCamera(cam)} activeOpacity={0.8}>
                 <View style={styles.camThumbImg}>
                   <Ionicons name="videocam-outline" size={20} color="rgba(255,255,255,0.18)" />
                   {!!recordings[cam.id] && <View style={styles.camRecBadge} />}
                 </View>
                 <View style={styles.camThumbFooter}>
                   <Text style={styles.camThumbName} numberOfLines={1}>{cam.name}</Text>
-                  <View style={[styles.statusDotSm, {
-                    backgroundColor: cam.status === 'IDLE' ? '#FF9500' : '#00FF88',
-                  }]} />
+                  <View style={[styles.statusDotSm, { backgroundColor: cam.status === 'IDLE' ? '#FF9500' : '#00FF88' }]} />
                 </View>
               </TouchableOpacity>
             ))}
@@ -1355,19 +1503,12 @@ export default function LiveScreen() {
           {sensors.map(s => {
             const pct = Math.min(100, (s.value / s.max) * 100);
             return (
-              <TouchableOpacity
-                key={s.key}
-                style={styles.sensorCard}
-                onPress={() => setActiveSensor(s)}
-                activeOpacity={0.75}
-              >
+              <TouchableOpacity key={s.key} style={styles.sensorCard} onPress={() => setActiveSensor(s)} activeOpacity={0.75}>
                 <View style={[styles.sensorIconBg, { backgroundColor: s.bg }]}>
                   <MaterialCommunityIcons name={s.icon as any} size={20} color={s.color} />
                 </View>
                 <Text style={styles.sensorLabel}>{s.label}</Text>
-                <Text style={styles.sensorValue}>
-                  {s.value}<Text style={styles.sensorUnit}> {s.unit}</Text>
-                </Text>
+                <Text style={styles.sensorValue}>{s.value}<Text style={styles.sensorUnit}> {s.unit}</Text></Text>
                 <Text style={[styles.sensorStatus, { color: s.statusColor }]}>{s.status}</Text>
                 <View style={styles.sensorBarTrack}>
                   <View style={[styles.sensorBarFill, { width: `${pct}%` as any, backgroundColor: s.color }]} />
@@ -1379,20 +1520,17 @@ export default function LiveScreen() {
             );
           })}
         </View>
+
       </ScrollView>
 
       {/* Blocked face alert */}
       {alertVisible && blockedFace && (
         <View style={styles.blockedAlert}>
           <View style={styles.blockedAlertInner}>
-            <View style={styles.blockedAlertIcon}>
-              <Ionicons name="warning" size={28} color="#FF3B30" />
-            </View>
+            <View style={styles.blockedAlertIcon}><Ionicons name="warning" size={28} color="#FF3B30" /></View>
             <View style={{ flex: 1 }}>
               <Text style={styles.blockedAlertTitle}>Blocked Person Detected</Text>
-              <Text style={styles.blockedAlertSub}>
-                {blockedFace.name} · {activeCamera.name} · {Math.round(blockedFace.confidence * 100)}%
-              </Text>
+              <Text style={styles.blockedAlertSub}>{blockedFace.name} · {activeCamera.name} · {Math.round(blockedFace.confidence * 100)}%</Text>
             </View>
             <TouchableOpacity onPress={() => setAlertVisible(false)}>
               <Ionicons name="close-circle" size={22} color="#FF3B30" />
@@ -1401,568 +1539,205 @@ export default function LiveScreen() {
         </View>
       )}
 
-      {/* Sheets */}
-      {activeSheet === 'info' && (
-        <CameraInfoSheet camera={activeCamera} onClose={() => setActiveSheet(null)} />
-      )}
+      {activeSheet === 'info'    && <CameraInfoSheet camera={activeCamera} onClose={() => setActiveSheet(null)} />}
       {activeSheet === 'options' && (
         <CameraOptionsSheet
-          camera={activeCamera}
-          onClose={() => setActiveSheet(null)}
-          onRecordToggle={handleRecordToggle}
-          onSnapshot={handleSnapshot}
-          isRecording={isRecording}
-          recordingStart={recordingStart}
+          camera={activeCamera} onClose={() => setActiveSheet(null)}
+          onRecordToggle={handleRecordToggle} isRecording={isRecording}
+          recordingStart={recordingStart} isSaving={isSaving}
         />
       )}
       {activeSheet === 'fullscreen' && (
-        <FullscreenView camera={activeCamera} zones={currentZones} onClose={() => setActiveSheet(null)} />
+        <FullscreenView
+          camera={activeCamera} zones={currentZones}
+          isRecording={isRecording} recordingStart={recordingStart}
+          onClose={() => setActiveSheet(null)}
+          onRecordToggle={handleRecordToggle} isSaving={isSaving}
+        />
       )}
-      {activeSensor && (
-        <SensorDetail sensor={activeSensor} onClose={() => setActiveSensor(null)} />
-      )}
+      {activeSensor && <SensorDetail sensor={activeSensor} onClose={() => setActiveSensor(null)} />}
     </View>
   );
 }
 
-// ─── Stream HUD Styles ────────────────────────────────────────────────────────
+// ─── Styles ───────────────────────────────────────────────────────────────────
 
 const streamStyles = StyleSheet.create({
-  hudRoot: {
-    ...StyleSheet.absoluteFillObject,
-    overflow: 'hidden',
-  },
-  scanlines: {
-    ...StyleSheet.absoluteFillObject,
-    flexDirection: 'column',
-    justifyContent: 'space-around',
-    pointerEvents: 'none' as any,
-  },
-  scanlineRow: {
-    height: 1,
-    backgroundColor: 'rgba(0,0,0,0.18)',
-  },
-  movingScan: {
-    position: 'absolute',
-    left: 0,
-    right: 0,
-    height: 2,
-    backgroundColor: 'rgba(0,255,136,0.18)',
-  },
-  bracket: {
-    position: 'absolute',
-    width: 18,
-    height: 18,
-  },
-  bracketH: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    width: 18,
-    height: 2,
-    backgroundColor: '#00FF88',
-    opacity: 0.8,
-  },
-  bracketV: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    width: 2,
-    height: 18,
-    backgroundColor: '#00FF88',
-    opacity: 0.8,
-  },
-  topLeft: {
-    position: 'absolute',
-    top: 10,
-    left: 12,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
-  topRight: {
-    position: 'absolute',
-    top: 10,
-    right: 12,
-    alignItems: 'flex-end',
-  },
-  bottomLeft: {
-    position: 'absolute',
-    bottom: 10,
-    left: 12,
-  },
-  bottomRight: {
-    position: 'absolute',
-    bottom: 10,
-    right: 12,
-    alignItems: 'flex-end',
-    gap: 4,
-  },
-  camIdPill: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 5,
-    backgroundColor: 'rgba(0,0,0,0.55)',
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-    borderRadius: 4,
-    borderWidth: 0.5,
-    borderColor: 'rgba(0,255,136,0.3)',
-  },
-  statusDotTiny: {
-    width: 5,
-    height: 5,
-    borderRadius: 3,
-  },
-  camIdText: {
-    fontSize: 10,
-    fontWeight: '700',
-    color: '#00FF88',
-    letterSpacing: 1.5,
-    fontFamily: 'monospace' as any,
-  },
-  clockText: {
-    fontSize: 11,
-    fontWeight: '700',
-    color: 'rgba(255,255,255,0.85)',
-    letterSpacing: 1,
-    fontFamily: 'monospace' as any,
-    backgroundColor: 'rgba(0,0,0,0.45)',
-    paddingHorizontal: 7,
-    paddingVertical: 3,
-    borderRadius: 4,
-  },
-  resText: {
-    fontSize: 9,
-    color: 'rgba(255,255,255,0.45)',
-    letterSpacing: 0.5,
-    marginTop: 2,
-    textAlign: 'right',
-    fontFamily: 'monospace' as any,
-  },
-  camNameHud: {
-    fontSize: 10,
-    fontWeight: '700',
-    color: 'rgba(255,255,255,0.9)',
-    letterSpacing: 1.5,
-    fontFamily: 'monospace' as any,
-    backgroundColor: 'rgba(0,0,0,0.45)',
-    paddingHorizontal: 6,
-    paddingVertical: 2,
-    borderRadius: 3,
-  },
-  camSubHud: {
-    fontSize: 9,
-    color: 'rgba(255,255,255,0.4)',
-    letterSpacing: 0.5,
-    marginTop: 2,
-    fontFamily: 'monospace' as any,
-  },
-  detCountBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-    backgroundColor: 'rgba(0,0,0,0.55)',
-    paddingHorizontal: 7,
-    paddingVertical: 3,
-    borderRadius: 4,
-    borderWidth: 0.5,
-  },
-  detCountText: {
-    fontSize: 9,
-    fontWeight: '700',
-    letterSpacing: 0.5,
-    fontFamily: 'monospace' as any,
-  },
-  zoneBadgeHud: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-    backgroundColor: 'rgba(0,0,0,0.55)',
-    paddingHorizontal: 7,
-    paddingVertical: 3,
-    borderRadius: 4,
-    borderWidth: 0.5,
-    borderColor: 'rgba(255,149,0,0.4)',
-  },
-  zoneBadgeText: {
-    fontSize: 9,
-    fontWeight: '700',
-    color: '#FF9500',
-    letterSpacing: 0.5,
-    fontFamily: 'monospace' as any,
-  },
-
-  // Detection boxes
-  detBox: {
-    position: 'absolute',
-    borderWidth: 0,
-  },
-  detCorner: {
-    position: 'absolute',
-    width: 10,
-    height: 10,
-  },
-  detLabel: {
-    position: 'absolute',
-    top: -20,
-    left: 0,
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 5,
-    paddingVertical: 2,
-    borderRadius: 3,
-    gap: 4,
-  },
-  detLabelText: {
-    fontSize: 9,
-    fontWeight: '700',
-    color: '#000',
-    letterSpacing: 0.5,
-    fontFamily: 'monospace' as any,
-  },
-  detConfText: {
-    fontSize: 8,
-    color: 'rgba(0,0,0,0.7)',
-    fontFamily: 'monospace' as any,
-  },
+  hudRoot: { ...StyleSheet.absoluteFillObject, overflow: 'hidden' },
+  scanlines: { ...StyleSheet.absoluteFillObject, flexDirection: 'column', justifyContent: 'space-around', pointerEvents: 'none' as any },
+  scanlineRow: { height: 1, backgroundColor: 'rgba(0,0,0,0.18)' },
+  movingScan: { position: 'absolute', left: 0, right: 0, height: 2, backgroundColor: 'rgba(0,255,136,0.18)' },
+  bracket: { position: 'absolute', width: 18, height: 18 },
+  bracketH: { position: 'absolute', top: 0, left: 0, width: 18, height: 2, backgroundColor: '#00FF88', opacity: 0.8 },
+  bracketV: { position: 'absolute', top: 0, left: 0, width: 2, height: 18, backgroundColor: '#00FF88', opacity: 0.8 },
+  topLeft: { position: 'absolute', top: 10, left: 12, flexDirection: 'row', alignItems: 'center', gap: 8 },
+  topRight: { position: 'absolute', top: 10, right: 12, alignItems: 'flex-end' },
+  bottomLeft: { position: 'absolute', bottom: 10, left: 12 },
+  bottomRight: { position: 'absolute', bottom: 10, right: 12, alignItems: 'flex-end', gap: 4 },
+  camIdPill: { flexDirection: 'row', alignItems: 'center', gap: 5, backgroundColor: 'rgba(0,0,0,0.55)', paddingHorizontal: 8, paddingVertical: 3, borderRadius: 4, borderWidth: 0.5, borderColor: 'rgba(0,255,136,0.3)' },
+  statusDotTiny: { width: 5, height: 5, borderRadius: 3 },
+  camIdText: { fontSize: 10, fontWeight: '700', color: '#00FF88', letterSpacing: 1.5, fontFamily: 'monospace' as any },
+  clockText: { fontSize: 11, fontWeight: '700', color: 'rgba(255,255,255,0.85)', letterSpacing: 1, fontFamily: 'monospace' as any, backgroundColor: 'rgba(0,0,0,0.45)', paddingHorizontal: 7, paddingVertical: 3, borderRadius: 4 },
+  resText: { fontSize: 9, color: 'rgba(255,255,255,0.45)', letterSpacing: 0.5, marginTop: 2, textAlign: 'right', fontFamily: 'monospace' as any },
+  camNameHud: { fontSize: 10, fontWeight: '700', color: 'rgba(255,255,255,0.9)', letterSpacing: 1.5, fontFamily: 'monospace' as any, backgroundColor: 'rgba(0,0,0,0.45)', paddingHorizontal: 6, paddingVertical: 2, borderRadius: 3 },
+  camSubHud: { fontSize: 9, color: 'rgba(255,255,255,0.4)', letterSpacing: 0.5, marginTop: 2, fontFamily: 'monospace' as any },
+  detCountBadge: { flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: 'rgba(0,0,0,0.55)', paddingHorizontal: 7, paddingVertical: 3, borderRadius: 4, borderWidth: 0.5 },
+  detCountText: { fontSize: 9, fontWeight: '700', letterSpacing: 0.5, fontFamily: 'monospace' as any },
+  zoneBadgeHud: { flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: 'rgba(0,0,0,0.55)', paddingHorizontal: 7, paddingVertical: 3, borderRadius: 4, borderWidth: 0.5, borderColor: 'rgba(255,149,0,0.4)' },
+  zoneBadgeText: { fontSize: 9, fontWeight: '700', color: '#FF9500', letterSpacing: 0.5, fontFamily: 'monospace' as any },
+  webrtcBadge: { flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: 'rgba(0,0,0,0.55)', paddingHorizontal: 7, paddingVertical: 3, borderRadius: 4, borderWidth: 0.5, borderColor: 'rgba(0,122,255,0.3)' },
+  webrtcDot: { width: 5, height: 5, borderRadius: 3 },
+  webrtcBadgeText: { fontSize: 9, fontWeight: '700', letterSpacing: 0.5, fontFamily: 'monospace' as any },
+  detBox: { position: 'absolute', borderWidth: 0 },
+  detCorner: { position: 'absolute', width: 10, height: 10 },
+  detLabel: { position: 'absolute', top: -20, left: 0, flexDirection: 'row', alignItems: 'center', paddingHorizontal: 5, paddingVertical: 2, borderRadius: 3, gap: 4 },
+  detLabelText: { fontSize: 9, fontWeight: '700', color: '#000', letterSpacing: 0.5, fontFamily: 'monospace' as any },
+  detConfText: { fontSize: 8, color: 'rgba(0,0,0,0.7)', fontFamily: 'monospace' as any },
 });
-
-// ─── Fullscreen Styles ────────────────────────────────────────────────────────
 
 const fsStyles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#000',
-  },
-  videoArea: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    overflow: 'hidden',
-  },
-  scanlines: {
-    ...StyleSheet.absoluteFillObject,
-    flexDirection: 'column',
-    justifyContent: 'space-around',
-  },
-  scanlineRow: {
-    height: 1,
-    backgroundColor: 'rgba(0,0,0,0.2)',
-  },
-  movingScan: {
-    position: 'absolute',
-    left: 0,
-    right: 0,
-    height: 2,
-    backgroundColor: 'rgba(0,255,136,0.15)',
-  },
-  bracket: {
-    position: 'absolute',
-    width: 24,
-    height: 24,
-  },
-  bracketH: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    width: 24,
-    height: 2,
-    backgroundColor: '#00FF88',
-    opacity: 0.7,
-  },
-  bracketV: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    width: 2,
-    height: 24,
-    backgroundColor: '#00FF88',
-    opacity: 0.7,
-  },
-
-  topBar: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    paddingTop: 52,
-    paddingHorizontal: 20,
-    paddingBottom: 14,
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: 'rgba(0,0,0,0.6)',
-    borderBottomWidth: 0.5,
-    borderBottomColor: 'rgba(0,255,136,0.15)',
-  },
-  topCenter: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10,
-    marginLeft: 12,
-  },
-  topRight: {
-    alignItems: 'flex-end',
-  },
-  liveDot: {
-    width: 7,
-    height: 7,
-    borderRadius: 4,
-    backgroundColor: '#FF3B30',
-  },
-  liveLabel: {
-    fontSize: 10,
-    fontWeight: '700',
-    color: '#FF3B30',
-    letterSpacing: 2,
-    fontFamily: 'monospace' as any,
-  },
-  camNameFs: {
-    fontSize: 13,
-    fontWeight: '700',
-    color: 'rgba(255,255,255,0.9)',
-    letterSpacing: 1,
-    fontFamily: 'monospace' as any,
-  },
-  clockFs: {
-    fontSize: 12,
-    color: 'rgba(255,255,255,0.6)',
-    fontFamily: 'monospace' as any,
-    letterSpacing: 0.5,
-  },
-
-  bottomBar: {
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
-    paddingBottom: 36,
-    paddingTop: 14,
-    paddingHorizontal: 20,
-    backgroundColor: 'rgba(0,0,0,0.7)',
-    borderTopWidth: 0.5,
-    borderTopColor: 'rgba(0,255,136,0.15)',
-    gap: 14,
-  },
-  bottomInfo: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-  },
-  camIdFs: {
-    fontSize: 11,
-    fontWeight: '700',
-    color: '#00FF88',
-    letterSpacing: 1.5,
-    fontFamily: 'monospace' as any,
-  },
-  camSubFs: {
-    fontSize: 10,
-    color: 'rgba(255,255,255,0.4)',
-    letterSpacing: 0.3,
-    fontFamily: 'monospace' as any,
-  },
-  toolRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    gap: 8,
-  },
-  toolBtn: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 5,
-    paddingVertical: 10,
-    borderRadius: 10,
-    backgroundColor: 'rgba(255,255,255,0.08)',
-    borderWidth: 0.5,
-    borderColor: 'rgba(255,255,255,0.12)',
-  },
-  toolBtnActive: {
-    backgroundColor: 'rgba(255,59,48,0.15)',
-    borderColor: 'rgba(255,59,48,0.3)',
-  },
-  toolBtnGreen: {
-    backgroundColor: 'rgba(0,255,136,0.1)',
-    borderColor: 'rgba(0,255,136,0.25)',
-  },
-  toolLabel: {
-    fontSize: 10,
-    color: 'rgba(255,255,255,0.6)',
-    fontWeight: '600',
-    letterSpacing: 0.3,
-  },
-  iconBtn: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: 'rgba(255,255,255,0.1)',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
+  container: { flex: 1, backgroundColor: '#000' },
+  videoArea: { flex: 1, overflow: 'hidden' },
+  movingScan: { position: 'absolute', left: 0, right: 0, height: 2, backgroundColor: 'rgba(0,255,136,0.15)' },
+  bracket: { position: 'absolute', width: 24, height: 24 },
+  bracketH: { position: 'absolute', top: 0, left: 0, width: 24, height: 2, backgroundColor: '#00FF88', opacity: 0.7 },
+  bracketV: { position: 'absolute', top: 0, left: 0, width: 2, height: 24, backgroundColor: '#00FF88', opacity: 0.7 },
+  topBar: { position: 'absolute', top: 0, left: 0, right: 0, paddingTop: 52, paddingHorizontal: 20, paddingBottom: 14, flexDirection: 'row', alignItems: 'center', backgroundColor: 'rgba(0,0,0,0.6)', borderBottomWidth: 0.5, borderBottomColor: 'rgba(0,255,136,0.15)' },
+  topCenter: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: 10, marginLeft: 12 },
+  topRight: { alignItems: 'flex-end' },
+  liveDot: { width: 7, height: 7, borderRadius: 4, backgroundColor: '#FF3B30' },
+  liveLabel: { fontSize: 10, fontWeight: '700', color: '#FF3B30', letterSpacing: 2, fontFamily: 'monospace' as any },
+  camNameFs: { fontSize: 13, fontWeight: '700', color: 'rgba(255,255,255,0.9)', letterSpacing: 1, fontFamily: 'monospace' as any },
+  webrtcPill: { backgroundColor: 'rgba(0,122,255,0.25)', paddingHorizontal: 7, paddingVertical: 2, borderRadius: 4, borderWidth: 0.5, borderColor: 'rgba(0,122,255,0.5)' },
+  webrtcPillText: { fontSize: 9, fontWeight: '700', color: '#007AFF', letterSpacing: 0.5, fontFamily: 'monospace' as any },
+  bottomBar: { position: 'absolute', bottom: 0, left: 0, right: 0, paddingBottom: 36, paddingTop: 14, paddingHorizontal: 20, backgroundColor: 'rgba(0,0,0,0.7)', borderTopWidth: 0.5, borderTopColor: 'rgba(0,255,136,0.15)', gap: 14 },
+  bottomInfo: { flexDirection: 'row', alignItems: 'center', gap: 12 },
+  camIdFs: { fontSize: 11, fontWeight: '700', color: '#00FF88', letterSpacing: 1.5, fontFamily: 'monospace' as any },
+  camSubFs: { fontSize: 10, color: 'rgba(255,255,255,0.4)', letterSpacing: 0.3, fontFamily: 'monospace' as any },
+  toolRow: { flexDirection: 'row', justifyContent: 'space-between', gap: 8 },
+  toolBtn: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 5, paddingVertical: 10, borderRadius: 10, backgroundColor: 'rgba(255,255,255,0.08)', borderWidth: 0.5, borderColor: 'rgba(255,255,255,0.12)' },
+  toolBtnGreen: { backgroundColor: 'rgba(0,255,136,0.1)', borderColor: 'rgba(0,255,136,0.25)' },
+  toolBtnRec:   { backgroundColor: 'rgba(255,59,48,0.15)', borderColor: 'rgba(255,59,48,0.35)' },
+  toolLabel: { fontSize: 10, color: 'rgba(255,255,255,0.6)', fontWeight: '600', letterSpacing: 0.3 },
+  iconBtn: { width: 36, height: 36, borderRadius: 18, backgroundColor: 'rgba(255,255,255,0.1)', alignItems: 'center', justifyContent: 'center' },
+  recBar: { flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: 'rgba(255,59,48,0.12)', borderRadius: 8, paddingHorizontal: 12, paddingVertical: 7, borderWidth: 0.5, borderColor: 'rgba(255,59,48,0.3)' },
+  recBarDot: { width: 7, height: 7, borderRadius: 4, backgroundColor: '#FF3B30' },
+  recBarText: { fontSize: 11, color: 'rgba(255,255,255,0.7)', fontWeight: '600' },
 });
 
-// ─── Main Styles ──────────────────────────────────────────────────────────────
-
 const styles = StyleSheet.create({
-  container:     { flex: 1, backgroundColor: '#F2F2F7' },
+  container: { flex: 1, backgroundColor: '#F2F2F7' },
   scrollContent: { paddingBottom: 32 },
-
   loadingContainer: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 12, backgroundColor: '#F2F2F7' },
-  loadingText:      { fontSize: 14, color: '#AEAEB2' },
-  emptyText:        { fontSize: 16, fontWeight: '600', color: '#AEAEB2', marginTop: 8 },
-  retryBtn:         { marginTop: 8, paddingHorizontal: 24, paddingVertical: 10, backgroundColor: '#007AFF', borderRadius: 20 },
-  retryText:        { color: '#fff', fontWeight: '700', fontSize: 14 },
-
-  noCamsBox:  { marginHorizontal: 16, marginBottom: 16, padding: 20, backgroundColor: '#fff', borderRadius: 14, alignItems: 'center' },
+  loadingText: { fontSize: 14, color: '#AEAEB2' },
+  emptyText: { fontSize: 16, fontWeight: '600', color: '#AEAEB2', marginTop: 8 },
+  retryBtn: { marginTop: 8, paddingHorizontal: 24, paddingVertical: 10, backgroundColor: '#007AFF', borderRadius: 20 },
+  retryText: { color: '#fff', fontWeight: '700', fontSize: 14 },
+  noCamsBox: { marginHorizontal: 16, marginBottom: 16, padding: 20, backgroundColor: '#fff', borderRadius: 14, alignItems: 'center' },
   noCamsText: { color: '#AEAEB2', fontSize: 13 },
-
-  filterList:    { marginTop: 14, marginBottom: 14 },
+  filterList: { marginTop: 14, marginBottom: 14 },
   filterContent: { paddingHorizontal: 16, gap: 8 },
-  chip: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 5,
-    paddingHorizontal: 14,
-    paddingVertical: 7,
-    borderRadius: 20,
-    backgroundColor: '#fff',
-    borderWidth: 0.5,
-    borderColor: 'rgba(0,0,0,0.08)',
-  },
-  chipActive:      { backgroundColor: '#1C1C1E', borderColor: '#1C1C1E' },
-  chipText:        { fontSize: 13, fontWeight: '600', color: '#AEAEB2' },
-  chipTextActive:  { color: '#fff' },
-  chipCount: {
-    fontSize: 10,
-    fontWeight: '700',
-    color: '#AEAEB2',
-    backgroundColor: '#F2F2F7',
-    paddingHorizontal: 5,
-    paddingVertical: 1,
-    borderRadius: 8,
-    overflow: 'hidden',
-  },
-  chipCountActive: {
-    color: '#1C1C1E',
-    backgroundColor: 'rgba(255,255,255,0.2)',
-  },
-
-  streamCard:        { marginHorizontal: 16, borderRadius: 20, overflow: 'hidden', backgroundColor: '#0A0A0A', marginBottom: 4 },
+  chip: { flexDirection: 'row', alignItems: 'center', gap: 5, paddingHorizontal: 14, paddingVertical: 7, borderRadius: 20, backgroundColor: '#fff', borderWidth: 0.5, borderColor: 'rgba(0,0,0,0.08)' },
+  chipActive: { backgroundColor: '#1C1C1E', borderColor: '#1C1C1E' },
+  chipText: { fontSize: 13, fontWeight: '600', color: '#AEAEB2' },
+  chipTextActive: { color: '#fff' },
+  chipCount: { fontSize: 10, fontWeight: '700', color: '#AEAEB2', backgroundColor: '#F2F2F7', paddingHorizontal: 5, paddingVertical: 1, borderRadius: 8, overflow: 'hidden' },
+  chipCountActive: { color: '#1C1C1E', backgroundColor: 'rgba(255,255,255,0.2)' },
+  go2rtcWarning: { flexDirection: 'row', alignItems: 'flex-start', gap: 8, marginHorizontal: 16, marginBottom: 10, backgroundColor: '#FFF8E1', borderRadius: 10, padding: 10, borderWidth: 0.5, borderColor: '#FF9500' },
+  go2rtcWarningText: { flex: 1, fontSize: 12, color: '#7A5000' },
+  streamCard: { marginHorizontal: 16, borderRadius: 20, overflow: 'hidden', backgroundColor: '#0A0A0A', marginBottom: 4 },
   streamPlaceholder: { height: STREAM_H, overflow: 'hidden' },
-
-  recTimerPill:   { flexDirection: 'row', alignItems: 'center', gap: 5, backgroundColor: 'rgba(255,59,48,0.85)', paddingHorizontal: 10, paddingVertical: 4, borderRadius: 4 },
-  recDot:         { width: 6, height: 6, borderRadius: 3, backgroundColor: '#fff' },
-  recTimerText:   { fontSize: 11, fontWeight: '700', color: '#fff', letterSpacing: 0.5, fontFamily: 'monospace' as any },
-  recDotSmall:    { width: 5, height: 5, borderRadius: 3, backgroundColor: '#FF3B30', marginLeft: 4 },
-
-  streamFooter:    { paddingHorizontal: 14, paddingVertical: 12, flexDirection: 'row', alignItems: 'center', backgroundColor: '#111' },
-  livePill:        { flexDirection: 'row', alignItems: 'center', gap: 5, backgroundColor: 'rgba(255,255,255,0.08)', paddingHorizontal: 10, paddingVertical: 4, borderRadius: 20, alignSelf: 'flex-start', marginBottom: 4 },
-  statusDot:       { width: 6, height: 6, borderRadius: 3 },
-  liveText:        { fontSize: 10, fontWeight: '700', color: '#fff', letterSpacing: 0.5 },
-  camName:         { fontSize: 14, fontWeight: '700', color: '#fff' },
-  camSub:          { fontSize: 11, color: 'rgba(255,255,255,0.35)', marginTop: 2 },
-  streamActions:   { flexDirection: 'row', gap: 7, flexWrap: 'wrap', justifyContent: 'flex-end' },
-  actionBtn:       { width: 36, height: 36, borderRadius: 10, backgroundColor: 'rgba(255,255,255,0.08)', alignItems: 'center', justifyContent: 'center', borderWidth: 0.5, borderColor: 'rgba(255,255,255,0.1)' },
+  recTimerPill: { flexDirection: 'row', alignItems: 'center', gap: 5, backgroundColor: 'rgba(255,59,48,0.85)', paddingHorizontal: 10, paddingVertical: 4, borderRadius: 4 },
+  recDot: { width: 6, height: 6, borderRadius: 3, backgroundColor: '#fff' },
+  recTimerText: { fontSize: 11, fontWeight: '700', color: '#fff', letterSpacing: 0.5, fontFamily: 'monospace' as any },
+  recDotSmall: { width: 5, height: 5, borderRadius: 3, backgroundColor: '#FF3B30', marginLeft: 4 },
+  streamFooter: { paddingHorizontal: 14, paddingVertical: 12, flexDirection: 'row', alignItems: 'center', backgroundColor: '#111' },
+  livePill: { flexDirection: 'row', alignItems: 'center', gap: 5, backgroundColor: 'rgba(255,255,255,0.08)', paddingHorizontal: 10, paddingVertical: 4, borderRadius: 20, alignSelf: 'flex-start', marginBottom: 4 },
+  statusDot: { width: 6, height: 6, borderRadius: 3 },
+  liveText: { fontSize: 10, fontWeight: '700', color: '#fff', letterSpacing: 0.5 },
+  camName: { fontSize: 14, fontWeight: '700', color: '#fff' },
+  camSub: { fontSize: 11, color: 'rgba(255,255,255,0.35)', marginTop: 2 },
+  streamActions: { flexDirection: 'row', gap: 7, flexWrap: 'wrap', justifyContent: 'flex-end' },
+  actionBtn: { width: 36, height: 36, borderRadius: 10, backgroundColor: 'rgba(255,255,255,0.08)', alignItems: 'center', justifyContent: 'center', borderWidth: 0.5, borderColor: 'rgba(255,255,255,0.1)' },
   actionBtnActive: { backgroundColor: 'rgba(255,255,255,0.2)' },
-
-  zoneModeBar:  { flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 14, paddingVertical: 7 },
+  zoneModeBar: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 14, paddingVertical: 7 },
   zoneModeText: { fontSize: 11, color: '#fff', fontWeight: '600', flex: 1 },
-
-  zoneDeleteBtn: {
-    position: 'absolute', top: 0, right: 0, zIndex: 30,
-    width: H, height: H, borderRadius: H / 2,
-    backgroundColor: '#FF3B30', alignItems: 'center', justifyContent: 'center', elevation: 5,
-  },
-  cornerHandle: {
-    position: 'absolute', width: H, height: H, borderRadius: 5,
-    backgroundColor: '#FF3B30', alignItems: 'center', justifyContent: 'center', zIndex: 20, elevation: 5,
-  },
-
+  zoneDeleteBtn: { position: 'absolute', top: 0, right: 0, zIndex: 30, width: H, height: H, borderRadius: H / 2, backgroundColor: '#FF3B30', alignItems: 'center', justifyContent: 'center', elevation: 5 },
+  cornerHandle: { position: 'absolute', width: H, height: H, borderRadius: 5, backgroundColor: '#FF3B30', alignItems: 'center', justifyContent: 'center', zIndex: 20, elevation: 5 },
   drawHintOverlay: { alignItems: 'center', justifyContent: 'center', gap: 7, backgroundColor: 'rgba(0,0,0,0.2)' },
-  drawHintText:    { fontSize: 12, fontWeight: '700', color: 'rgba(255,255,255,0.7)' },
-  draftLabel:      { position: 'absolute', top: 4, left: 4, backgroundColor: '#FF9500', paddingHorizontal: 5, paddingVertical: 2, borderRadius: 3 },
-  draftLabelText:  { fontSize: 9, color: '#fff', fontWeight: '700', fontFamily: 'monospace' as any },
-
+  drawHintText: { fontSize: 12, fontWeight: '700', color: 'rgba(255,255,255,0.7)' },
+  draftLabel: { position: 'absolute', top: 4, left: 4, backgroundColor: '#FF9500', paddingHorizontal: 5, paddingVertical: 2, borderRadius: 3 },
+  draftLabelText: { fontSize: 9, color: '#fff', fontWeight: '700', fontFamily: 'monospace' as any },
   sectionHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 16, marginBottom: 12, marginTop: 20 },
-  sectionTitle:  { fontSize: 16, fontWeight: '700', color: '#1C1C1E' },
-  sectionHint:   { fontSize: 12, color: '#AEAEB2' },
-
+  sectionTitle: { fontSize: 16, fontWeight: '700', color: '#1C1C1E' },
+  sectionHint: { fontSize: 12, color: '#AEAEB2' },
   recCountBadge: { flexDirection: 'row', alignItems: 'center', gap: 5, backgroundColor: '#FF3B3015', paddingHorizontal: 10, paddingVertical: 4, borderRadius: 20, borderWidth: 1, borderColor: 'rgba(255,59,48,0.25)' },
-  recCountDot:   { width: 6, height: 6, borderRadius: 3, backgroundColor: '#FF3B30' },
-  recCountText:  { fontSize: 11, fontWeight: '700', color: '#FF3B30' },
-
-  camScroll:      { paddingLeft: 16, marginBottom: 24 },
-  camThumb:       { width: 130, marginRight: 10, borderRadius: 14, overflow: 'hidden', borderWidth: 2, borderColor: 'transparent' },
+  recCountDot: { width: 6, height: 6, borderRadius: 3, backgroundColor: '#FF3B30' },
+  recCountText: { fontSize: 11, fontWeight: '700', color: '#FF3B30' },
+  camScroll: { paddingLeft: 16, marginBottom: 24 },
+  camThumb: { width: 130, marginRight: 10, borderRadius: 14, overflow: 'hidden', borderWidth: 2, borderColor: 'transparent' },
   camThumbActive: { borderColor: '#007AFF' },
-  camThumbImg:    { height: 80, backgroundColor: '#1C1C1E', alignItems: 'center', justifyContent: 'center' },
+  camThumbImg: { height: 80, backgroundColor: '#1C1C1E', alignItems: 'center', justifyContent: 'center' },
   camThumbFooter: { backgroundColor: '#111', padding: 8, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  camThumbName:   { fontSize: 11, fontWeight: '600', color: '#fff', flex: 1 },
-  statusDotSm:    { width: 5, height: 5, borderRadius: 3 },
-  camRecBadge:    { position: 'absolute', top: 6, right: 6, width: 10, height: 10, borderRadius: 5, backgroundColor: '#FF3B30', borderWidth: 1.5, borderColor: '#1C1C1E' },
-
-  sensorsGrid:    { flexDirection: 'row', flexWrap: 'wrap', paddingHorizontal: 16, gap: 12, marginBottom: 16 },
-  sensorCard:     { width: (width - 44) / 2, backgroundColor: '#fff', borderRadius: 18, padding: 14, borderWidth: 0.5, borderColor: 'rgba(0,0,0,0.06)' },
-  sensorIconBg:   { width: 40, height: 40, borderRadius: 12, alignItems: 'center', justifyContent: 'center', marginBottom: 10 },
-  sensorLabel:    { fontSize: 11, color: '#AEAEB2', fontWeight: '500', marginBottom: 2 },
-  sensorValue:    { fontSize: 20, fontWeight: '700', color: '#1C1C1E' },
-  sensorUnit:     { fontSize: 12, fontWeight: '500', color: '#AEAEB2' },
-  sensorStatus:   { fontSize: 10, fontWeight: '700', marginTop: 4 },
+  camThumbName: { fontSize: 11, fontWeight: '600', color: '#fff', flex: 1 },
+  statusDotSm: { width: 5, height: 5, borderRadius: 3 },
+  camRecBadge: { position: 'absolute', top: 6, right: 6, width: 10, height: 10, borderRadius: 5, backgroundColor: '#FF3B30', borderWidth: 1.5, borderColor: '#1C1C1E' },
+  sensorsGrid: { flexDirection: 'row', flexWrap: 'wrap', paddingHorizontal: 16, gap: 12, marginBottom: 16 },
+  sensorCard: { width: (width - 44) / 2, backgroundColor: '#fff', borderRadius: 18, padding: 14, borderWidth: 0.5, borderColor: 'rgba(0,0,0,0.06)' },
+  sensorIconBg: { width: 40, height: 40, borderRadius: 12, alignItems: 'center', justifyContent: 'center', marginBottom: 10 },
+  sensorLabel: { fontSize: 11, color: '#AEAEB2', fontWeight: '500', marginBottom: 2 },
+  sensorValue: { fontSize: 20, fontWeight: '700', color: '#1C1C1E' },
+  sensorUnit: { fontSize: 12, fontWeight: '500', color: '#AEAEB2' },
+  sensorStatus: { fontSize: 10, fontWeight: '700', marginTop: 4 },
   sensorBarTrack: { height: 3, borderRadius: 2, backgroundColor: 'rgba(0,0,0,0.06)', marginTop: 8, overflow: 'hidden' },
-  sensorBarFill:  { height: 3, borderRadius: 2 },
-
-  blockedAlert:      { position: 'absolute', top: 0, left: 0, right: 0, paddingHorizontal: 16, paddingTop: 12, zIndex: 999 },
+  sensorBarFill: { height: 3, borderRadius: 2 },
+  blockedAlert: { position: 'absolute', top: 0, left: 0, right: 0, paddingHorizontal: 16, paddingTop: 12, zIndex: 999 },
   blockedAlertInner: { backgroundColor: '#FFF0F0', borderRadius: 16, padding: 14, flexDirection: 'row', alignItems: 'center', gap: 12, borderWidth: 1, borderColor: '#FF3B30', elevation: 8 },
-  blockedAlertIcon:  { width: 44, height: 44, borderRadius: 12, backgroundColor: '#FFE5E5', alignItems: 'center', justifyContent: 'center' },
+  blockedAlertIcon: { width: 44, height: 44, borderRadius: 12, backgroundColor: '#FFE5E5', alignItems: 'center', justifyContent: 'center' },
   blockedAlertTitle: { fontSize: 14, fontWeight: '800', color: '#FF3B30' },
-  blockedAlertSub:   { fontSize: 11, color: '#8E3030', marginTop: 2 },
-
-  overlay:     { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.45)', justifyContent: 'flex-end' },
-  sheet:       { backgroundColor: '#fff', borderTopLeftRadius: 24, borderTopRightRadius: 24, paddingHorizontal: 20, paddingTop: 12, maxHeight: '85%' },
+  blockedAlertSub: { fontSize: 11, color: '#8E3030', marginTop: 2 },
+  overlay: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.45)', justifyContent: 'flex-end' },
+  sheet: { backgroundColor: '#fff', borderTopLeftRadius: 24, borderTopRightRadius: 24, paddingHorizontal: 20, paddingTop: 12, maxHeight: '85%' },
   sheetHandle: { width: 36, height: 4, borderRadius: 2, backgroundColor: 'rgba(0,0,0,0.12)', alignSelf: 'center', marginBottom: 16 },
-  closeBtn:    { width: 32, height: 32, borderRadius: 16, backgroundColor: '#F2F2F7', alignItems: 'center', justifyContent: 'center' },
-  sheetTitle:  { fontSize: 16, fontWeight: '700', color: '#1C1C1E' },
-  sheetSub:    { fontSize: 12, color: '#AEAEB2', marginTop: 1 },
-
+  closeBtn: { width: 32, height: 32, borderRadius: 16, backgroundColor: '#F2F2F7', alignItems: 'center', justifyContent: 'center' },
+  sheetTitle: { fontSize: 16, fontWeight: '700', color: '#1C1C1E' },
+  sheetSub: { fontSize: 12, color: '#AEAEB2', marginTop: 1 },
   sheetHeaderRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 },
-  sheetCamThumb:  { width: 44, height: 36, borderRadius: 8, backgroundColor: '#1C1C1E', alignItems: 'center', justifyContent: 'center' },
-  infoCard:       { backgroundColor: '#F9F9F9', borderRadius: 16, overflow: 'hidden', marginBottom: 4 },
-  infoRow:        { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 14, paddingVertical: 11 },
-  infoRowBorder:  { borderBottomWidth: 0.5, borderBottomColor: 'rgba(0,0,0,0.06)' },
-  infoLabel:      { fontSize: 13, color: '#AEAEB2' },
-  infoValue:      { fontSize: 13, fontWeight: '600', color: '#1C1C1E', flex: 1, textAlign: 'right' },
-
-  sheetTitle2:     { fontSize: 16, fontWeight: '700', color: '#1C1C1E', marginBottom: 2 },
-  sheetSub2:       { fontSize: 12, color: '#AEAEB2', marginBottom: 16 },
-  optionsCard:     { backgroundColor: '#F9F9F9', borderRadius: 16, overflow: 'hidden' },
-  optionRow:       { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 14, paddingVertical: 12, gap: 12 },
+  sheetCamThumb: { width: 44, height: 36, borderRadius: 8, backgroundColor: '#1C1C1E', alignItems: 'center', justifyContent: 'center' },
+  infoCard: { backgroundColor: '#F9F9F9', borderRadius: 16, overflow: 'hidden', marginBottom: 4 },
+  infoRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 14, paddingVertical: 11 },
+  infoRowBorder: { borderBottomWidth: 0.5, borderBottomColor: 'rgba(0,0,0,0.06)' },
+  infoLabel: { fontSize: 13, color: '#AEAEB2' },
+  infoValue: { fontSize: 13, fontWeight: '600', color: '#1C1C1E', flex: 1, textAlign: 'right' },
+  sheetTitle2: { fontSize: 16, fontWeight: '700', color: '#1C1C1E', marginBottom: 2 },
+  sheetSub2: { fontSize: 12, color: '#AEAEB2', marginBottom: 16 },
+  optionsCard: { backgroundColor: '#F9F9F9', borderRadius: 16, overflow: 'hidden' },
+  optionRow: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 14, paddingVertical: 12, gap: 12 },
   optionRowBorder: { borderBottomWidth: 0.5, borderBottomColor: 'rgba(0,0,0,0.06)' },
-  optionIconBg:    { width: 36, height: 36, borderRadius: 10, alignItems: 'center', justifyContent: 'center' },
-  optionLabel:     { fontSize: 14, fontWeight: '600', color: '#1C1C1E' },
-  optionSub:       { fontSize: 11, color: '#AEAEB2', marginTop: 1 },
-
-  detailHeader:    { flexDirection: 'row', alignItems: 'center', gap: 12, marginBottom: 20 },
-  detailIconBg:    { width: 48, height: 48, borderRadius: 14, alignItems: 'center', justifyContent: 'center' },
-  bigValueCard:    { backgroundColor: '#F9F9F9', borderRadius: 16, padding: 20, marginBottom: 12, alignItems: 'center' },
-  bigValue:        { fontSize: 48, fontWeight: '700', color: '#1C1C1E' },
-  bigUnit:         { fontSize: 20, fontWeight: '500', color: '#AEAEB2' },
-  progressTrack:   { height: 6, borderRadius: 3, backgroundColor: 'rgba(0,0,0,0.07)', width: '100%', marginTop: 16, overflow: 'hidden' },
-  progressFill:    { height: 6, borderRadius: 3 },
-  progressLabels:  { flexDirection: 'row', justifyContent: 'space-between', width: '100%', marginTop: 4 },
-  progressLbl:     { fontSize: 10, color: '#AEAEB2' },
-  detailCard:      { backgroundColor: '#F9F9F9', borderRadius: 16, padding: 16, marginBottom: 12 },
+  optionIconBg: { width: 36, height: 36, borderRadius: 10, alignItems: 'center', justifyContent: 'center' },
+  optionLabel: { fontSize: 14, fontWeight: '600', color: '#1C1C1E' },
+  optionSub: { fontSize: 11, color: '#AEAEB2', marginTop: 1 },
+  detailHeader: { flexDirection: 'row', alignItems: 'center', gap: 12, marginBottom: 20 },
+  detailIconBg: { width: 48, height: 48, borderRadius: 14, alignItems: 'center', justifyContent: 'center' },
+  bigValueCard: { backgroundColor: '#F9F9F9', borderRadius: 16, padding: 20, marginBottom: 12, alignItems: 'center' },
+  bigValue: { fontSize: 48, fontWeight: '700', color: '#1C1C1E' },
+  bigUnit: { fontSize: 20, fontWeight: '500', color: '#AEAEB2' },
+  progressTrack: { height: 6, borderRadius: 3, backgroundColor: 'rgba(0,0,0,0.07)', width: '100%', marginTop: 16, overflow: 'hidden' },
+  progressFill: { height: 6, borderRadius: 3 },
+  progressLabels: { flexDirection: 'row', justifyContent: 'space-between', width: '100%', marginTop: 4 },
+  progressLbl: { fontSize: 10, color: '#AEAEB2' },
+  detailCard: { backgroundColor: '#F9F9F9', borderRadius: 16, padding: 16, marginBottom: 12 },
   detailCardTitle: { fontSize: 12, fontWeight: '600', color: '#AEAEB2', marginBottom: 12, textTransform: 'uppercase', letterSpacing: 0.5 },
-  sparkLabels:     { flexDirection: 'row', justifyContent: 'space-between', marginTop: 6 },
-  sparkLbl:        { fontSize: 10, color: '#AEAEB2', flex: 1, textAlign: 'center' },
-  statsGrid:       { flexDirection: 'row', flexWrap: 'wrap', gap: 10, marginBottom: 12 },
-  statCard:        { flex: 1, minWidth: '45%', backgroundColor: '#F9F9F9', borderRadius: 12, padding: 12 },
-  statLabel:       { fontSize: 11, color: '#AEAEB2', marginBottom: 4 },
-  statValue:       { fontSize: 15, fontWeight: '700', color: '#1C1C1E' },
-  descCard:        { flexDirection: 'row', gap: 10, backgroundColor: '#EAF4FF', borderRadius: 14, padding: 14, marginBottom: 12, alignItems: 'flex-start' },
-  descText:        { flex: 1, fontSize: 13, color: '#004A8F', lineHeight: 19 },
-  threshRow:       { flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 6 },
-  threshDot:       { width: 8, height: 8, borderRadius: 4 },
-  threshLabel:     { fontSize: 13, color: '#1C1C1E', flex: 1 },
-  threshVal:       { fontSize: 12, color: '#AEAEB2' },
+  sparkLabels: { flexDirection: 'row', justifyContent: 'space-between', marginTop: 6 },
+  sparkLbl: { fontSize: 10, color: '#AEAEB2', flex: 1, textAlign: 'center' },
+  statsGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10, marginBottom: 12 },
+  statCard: { flex: 1, minWidth: '45%', backgroundColor: '#F9F9F9', borderRadius: 12, padding: 12 },
+  statLabel: { fontSize: 11, color: '#AEAEB2', marginBottom: 4 },
+  statValue: { fontSize: 15, fontWeight: '700', color: '#1C1C1E' },
+  descCard: { flexDirection: 'row', gap: 10, backgroundColor: '#EAF4FF', borderRadius: 14, padding: 14, marginBottom: 12, alignItems: 'flex-start' },
+  descText: { flex: 1, fontSize: 13, color: '#004A8F', lineHeight: 19 },
+  threshRow: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 6 },
+  threshDot: { width: 8, height: 8, borderRadius: 4 },
+  threshLabel: { fontSize: 13, color: '#1C1C1E', flex: 1 },
+  threshVal: { fontSize: 12, color: '#AEAEB2' },
 });

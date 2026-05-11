@@ -1,7 +1,7 @@
 import cv2
 
 def test_camera():
-    cap = cv2.VideoCapture(0, cv2.CAP_DSHOW) 
+    cap = cv2.VideoCapture(0) 
     print("Camera opened:", cap.isOpened())
 
     while True:

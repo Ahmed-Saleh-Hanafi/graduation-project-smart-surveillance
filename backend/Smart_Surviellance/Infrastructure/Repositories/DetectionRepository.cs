@@ -17,10 +17,12 @@ namespace Infrastructure.Repositories
             _context = context;
         }
 
-        public async Task AddDetectionAsync(Detection detection)
+        public async Task <Detection> AddDetectionAsync(Detection detection)
         {
             await _context.Detections.AddAsync(detection);
             await _context.SaveChangesAsync();
+            return detection;
+           
         }
 
         public async Task<IEnumerable<Detection>> GetAllDetectionAsync()
@@ -43,6 +45,21 @@ namespace Infrastructure.Repositories
                 .ToListAsync();
         }
 
-        
+        public async Task<Detection> GetByIdAsync(int detectionId)
+        {
+            return await _context.Detections.FindAsync(detectionId);
+        }
+
+        public async Task ResolveDetectionAsync(int detectionId)
+        {
+            
+                var detection = await _context.Detections.FindAsync(detectionId);
+                if (detection != null)
+                {
+                    detection.IsResolved = true;
+                    await _context.SaveChangesAsync();
+                }
+            
+        }
     }
 }

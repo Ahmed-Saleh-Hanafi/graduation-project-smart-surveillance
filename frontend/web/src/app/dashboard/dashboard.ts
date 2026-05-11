@@ -7,61 +7,85 @@ import { DashboardService } from '../services/dashboard.service';
   standalone: true,
   imports: [CommonModule],
   templateUrl: './dashboard.html',
-  styleUrl: './dashboard.css',
+  styleUrls: ['./dashboard.css'],
 })
 export class Dashboard implements OnInit {
 
   @ViewChild('videoPlayer') videoPlayer!: ElementRef<HTMLVideoElement>;
 
   cameras: any[] = [];
+  errorMessage: string | null = null;
   private pc!: RTCPeerConnection;
 
-  // 👇 مهم عشان الـ placeholder
   videoReady: boolean = false;
+  selectedCamera: any = null;
 
   constructor(private dashboardService: DashboardService) {}
 
   ngOnInit() {
+    // 1. هات الكاميرات من الذاكرة واعرضها فوراً
+    this.loadFromCache();
+    
+    // 2. حدث الداتا من السيرفر في الخلفية
     this.loadCameras();
   }
 
-  loadCameras() {
-    this.dashboardService.getCameras().subscribe(res => {
-      this.cameras = res.data;
-    });
+  loadFromCache() {
+    try {
+      const cached = localStorage.getItem('camguard_dashboard_cameras');
+      if (cached) {
+        this.cameras = JSON.parse(cached);
+      }
+    } catch (e) {
+      console.error('Cache read error', e);
+    }
   }
 
-  async selectCamera(id: number) {
-    await this.startWebRTC(id);
+  loadCameras() {
+    this.errorMessage = null;
+
+    this.dashboardService.getCameras().subscribe(
+      res => {
+        this.cameras = (res && (res.data ?? res)) || [];
+        // احفظ الداتا الجديدة في الكاش للريفريش الجاي
+        localStorage.setItem('camguard_dashboard_cameras', JSON.stringify(this.cameras));
+      },
+      error => {
+        console.error('Failed to load cameras', error);
+        this.errorMessage = 'Unable to connect to camera service.';
+      }
+    );
+  }
+
+  async selectCamera(cam: any) {
+    this.selectedCamera = cam;
     
+    setTimeout(async () => {
+      await this.startWebRTC(cam.id);
+    }, 0);
   }
 
   async startWebRTC(id: number) {
-
-    // لو فيه اتصال قديم اقفله
     if (this.pc) {
       this.pc.close();
     }
 
     this.videoReady = false;
-
     this.pc = new RTCPeerConnection();
 
-    // 🎥 استقبال الفيديو
     this.pc.ontrack = (event) => {
       const stream = event.streams[0];
-
-      this.videoPlayer.nativeElement.srcObject = stream;
-      this.videoPlayer.nativeElement.play();
-
-      this.videoReady = true; // 👈 الفيديو اشتغل
+      
+      if (this.videoPlayer && this.videoPlayer.nativeElement) {
+        this.videoPlayer.nativeElement.srcObject = stream;
+        this.videoPlayer.nativeElement.play();
+        this.videoReady = true; 
+      }
     };
 
-    // 📡 create offer
     const offer = await this.pc.createOffer();
     await this.pc.setLocalDescription(offer);
 
-    // 📡 send to backend
     const answer = await this.dashboardService.startStream(id, offer);
 
     if (!answer) {
@@ -71,5 +95,4 @@ export class Dashboard implements OnInit {
 
     await this.pc.setRemoteDescription(answer);
   }
-  
 }

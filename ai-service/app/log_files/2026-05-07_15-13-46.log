@@ -1,0 +1,40 @@
+2026-05-07 15:13:46,549 - INFO - logger.py - 24 - AI Service started
+2026-05-07 15:13:46,549 - INFO - logger.py - 25 - Logging system initialized
+2026-05-07 15:13:47,025 - DEBUG - _trace.py - 87 - connect_tcp.started host='localhost' port=5198 local_address=None timeout=30.0 socket_options=None
+2026-05-07 15:13:47,029 - DEBUG - _trace.py - 87 - connect_tcp.complete return_value=<httpcore._backends.anyio.AnyIOStream object at 0x00000266790C4830>
+2026-05-07 15:13:47,030 - DEBUG - _trace.py - 87 - send_request_headers.started request=<Request [b'GET']>
+2026-05-07 15:13:47,030 - DEBUG - _trace.py - 87 - send_request_headers.complete
+2026-05-07 15:13:47,031 - DEBUG - _trace.py - 87 - send_request_body.started request=<Request [b'GET']>
+2026-05-07 15:13:47,031 - DEBUG - _trace.py - 87 - send_request_body.complete
+2026-05-07 15:13:47,031 - DEBUG - _trace.py - 87 - receive_response_headers.started request=<Request [b'GET']>
+2026-05-07 15:13:47,167 - DEBUG - _trace.py - 87 - receive_response_headers.complete return_value=(b'HTTP/1.1', 200, b'OK', [(b'Content-Type', b'application/json; charset=utf-8'), (b'Date', b'Thu, 07 May 2026 12:13:46 GMT'), (b'Server', b'Kestrel'), (b'Transfer-Encoding', b'chunked')])
+2026-05-07 15:13:47,168 - INFO - _client.py - 1740 - HTTP Request: GET http://localhost:5198/api/Camera/ai "HTTP/1.1 200 OK"
+2026-05-07 15:13:47,168 - DEBUG - _trace.py - 87 - receive_response_body.started request=<Request [b'GET']>
+2026-05-07 15:13:47,168 - DEBUG - _trace.py - 87 - receive_response_body.complete
+2026-05-07 15:13:47,169 - DEBUG - _trace.py - 87 - response_closed.started
+2026-05-07 15:13:47,169 - DEBUG - _trace.py - 87 - response_closed.complete
+2026-05-07 15:13:47,171 - DEBUG - _trace.py - 87 - close.started
+2026-05-07 15:13:47,171 - DEBUG - _trace.py - 87 - close.complete
+2026-05-07 15:13:47,172 - INFO - logger.py - 53 - Loaded 1 cameras
+2026-05-07 15:13:52,473 - INFO - logger.py - 53 - Loading models is success
+2026-05-07 15:13:52,728 - DEBUG - _trace.py - 87 - connect_tcp.started host='localhost' port=5198 local_address=None timeout=30.0 socket_options=None
+2026-05-07 15:13:52,731 - DEBUG - _trace.py - 87 - connect_tcp.complete return_value=<httpcore._backends.anyio.AnyIOStream object at 0x00000266790839D0>
+2026-05-07 15:13:52,732 - DEBUG - _trace.py - 87 - send_request_headers.started request=<Request [b'GET']>
+2026-05-07 15:13:52,732 - DEBUG - _trace.py - 87 - send_request_headers.complete
+2026-05-07 15:13:52,732 - DEBUG - _trace.py - 87 - send_request_body.started request=<Request [b'GET']>
+2026-05-07 15:13:52,733 - DEBUG - _trace.py - 87 - send_request_body.complete
+2026-05-07 15:13:52,733 - DEBUG - _trace.py - 87 - receive_response_headers.started request=<Request [b'GET']>
+2026-05-07 15:13:52,750 - DEBUG - _trace.py - 87 - receive_response_headers.complete return_value=(b'HTTP/1.1', 200, b'OK', [(b'Content-Type', b'application/json; charset=utf-8'), (b'Date', b'Thu, 07 May 2026 12:13:52 GMT'), (b'Server', b'Kestrel'), (b'Transfer-Encoding', b'chunked')])
+2026-05-07 15:13:52,751 - INFO - _client.py - 1740 - HTTP Request: GET http://localhost:5198/api/Face/get-all-faces "HTTP/1.1 200 OK"
+2026-05-07 15:13:52,751 - DEBUG - _trace.py - 87 - receive_response_body.started request=<Request [b'GET']>
+2026-05-07 15:13:52,751 - DEBUG - _trace.py - 87 - receive_response_body.complete
+2026-05-07 15:13:52,751 - DEBUG - _trace.py - 87 - response_closed.started
+2026-05-07 15:13:52,752 - DEBUG - _trace.py - 87 - response_closed.complete
+2026-05-07 15:13:52,752 - DEBUG - _trace.py - 87 - close.started
+2026-05-07 15:13:52,753 - DEBUG - _trace.py - 87 - close.complete
+2026-05-07 15:13:54,664 - INFO - logger.py - 53 - Loading 2 faces and save them in faces.index is success
+2026-05-07 15:13:54,665 - INFO - logger.py - 53 - The mode is test
+2026-05-07 15:13:54,665 - INFO - logger.py - 53 - assign worker to each camera is success 1
+2026-05-07 15:13:54,665 - INFO - logger.py - 53 - assign consumer is success
+2026-05-07 15:13:54,665 - INFO - logger.py - 53 - workers and consumer is runing
+2026-05-07 15:13:55,448 - INFO - logger.py - 53 - Camera 1 started

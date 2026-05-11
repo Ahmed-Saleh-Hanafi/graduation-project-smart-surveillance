@@ -1,0 +1,44 @@
+2026-05-07 14:22:34,145 - INFO - logger.py - 24 - AI Service started
+2026-05-07 14:22:34,145 - INFO - logger.py - 25 - Logging system initialized
+2026-05-07 14:22:34,412 - DEBUG - _trace.py - 87 - connect_tcp.started host='localhost' port=5198 local_address=None timeout=30.0 socket_options=None
+2026-05-07 14:22:34,415 - DEBUG - _trace.py - 87 - connect_tcp.complete return_value=<httpcore._backends.anyio.AnyIOStream object at 0x0000016576794980>
+2026-05-07 14:22:34,416 - DEBUG - _trace.py - 87 - send_request_headers.started request=<Request [b'GET']>
+2026-05-07 14:22:34,417 - DEBUG - _trace.py - 87 - send_request_headers.complete
+2026-05-07 14:22:34,417 - DEBUG - _trace.py - 87 - send_request_body.started request=<Request [b'GET']>
+2026-05-07 14:22:34,417 - DEBUG - _trace.py - 87 - send_request_body.complete
+2026-05-07 14:22:34,417 - DEBUG - _trace.py - 87 - receive_response_headers.started request=<Request [b'GET']>
+2026-05-07 14:22:34,733 - DEBUG - _trace.py - 87 - receive_response_headers.complete return_value=(b'HTTP/1.1', 200, b'OK', [(b'Content-Type', b'application/json; charset=utf-8'), (b'Date', b'Thu, 07 May 2026 11:22:34 GMT'), (b'Server', b'Kestrel'), (b'Transfer-Encoding', b'chunked')])
+2026-05-07 14:22:34,733 - INFO - _client.py - 1740 - HTTP Request: GET http://localhost:5198/api/Camera/ai "HTTP/1.1 200 OK"
+2026-05-07 14:22:34,733 - DEBUG - _trace.py - 87 - receive_response_body.started request=<Request [b'GET']>
+2026-05-07 14:22:34,734 - DEBUG - _trace.py - 87 - receive_response_body.complete
+2026-05-07 14:22:34,735 - DEBUG - _trace.py - 87 - response_closed.started
+2026-05-07 14:22:34,735 - DEBUG - _trace.py - 87 - response_closed.complete
+2026-05-07 14:22:34,736 - DEBUG - _trace.py - 87 - close.started
+2026-05-07 14:22:34,736 - DEBUG - _trace.py - 87 - close.complete
+2026-05-07 14:22:34,736 - INFO - logger.py - 53 - Loaded 1 cameras
+2026-05-07 14:22:34,743 - DEBUG - connectionpool.py - 1049 - Starting new HTTPS connection (1): github.com:443
+2026-05-07 14:22:35,188 - DEBUG - connectionpool.py - 544 - https://github.com:443 "GET /deepinsight/insightface/releases/download/v0.7/buffalo_l.zip HTTP/1.1" 302 0
+2026-05-07 14:22:35,190 - DEBUG - connectionpool.py - 1049 - Starting new HTTPS connection (1): release-assets.githubusercontent.com:443
+2026-05-07 14:22:35,594 - DEBUG - connectionpool.py - 544 - https://release-assets.githubusercontent.com:443 "GET /github-production-release-asset/102057483/8ae2cf05-2fe7-45cc-addd-2fc11120dcd1?sp=r&sv=2018-11-09&sr=b&spr=https&se=2026-05-07T12%3A15%3A35Z&rscd=attachment%3B+filename%3Dbuffalo_l.zip&rsct=application%2Foctet-stream&skoid=96c2d410-5711-43a1-aedd-ab1947aa7ab0&sktid=398a6654-997b-47e9-b12b-9515b896b4de&skt=2026-05-07T11%3A14%3A41Z&ske=2026-05-07T12%3A15%3A35Z&sks=b&skv=2018-11-09&sig=hkQy6pnQCDARKqarVolFjp6j2ubYfgqkN8zcFmf6zhc%3D&jwt=eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpc3MiOiJnaXRodWIuY29tIiwiYXVkIjoicmVsZWFzZS1hc3NldHMuZ2l0aHVidXNlcmNvbnRlbnQuY29tIiwia2V5Ijoia2V5MSIsImV4cCI6MTc3ODE1NjQ0MywibmJmIjoxNzc4MTUyODQzLCJwYXRoIjoicmVsZWFzZWFzc2V0cHJvZHVjdGlvbi5ibG9iLmNvcmUud2luZG93cy5uZXQifQ.djrWC3YCR0-08zYCZggQRqV7T_BGI8d486ZLLsdHJw4&response-content-disposition=attachment%3B%20filename%3Dbuffalo_l.zip&response-content-type=application%2Foctet-stream HTTP/1.1" 200 288621354
+2026-05-07 14:24:14,884 - INFO - logger.py - 53 - Loading models is success
+2026-05-07 14:24:15,115 - DEBUG - _trace.py - 87 - connect_tcp.started host='localhost' port=5198 local_address=None timeout=30.0 socket_options=None
+2026-05-07 14:24:15,118 - DEBUG - _trace.py - 87 - connect_tcp.complete return_value=<httpcore._backends.anyio.AnyIOStream object at 0x0000016576828550>
+2026-05-07 14:24:15,118 - DEBUG - _trace.py - 87 - send_request_headers.started request=<Request [b'GET']>
+2026-05-07 14:24:15,119 - DEBUG - _trace.py - 87 - send_request_headers.complete
+2026-05-07 14:24:15,119 - DEBUG - _trace.py - 87 - send_request_body.started request=<Request [b'GET']>
+2026-05-07 14:24:15,119 - DEBUG - _trace.py - 87 - send_request_body.complete
+2026-05-07 14:24:15,119 - DEBUG - _trace.py - 87 - receive_response_headers.started request=<Request [b'GET']>
+2026-05-07 14:24:15,233 - DEBUG - _trace.py - 87 - receive_response_headers.complete return_value=(b'HTTP/1.1', 200, b'OK', [(b'Content-Type', b'application/json; charset=utf-8'), (b'Date', b'Thu, 07 May 2026 11:24:14 GMT'), (b'Server', b'Kestrel'), (b'Transfer-Encoding', b'chunked')])
+2026-05-07 14:24:15,233 - INFO - _client.py - 1740 - HTTP Request: GET http://localhost:5198/api/Face/get-all-faces "HTTP/1.1 200 OK"
+2026-05-07 14:24:15,233 - DEBUG - _trace.py - 87 - receive_response_body.started request=<Request [b'GET']>
+2026-05-07 14:24:15,234 - DEBUG - _trace.py - 87 - receive_response_body.complete
+2026-05-07 14:24:15,234 - DEBUG - _trace.py - 87 - response_closed.started
+2026-05-07 14:24:15,234 - DEBUG - _trace.py - 87 - response_closed.complete
+2026-05-07 14:24:15,235 - DEBUG - _trace.py - 87 - close.started
+2026-05-07 14:24:15,235 - DEBUG - _trace.py - 87 - close.complete
+2026-05-07 14:24:15,340 - INFO - logger.py - 53 - Loading 1 faces and save them in faces.index is success
+2026-05-07 14:24:15,340 - INFO - logger.py - 53 - The mode is test
+2026-05-07 14:24:15,340 - INFO - logger.py - 53 - assign worker to each camera is success 1
+2026-05-07 14:24:15,340 - INFO - logger.py - 53 - assign consumer is success
+2026-05-07 14:24:15,340 - INFO - logger.py - 53 - workers and consumer is runing
+2026-05-07 14:24:16,193 - INFO - logger.py - 53 - Camera 1 started

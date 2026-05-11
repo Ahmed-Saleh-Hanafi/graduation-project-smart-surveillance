@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html class="light" lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta content="width=device-width, initial-scale=1.0" name="viewport" />
+  <title>Detections</title>
+  <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet" />
+  <script id="tailwind-config">
+    tailwind.config = {
+      darkMode: "class",
+      theme: {
+        extend: {
+          "colors": {
+            "surface": "#f8f9fa",
+            "on-surface": "#191c1d",
+            "primary": "#005bbf",
+          },
+          "fontFamily": {
+            "headline": ["Inter"],
+            "body": ["Inter"],
+            "label": ["Inter"]
+          }
+        },
+      },
+    }
+  </script>
+  <style>
+    body { font-family: 'Inter', sans-serif; }
+    .material-symbols-outlined { font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24; }
+    .custom-scrollbar::-webkit-scrollbar { width: 6px; }
+    .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
+    .custom-scrollbar::-webkit-scrollbar-thumb { background-color: #cbd5e1; border-radius: 20px; }
+  </style>
+</head>
+
+<body class="bg-surface text-on-surface">
+  <header style="padding-top: 7px; padding-bottom: 7px;" class="fixed top-0 w-full z-50 bg-slate-50/80 backdrop-blur-xl border-b border-slate-200/50 shadow-sm">
+    <div class="flex justify-between items-center px-6 h-50 w-full max-w-[1920px] mx-auto">
+      <div class="flex items-center gap-8">
+        <img src="imgs/logo.png" alt="logo" style="width:150px; height: fit-content; margin-left: 20px;">
+      </div>
+      <div class="flex items-center gap-4">
+        <a href="/Alerts">
+          <button class="p-2 text-slate-500 hover:bg-slate-100/50 transition-all duration-200 active:scale-95">
+            <span class="material-symbols-outlined" data-icon="notifications">notifications</span>
+          </button>
+        </a>
+        <button class="p-2 text-slate-500 hover:bg-slate-100/50 transition-all duration-200 active:scale-95">
+          <span class="material-symbols-outlined" data-icon="settings">settings</span>
+        </button>
+        <div class="w-8 h-8 rounded-full overflow-hidden bg-slate-200">
+          <img alt="Administrator profile" src="https://lh3.googleusercontent.com/aida-public/AB6AXuD1gFb8rW8bBh7Q7n-fUYlzdznMbfbtPnfUzbwsieTvqtKz4PzrBkZeG-NOgxEs2mGzSllahsVxyX5XHGOQP04N99JQTXuYU3U00E_uiREUq4utywLgBKlWieiJDDBFhfKgbxelAiCMua6NxbIoGZ2XCwGifXbKKLbrr5qJGKyYhRzfkEh8_oqa51KPa5swXJFpNHRHIfiDcmveSaWjidVNcSlOdYO3PSCsZPo7uwta9WrHTd6W5Cxj4f61V1CcTiAWDWPj8aOngNRx" />
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <aside class="fixed left-0 top-10 h-[calc(100vh-4rem)] w-64 z-40 bg-slate-50/80 backdrop-blur-xl flex flex-col py-4 px-2 border-r border-slate-200/20">
+    <div class="px-4 py-2 mb-6"></div>
+    <nav class="flex-1 space-y-1">
+      <a class="flex items-center gap-3 px-4 py-3 text-sm font-medium text-slate-600 hover:bg-slate-100 transition-colors duration-150 rounded-lg group" href="/Dashboard">
+        <span class="material-symbols-outlined text-slate-400 group-hover:text-blue-700">dashboard</span> Dashboard
+      </a>
+      <a class="flex items-center gap-3 px-4 py-3 text-sm font-medium text-slate-600 hover:bg-slate-100 transition-colors duration-150 rounded-lg group" href="/CameraConfiguration">
+        <span class="material-symbols-outlined text-slate-400 group-hover:text-blue-700">videocam</span> Camera Config
+      </a>
+      <a class="flex items-center gap-3 px-4 py-3 text-sm font-medium text-slate-600 hover:bg-slate-100 transition-colors duration-150 rounded-lg group" href="#">
+        <span class="material-symbols-outlined text-slate-400 group-hover:text-blue-700">database</span> Sensor Configuration
+      </a>
+      <a class="flex items-center gap-3 px-4 py-3 text-sm font-medium text-slate-600 hover:bg-slate-100 transition-colors duration-150 rounded-lg group" href="/usermanagement">
+        <span class="material-symbols-outlined text-slate-400 group-hover:text-blue-700">group</span> User Management
+      </a>
+      <a class="flex items-center gap-3 px-4 py-3 text-sm font-medium text-slate-600 hover:bg-slate-100 transition-colors duration-150 rounded-lg group" href="/rolemanagement">
+        <span class="material-symbols-outlined text-slate-400 group-hover:text-blue-700">key</span> Role Management
+      </a>
+      <a class="flex items-center gap-3 px-4 py-3 text-sm font-medium bg-blue-50 text-blue-700 border-l-4 border-blue-700 transition-colors duration-150 rounded-r-lg group" href="/detectionmanagement">
+        <span class="material-symbols-outlined text-blue-700">radar</span> Detections
+      </a>
+      <a class="flex items-center gap-3 px-4 py-3 text-sm font-medium text-slate-600 hover:bg-slate-100 transition-colors duration-150 rounded-lg group" href="/Alerts">
+        <span class="material-symbols-outlined text-slate-400 group-hover:text-blue-700">notifications</span> Notification Management
+      </a>
+    </nav>
+  </aside>
+
+  <main class="ml-64 mt-16 p-8 min-h-screen bg-surface">
+    <div class="flex flex-wrap justify-between items-center mb-8">
+      <div class="flex items-center gap-4">
+        <h1 class="text-3xl font-extrabold tracking-tight">Detections by Camera</h1>
+        <span class="bg-slate-100 text-slate-600 px-3 py-1 rounded-full text-xs font-semibold">
+          {{ totalCameras }} cameras
+        </span>
+        <span class="bg-blue-50 text-blue-700 px-3 py-1 rounded-full text-xs font-semibold">
+          {{ totalDetections }} detections
+        </span>
+      </div>
+      
+      <div class="flex items-center gap-3 mt-4 sm:mt-0">
+        <div class="flex items-center gap-2">
+          <label class="text-xs text-slate-500 font-medium whitespace-nowrap">Filter by Date</label>
+          <input type="date" [(ngModel)]="filterDate" class="px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white" />
+        </div>
+        <button (click)="clearFilter()" class="px-4 py-2 bg-white border border-slate-300 rounded-lg text-sm font-medium text-slate-600 hover:bg-slate-50 transition-all duration-200">
+          Clear
+        </button>
+        <button (click)="applyFilter()" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-semibold shadow-md transition-all duration-200 flex items-center gap-2 active:scale-95">
+          <span class="material-symbols-outlined text-base">filter_alt</span> Apply Filter
+        </button>
+      </div>
+    </div>
+
+    <div *ngIf="errorMessage" class="text-center py-20">
+      <span class="material-symbols-outlined text-6xl text-red-300 mb-4">error</span>
+      <p class="text-red-500 text-lg">{{ errorMessage }}</p>
+    </div>
+
+    <div *ngIf="!isFetching && !errorMessage && cameraGroups.length === 0" class="text-center py-20">
+      <span class="material-symbols-outlined text-6xl text-slate-300 block mb-4">videocam_off</span>
+      <p class="text-slate-500 text-lg">No cameras configured yet.</p>
+      <p class="text-slate-400 text-sm mt-1">Add cameras from the Camera Configuration page or wait for data to sync.</p>
+    </div>
+
+    <div *ngIf="!errorMessage && cameraGroups.length > 0" class="grid grid-cols-1 lg:grid-cols-2 2xl:grid-cols-3 gap-6">
+      
+      <div *ngFor="let group of cameraGroups" class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden flex flex-col h-[500px]">
+        
+        <div class="px-5 py-4 bg-gradient-to-r from-slate-50 to-white border-b border-slate-200 flex items-center justify-between shrink-0">
+          <div class="flex items-center gap-3">
+            <div class="w-10 h-10 rounded-lg bg-blue-100 flex items-center justify-center text-blue-600 shadow-sm">
+              <span class="material-symbols-outlined">videocam</span>
+            </div>
+            <div>
+              <h2 class="text-lg font-bold text-slate-800 leading-tight">{{ group.cameraName }}</h2>
+              <p class="text-xs text-slate-500 font-mono mt-0.5">{{ group.cameraIp }}<span *ngIf="group.cameraPort">:{{ group.cameraPort }}</span></p>
+            </div>
+          </div>
+          <span class="bg-blue-50 text-blue-700 px-3 py-1 rounded-full text-xs font-bold">
+            {{ group.detections.length }} Detections
+          </span>
+        </div>
+
+        <div class="flex-1 p-4 bg-slate-50/50 overflow-y-auto custom-scrollbar space-y-3">
+          
+          <div *ngIf="group.detections.length === 0" class="flex flex-col items-center justify-center h-full text-center opacity-60">
+            <span class="material-symbols-outlined text-4xl text-slate-300 mb-2">search_off</span>
+            <p class="text-slate-500 text-sm">No detections for this camera yet.</p>
+          </div>
+
+          <div *ngFor="let det of group.detections" (click)="openDetectionModal(det)"
+               class="w-full bg-white border-2 rounded-lg p-3 shadow-sm hover:shadow-md transition-all duration-200 cursor-pointer flex items-center gap-4 group/item"
+               [ngClass]="det.isResolved ? 'border-green-400 hover:border-green-500 bg-green-50/30' : 'border-red-400 hover:border-red-500 bg-red-50/30'">
+            
+            <div class="w-16 h-16 shrink-0 rounded-md overflow-hidden bg-slate-100 flex items-center justify-center border border-slate-100 relative">
+              <img *ngIf="det.snapShotUrl" [src]="det.snapShotUrl" alt="Snapshot" class="w-full h-full object-cover group-hover/item:scale-110 transition-transform duration-300" />
+              <span *ngIf="!det.snapShotUrl" class="material-symbols-outlined text-slate-300">image_not_supported</span>
+              
+              <div class="absolute top-1 right-1 rounded-full bg-white p-0.5 shadow-sm">
+                <span *ngIf="det.isResolved" class="material-symbols-outlined text-[10px] text-green-500 font-bold block">check</span>
+                <span *ngIf="!det.isResolved" class="material-symbols-outlined text-[10px] text-red-500 font-bold block">priority_high</span>
+              </div>
+            </div>
+            
+            <div class="flex-1 min-w-0">
+              <div class="flex justify-between items-start mb-1 gap-2">
+                <h4 class="font-bold text-slate-800 text-sm truncate" title="{{ det.name }}">{{ det.name }}</h4>
+                <span class="text-[10px] font-bold px-2 py-0.5 rounded-full text-white shrink-0"
+                      [style.background-color]="getTypeColor(det.type)">
+                  {{ det.type }}
+                </span>
+              </div>
+              <p class="text-xs text-slate-500 truncate" title="{{ det.description }}">{{ det.description }}</p>
+              <div class="flex items-center justify-between mt-1.5">
+                <div class="flex items-center gap-1 text-[11px] font-semibold text-slate-400">
+                  <span class="material-symbols-outlined text-[13px]">schedule</span>
+                  {{ formatFullDate(det.detectedAt) }}
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </main>
+
+  <div *ngIf="isDetectionModalOpen && selectedDetection" class="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50 p-4" (click)="closeDetectionModal()">
+    
+    <div class="bg-white w-full max-w-[600px] rounded-2xl shadow-2xl overflow-hidden animate-modal-in flex flex-col border-t-4 border-t-green-500" (click)="$event.stopPropagation()">
+      
+      <div *ngIf="selectedDetection.snapShotUrl" class="relative">
+        <img [src]="selectedDetection.snapShotUrl" alt="Detection Snapshot" class="w-full h-56 object-cover" />
+        <button (click)="closeDetectionModal()" class="absolute top-3 right-3 w-8 h-8 flex items-center justify-center bg-black/50 hover:bg-black/70 text-white rounded-full transition-colors backdrop-blur-sm">
+          <span class="material-symbols-outlined text-xl">close</span>
+        </button>
+        <div class="absolute bottom-3 left-3 flex gap-2">
+          <span class="text-xs font-bold px-3 py-1 rounded-full text-white shadow-lg backdrop-blur-sm" [style.background-color]="getTypeColor(selectedDetection.type)">
+            {{ selectedDetection.type }}
+          </span>
+          <span class="text-xs font-bold px-3 py-1 rounded-full text-green-700 bg-green-100 border border-green-200 shadow-lg backdrop-blur-sm flex items-center gap-1">
+            <span class="material-symbols-outlined text-[14px]">task_alt</span> Resolved
+          </span>
+        </div>
+      </div>
+
+      <div *ngIf="!selectedDetection.snapShotUrl" class="h-20 bg-gradient-to-r from-blue-50 to-indigo-50 flex items-center justify-between px-4 relative border-b border-slate-100">
+        <div class="flex items-center gap-3">
+          <span class="text-xs font-bold px-3 py-1 rounded-full text-white shadow-md" [style.background-color]="getTypeColor(selectedDetection.type)">
+            {{ selectedDetection.type }}
+          </span>
+          <span class="text-xs font-bold px-3 py-1 rounded-full text-green-700 bg-green-100 border border-green-200 shadow-md flex items-center gap-1">
+            <span class="material-symbols-outlined text-[14px]">task_alt</span> Resolved
+          </span>
+        </div>
+        <button (click)="closeDetectionModal()" class="w-8 h-8 flex items-center justify-center text-slate-500 hover:bg-slate-200 rounded-full transition-colors">
+          <span class="material-symbols-outlined text-xl">close</span>
+        </button>
+      </div>
+
+      <div class="p-6 space-y-4">
+        
+        <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+          <h3 class="font-extrabold text-xl text-slate-800">{{ selectedDetection.name }}</h3>
+          <span class="text-xs font-semibold bg-slate-100 text-slate-600 px-2.5 py-1 rounded-lg">ID: #{{ selectedDetection.id }}</span>
+        </div>
+
+        <div class="grid grid-cols-2 gap-4">
+          <div class="bg-slate-50 rounded-xl p-3 border border-slate-100">
+            <p class="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1 flex items-center gap-1">
+              <span class="material-symbols-outlined text-[14px]">videocam</span> Camera ID
+            </p>
+            <p class="text-sm font-bold text-slate-800">{{ selectedDetection.cameraId }}</p>
+          </div>
+          
+          <div class="bg-slate-50 rounded-xl p-3 border border-slate-100">
+            <p class="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1 flex items-center gap-1">
+              <span class="material-symbols-outlined text-[14px]">calendar_today</span> Detected At
+            </p>
+            <p class="text-sm font-bold text-slate-800">{{ formatFullDate(selectedDetection.detectedAt) }}</p>
+          </div>
+        </div>
+
+        <div class="bg-blue-50/50 rounded-xl p-4 border border-blue-100/50">
+          <p class="text-[10px] font-bold text-blue-600 uppercase tracking-wider mb-1 flex items-center gap-1">
+            <span class="material-symbols-outlined text-[14px]">description</span> Description
+          </p>
+          <p class="text-sm text-slate-700 leading-relaxed">{{ selectedDetection.description }}</p>
+        </div>
+
+        <div *ngIf="selectedDetection.videoUrl" class="pt-2">
+          <a [href]="selectedDetection.videoUrl" target="_blank" class="w-full inline-flex items-center justify-center gap-2 px-4 py-3 bg-slate-900 hover:bg-black text-white rounded-xl text-sm font-bold transition-all duration-200">
+            <span class="material-symbols-outlined">play_circle</span>
+            Watch Recorded Video
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</body>
+</html>

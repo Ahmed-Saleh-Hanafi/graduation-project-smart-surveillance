@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>CamGuard — Detections</title>
+  <link rel="stylesheet" href="detections.css"/>
+</head>
+<body>
+
+<div class="toast-container" id="toast-container"></div>
+
+<!-- HEADER -->
+<header class="top-bar">
+  <div class="top-bar-left">
+    <div class="logo-icon">CG</div>
+    <div>
+      <h1>CamGuard</h1>
+      <span class="subtitle">Detection Dashboard</span>
+    </div>
+  </div>
+  <div class="top-bar-right">
+    <div class="config-field">
+      <label for="api-url">API URL</label>
+      <input id="api-url" type="text" value="http://localhost:5198"/>
+    </div>
+    <div class="config-field" style="flex:1.3">
+      <label for="auth-token">Bearer Token</label>
+      <input id="auth-token" type="text" placeholder="Paste JWT (optional)"/>
+    </div>
+  </div>
+</header>
+
+<!-- MAIN -->
+<main class="container">
+
+  <!-- TOOLBAR -->
+  <div class="toolbar">
+    <div class="toolbar-left">
+      <h2>Detections by Camera</h2>
+      <span class="pill" id="camera-count">0 cameras</span>
+      <span class="pill pill-accent" id="detection-count">0 detections</span>
+    </div>
+    <div class="toolbar-right">
+      <div class="config-field" style="min-width:140px">
+        <label for="filter-date">Filter by Date</label>
+        <input id="filter-date" type="date" onchange="onDateFilter()"/>
+      </div>
+      <button class="btn btn-outline" onclick="clearDateFilter()">Clear</button>
+      <button class="btn btn-primary" onclick="loadEverything()">↻ Refresh</button>
+    </div>
+  </div>
+
+  <!-- CAMERA GRID -->
+  <div class="camera-grid" id="camera-grid">
+    <div class="empty-state">
+      <div class="empty-icon">📷</div>
+      <p>Click <strong>Refresh</strong> to load cameras and detections</p>
+    </div>
+  </div>
+
+</main>
+
+<!-- DETECTION DETAIL MODAL -->
+<div class="modal-overlay" id="detail-modal">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title-row">
+        <span class="modal-type-badge" id="dm-type-badge">—</span>
+        <h3 id="dm-title">Detection Details</h3>
+      </div>
+      <button class="modal-close" onclick="closeModal()">×</button>
+    </div>
+    <div class="modal-body">
+      <!-- Snapshot -->
+      <div class="dm-snapshot-wrap" id="dm-snapshot-wrap" style="display:none">
+        <img id="dm-snapshot" src="" alt="Snapshot"/>
+      </div>
+
+      <!-- Info Grid -->
+      <div class="dm-grid">
+        <div class="dm-field">
+          <div class="dm-label">Detection ID</div>
+          <div class="dm-value" id="dm-id">—</div>
+        </div>
+        <div class="dm-field">
+          <div class="dm-label">Camera ID</div>
+          <div class="dm-value" id="dm-camera">—</div>
+        </div>
+        <div class="dm-field">
+          <div class="dm-label">Type</div>
+          <div class="dm-value" id="dm-type">—</div>
+        </div>
+        <div class="dm-field">
+          <div class="dm-label">Detected At</div>
+          <div class="dm-value" id="dm-date">—</div>
+        </div>
+        <div class="dm-field full">
+          <div class="dm-label">Name</div>
+          <div class="dm-value" id="dm-name">—</div>
+        </div>
+        <div class="dm-field full">
+          <div class="dm-label">Description</div>
+          <div class="dm-value dm-desc" id="dm-desc">—</div>
+        </div>
+      </div>
+
+      <!-- Video -->
+      <div id="dm-video-wrap" style="display:none">
+        <div class="dm-label" style="margin-bottom:8px">Video</div>
+        <a id="dm-video-link" href="#" target="_blank" class="btn btn-outline btn-sm">▶ Open Video</a>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="detections.js"></script>
+</body>
+</html>
