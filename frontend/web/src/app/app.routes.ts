@@ -20,6 +20,6 @@ export const routes: Routes = [
 {path: 'usermanagement',component: UserManagement, canActivate: [authGuard]},
 {path: 'rolemanagement',component: RoleManagement, canActivate: [authGuard]},
 {path: 'detectionmanagement',component: DetectionManagement, canActivate: [authGuard]},
-{ path: '**', redirectTo: 'login', pathMatch: 'full' },
+
 
 ];

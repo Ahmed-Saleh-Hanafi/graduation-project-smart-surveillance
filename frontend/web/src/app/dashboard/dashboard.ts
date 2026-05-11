@@ -1,4 +1,4 @@
-import { Component, OnInit, ViewChild, ElementRef } from '@angular/core';
+import { Component, OnInit, ViewChild, ElementRef, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { DashboardService } from '../services/dashboard.service';
 
@@ -20,13 +20,13 @@ export class Dashboard implements OnInit {
   videoReady: boolean = false;
   selectedCamera: any = null;
 
-  constructor(private dashboardService: DashboardService) {}
+  constructor(
+    private dashboardService: DashboardService,
+    private cdr: ChangeDetectorRef // 1. ضفنا الـ ChangeDetectorRef هنا
+  ) {}
 
   ngOnInit() {
-    // 1. هات الكاميرات من الذاكرة واعرضها فوراً
     this.loadFromCache();
-    
-    // 2. حدث الداتا من السيرفر في الخلفية
     this.loadCameras();
   }
 
@@ -47,7 +47,6 @@ export class Dashboard implements OnInit {
     this.dashboardService.getCameras().subscribe(
       res => {
         this.cameras = (res && (res.data ?? res)) || [];
-        // احفظ الداتا الجديدة في الكاش للريفريش الجاي
         localStorage.setItem('camguard_dashboard_cameras', JSON.stringify(this.cameras));
       },
       error => {
@@ -59,6 +58,7 @@ export class Dashboard implements OnInit {
 
   async selectCamera(cam: any) {
     this.selectedCamera = cam;
+    this.cdr.detectChanges(); // نحدث الشاشة عشان نظهر كارد التحميل (اختياري بس بيسرع الاستجابة)
     
     setTimeout(async () => {
       await this.startWebRTC(cam.id);
@@ -72,27 +72,64 @@ export class Dashboard implements OnInit {
 
     this.videoReady = false;
     this.pc = new RTCPeerConnection();
+    
+    // نقول لـ WebRTC إننا داخلين نستقبل فيديو
+    this.pc.addTransceiver('video', { direction: 'recvonly' });
 
+    // الحدث ده بيحصل لما الفيديو يوصل من السيرفر
     this.pc.ontrack = (event) => {
       const stream = event.streams[0];
-      
       if (this.videoPlayer && this.videoPlayer.nativeElement) {
         this.videoPlayer.nativeElement.srcObject = stream;
-        this.videoPlayer.nativeElement.play();
-        this.videoReady = true; 
+        this.videoPlayer.nativeElement.play().then(() => {
+          this.videoReady = true; 
+          
+          // 2. السطر ده هو اللي هيحل مشكلة الضغطتين، بيجبر الصفحة تتحدث فوراً
+          this.cdr.detectChanges(); 
+
+        }).catch(err => console.error('Play prevented by browser:', err));
       }
     };
 
-    const offer = await this.pc.createOffer();
-    await this.pc.setLocalDescription(offer);
+    try {
+      const offer = await this.pc.createOffer();
+      await this.pc.setLocalDescription(offer);
 
-    const answer = await this.dashboardService.startStream(id, offer);
+      this.dashboardService.getWebRTCUrl(id).subscribe(async (res) => {
+        if (!res.isSuccess || !res.data?.webRTCUrl) {
+          console.error('Failed to get WebRTC URL from backend');
+          return;
+        }
 
-    if (!answer) {
-      console.error('No answer from server');
-      return;
+        let mediaMtxUrl = res.data.webRTCUrl;
+        
+        if(!mediaMtxUrl.endsWith('/whep')) {
+          mediaMtxUrl = `${mediaMtxUrl}/whep`;
+        }
+
+        const sdpResponse = await fetch(mediaMtxUrl, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/sdp'
+          },
+          body: offer.sdp 
+        });
+
+        if (!sdpResponse.ok) {
+          console.error('MediaMTX rejected the offer', await sdpResponse.text());
+          return;
+        }
+
+        const answerSdp = await sdpResponse.text();
+        await this.pc.setRemoteDescription({
+          type: 'answer',
+          sdp: answerSdp
+        });
+
+      });
+
+    } catch (err) {
+      console.error('WebRTC Initialization Error:', err);
     }
-
-    await this.pc.setRemoteDescription(answer);
   }
 }
