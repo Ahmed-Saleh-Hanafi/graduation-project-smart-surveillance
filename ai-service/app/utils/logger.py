@@ -18,10 +18,9 @@ def setup_logs() -> None:
     logging.basicConfig(
         filename=log_file,
         filemode="a",
-        level=logging.DEBUG,
+        level=logging.INFO,
         format="%(asctime)s - %(levelname)s - %(filename)s - %(lineno)d - %(message)s"
     )
-    logging.info("AI Service started")
     logging.info("Logging system initialized")
 
 

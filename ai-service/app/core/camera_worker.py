@@ -97,7 +97,7 @@ async def camera_worker(cam_id: int, rtsp_url: str)-> None:
                 frame,
                 settings.FRAME_SIZE
             )
-
+            #frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
             # push to queue
             if frame_queue.full():
                 add_log('warning',f"queue is full")

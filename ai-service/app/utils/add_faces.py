@@ -8,7 +8,7 @@ from app.models.model_loader import models
 from app.utils.normalize import normalize
 
 
-def add_faces(faces: Dict[str, int]) -> None:
+def add_faces(faces: Dict[str, str | int]) -> None:
     # validation
     if not isinstance(faces, dict):
         raise TypeError('faces must be dict like {face_url, camera_id}')
@@ -19,23 +19,27 @@ def add_faces(faces: Dict[str, int]) -> None:
     if not hasattr(models, "face_detector"):
         raise RuntimeError("Face detector is not initialized")
 
+    
     success_loaded_faces = 0
     for face_url, cam_id in faces.items():
-        path = os.path.join(settings.ROOT_IMAGES, face_url)
-        img = cv2.imread(path)
+        path = settings.ROOT_IMAGES / face_url
+        if not os.path.exists(path):
+            logging.warning(f"Failed to read image: {path} in camera: {cam_id} because invalid face_url")
+            continue
+
+        img = cv2.imread(str(path))
         if img is None:
             logging.warning(f"Failed to read image: {path} in camera: {cam_id}")
             continue
-
         detections = models.face_detector.detect(img)
         if not detections:
             logging.warning(f"No face found in: {face_url} camera: {cam_id}")
             continue
-
+        
         face = detections[0] 
         embedding = face.embedding
         embedding = normalize(embedding)
-        face_dp.add_face(cam_id, face_url, embedding)
+        face_dp[str(cam_id)].add_face(cam_id, face_url, embedding)
         success_loaded_faces+= 1
         logging.info(f'add face: {face_url} camera: {cam_id} is success')
         

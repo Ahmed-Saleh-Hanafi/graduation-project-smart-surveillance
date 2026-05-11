@@ -1,10 +1,8 @@
-
-
 import cv2
 
-def draw(frame, box, confid):
+async def draw(frame: any, box: list, confid: int):
         """
-        Draw bounding boxes on frame
+        Draw bounding boxes on frame according box
         """
         x1, y1, x2, y2 = box.astype(int)
         score = confid
@@ -31,4 +29,3 @@ def draw(frame, box, confid):
             2
         )
         return frame
-    

@@ -7,6 +7,7 @@ class FaceDatabase:
         self.dimension = settings.EMB_DIM
         self.index = faiss.IndexFlatIP(self.dimension)
         self.metadata = {}
+        
     def clear(self):
         self.dimension = settings.EMB_DIM
         self.index = faiss.IndexFlatIP(self.dimension)
@@ -32,4 +33,4 @@ class FaceDatabase:
         return None, 0
 
 
-face_dp =FaceDatabase()
+face_dp = {}  # cam_id , face database

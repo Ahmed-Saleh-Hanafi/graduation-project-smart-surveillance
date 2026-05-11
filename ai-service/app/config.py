@@ -28,7 +28,7 @@ class Settings:
         # path of images in whitlist
     ROOT_IMAGES = BASE_DIR / "backend" / "Smart_Surviellance" / "Smart_Surviellance" / "wwwroot"
         # path snapshot
-    SNAPSHOT_IMAGES = BASE_DIR /"ai-service" /"app" /"data" /"database" / "snapshots"
+    SNAPSHOT_IMAGES = BASE_DIR / "backend" / "Smart_Surviellance" / "Smart_Surviellance" / "wwwroot" / "snapshots"
         # path log folder
     LOG_PATH = BASE_DIR / "ai-service" / "app" / "log_files"
     
@@ -40,6 +40,9 @@ class Settings:
     SIMILARITY_THRESHOLD = 0.4
     
     # config about models
-    DET_MODEL = "buffalo_l"    
+    DET_MODEL = "buffalo_l"   
+    WEAPON_ONN_MODEL_PATH = BASE_DIR / "ai-service" / "app"/ "models" / "best (1).onnx"
+    ABNORMAL_MODEL_PATH = BASE_DIR / "ai-service" / "app"/ "models" / "abnormal_v1.pth"
+    WEAPON_THRESHOLD = 0.5
 
 settings = Settings()

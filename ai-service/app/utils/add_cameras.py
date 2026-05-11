@@ -1,8 +1,8 @@
 import logging
 import subprocess
-import cv2
 from typing import Dict
 from app.config import settings
+from app.data.faces_dp import FaceDatabase, face_dp
 
 def add_cameras(cameras:Dict[int, str])->None:
     # validation
@@ -23,6 +23,7 @@ def add_cameras(cameras:Dict[int, str])->None:
         success_read_camera+= 1
         settings.CAMERA_SOURCES[cam_id] = rtsp_url
         logging.info(f'Loaded camera: {cam_id} that has rtsp_url: {rtsp_url}')
+        face_dp[str(cam_id)] = FaceDatabase()
     logging.info(f'Loading {success_read_camera} cameras and save them in settings.CAMERA_SOURCES is success')
 
 def check_rtsp(rtsp_url: str)-> bool:
