@@ -1,4 +1,5 @@
 from app.utils.get_provider import get_provider
+from pathlib import Path
 
 class Settings:
     APP_NAME = "CamGuard"
@@ -8,34 +9,40 @@ class Settings:
     BACKEND_FACE_API = "http://localhost:5198/api/Face/get-all-faces"
     BACKEND_ALERT_API = "http://localhost:5198/api/Detection"
     
-    # Mapping of camera IDs to RTSP URLs that is acctive 
-    CAMERA_SOURCES = {
-        
-    }
-    # mode
-    MODE = 'test'
+    # Mapping of camera IDs to RTSP URLs that is acctive {cam_id: rtsp_url}
+    CAMERA_SOURCES = {}
     
-    # get the device that we need to run ai models
+    # mode must be test or work
+    MODE = 'test'     
+    
+    # get the device that we need to run ai models  {device_id: -1 'cpu'or 0'gpu', provider, device: 'cpu' or 'gpu'}
     PROVIDER_IDX = 0
-    DEVICE = get_provider(PROVIDER_IDX)
+    DEVICE = get_provider(PROVIDER_IDX)  
     
-    # config of face 
-    FACE_DB_PATH = r"E:\Camguard\graduation-project-smart-surveillance\ai-service\app\data\database\faces.index"
-    META_PATH = r"E:\Camguard\graduation-project-smart-surveillance\ai-service\app\data\database\metadata.json"
+    # config of face detection and recognition
     EMB_DIM = 512
-    ROOT_IMAGES = r"E:\Camguard\graduation-project-smart-surveillance\backend\Smart_Surviellance\Smart_Surviellance\wwwroot"
-    SNAPSHOT_IMAGES = r"E:\Camguard\graduation-project-smart-surveillance\ai-service\app\data\database\snapshots"
+    
+    # Path of folder needed
+        # path of start point of project
+    BASE_DIR = Path(__file__).resolve().parent.parent.parent
+        # path of images in whitlist
+    ROOT_IMAGES = BASE_DIR / "backend" / "Smart_Surviellance" / "Smart_Surviellance" / "wwwroot"
+        # path snapshot
+    SNAPSHOT_IMAGES = BASE_DIR / "backend" / "Smart_Surviellance" / "Smart_Surviellance" / "wwwroot" / "snapshots"
+        # path log folder
+    LOG_PATH = BASE_DIR / "ai-service" / "app" / "log_files"
+    
     # config about processing stream
     FRAME_SIZE = (640, 640)
     BATCH_SIZE = 1
-    MAX_WAIT = 0.05
-    
-    DET_MODEL = "buffalo_l"
     TARGET_FPS = 3
     FRAME_INTERVAL = 1.0 / TARGET_FPS
     SIMILARITY_THRESHOLD = 0.4
     
-    # path log files
-    LOG_PATH = r"E:\Camguard\graduation-project-smart-surveillance\ai-service\app\log_files"
+    # config about models
+    DET_MODEL = "buffalo_l"   
+    WEAPON_ONN_MODEL_PATH = BASE_DIR / "ai-service" / "app"/ "models" / "best (1).onnx"
+    ABNORMAL_MODEL_PATH = BASE_DIR / "ai-service" / "app"/ "models" / "abnormal_v1.pth"
+    WEAPON_THRESHOLD = 0.5
 
 settings = Settings()

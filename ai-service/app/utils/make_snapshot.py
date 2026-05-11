@@ -8,7 +8,13 @@ def save_frame_and_get_url(frame) -> str:
     """
     Save frame as image and return URL path to send to backend
     """
+    if frame is None:
+        raise ValueError("Frame is None")
+    
 
+    if frame.size == 0:
+        raise ValueError("Frame is empty")
+    
     path_snapshot = settings.SNAPSHOT_IMAGES
     filename = f"{datetime.utcnow().strftime('%Y%m%d_%H%M%S')}_{uuid.uuid4().hex}.jpg"
     file_path = os.path.join(path_snapshot, filename)
@@ -17,6 +23,6 @@ def save_frame_and_get_url(frame) -> str:
 
     if not success:
         raise RuntimeError("Failed to save frame")
-    url = os.path.relpath(file_path, settings.ROOT_IMAGES)
+    url = os.path.join('/snapshots', filename)
 
-    return url.replace("\\", "/")
+    return url
