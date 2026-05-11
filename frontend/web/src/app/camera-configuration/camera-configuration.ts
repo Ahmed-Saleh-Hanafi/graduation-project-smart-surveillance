@@ -79,15 +79,19 @@ veiwCameras() {
     this.isModalOpen = true;
   }
 
-  openEdit(index: number) {
+openEdit(index: number) {
     this.mode = 'edit';
-
     const id = this.s[index].id;
 
     this.cameraService.lol(id).subscribe({
       next: (res: any) => {
-        this.form = res.data;
+        // بنحفظ الداتا سواء كانت جوه res.data أو هي الـ res نفسه
+        this.form = res.data || res; 
+        
         this.isModalOpen = true;
+
+        // السطر ده هو اللي هيحل مشكلة الضغطتين ويفتح الـ Modal فوراً
+        this.cdr.detectChanges();
       },
       error: err => console.log(err)
     });

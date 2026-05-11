@@ -43,8 +43,7 @@ constructor(
     this.form = this.emptyForm();
     this.isModalOpen = true;
   }
-
-  openEdit(user: User) {
+openEdit(user: User) {
     this.isEditMode = true;
     this.form = {
       id: user.id ?? '',
@@ -55,39 +54,37 @@ constructor(
       password: ''
     };
     this.isModalOpen = true;
+    
+    // عشان الـ Modal يفتح فوراً بدون ما تحتاج تدوس مرتين
+    this.cdr.detectChanges(); 
   }
 
   closeModal() {
     this.isModalOpen = false;
   }
-
   save() {
+    // التأكد من ملء الحقول الأساسية
     if (!this.form.email || !this.form.firstName || !this.form.lastName || !this.form.userName) {
       alert('Please fill all fields except password for update.');
       return;
     }
 
-    const payload: User = {
-      id: this.form.id,
-      email: this.form.email,
-      userName: this.form.userName,
-      firstName: this.form.firstName,
-      lastName: this.form.lastName,
-      password: this.form.password?.trim() || undefined
-    };
-
+    // --- حالة التعديل (Edit Mode) ---
     if (this.isEditMode) {
+      // تم توحيد الحروف الكابيتال وتعديل الـ Password
       const updatePayload: UpdateUserDto = {
         Id: this.form.id ?? '',
         Email: this.form.email,
         UserName: this.form.userName,
         FirstName: this.form.firstName,
         LastName: this.form.lastName,
-        password: this.form.password?.trim() || undefined
-      };
+        Password: this.form.password?.trim() || "" // P كابيتال ونص فاضي بدل undefined
+      } as any; // ضفنا as any مؤقتاً عشان لو الانترفيس عندك مكتوب سمول مايضربش إيرور
+
       this.userService.update(updatePayload).subscribe({
         next: (res: any) => {
-          if (res.isSuccess) {
+          // التعديل هنا: بنتأكد إن res موجود الأول، أو لو الباك إند رجع null بنعتبره نجح
+          if (!res || res.isSuccess !== false) {
             this.loadUsers();
             this.closeModal();
           } else {
@@ -95,12 +92,22 @@ constructor(
           }
         },
         error: err => {
-          console.error(err);
-          alert(err.error?.message || 'Update API error');
+          console.error('Update Error:', err);
+          alert(err.error?.message || 'Update API error. Check Console.');
         }
       });
       return;
     }
+
+    // --- حالة الإضافة (Create Mode) ---
+    const payload: User = {
+      id: this.form.id,
+      email: this.form.email,
+      userName: this.form.userName,
+      firstName: this.form.firstName,
+      lastName: this.form.lastName,
+      password: this.form.password?.trim() || ""
+    };
 
     if (!payload.password) {
       alert('Password is required when creating a new user.');
@@ -109,7 +116,7 @@ constructor(
 
     this.userService.create(payload).subscribe({
       next: (res: any) => {
-        if (res.isSuccess) {
+        if (!res || res.isSuccess !== false) {
           this.loadUsers();
           this.closeModal();
         } else {
@@ -117,8 +124,8 @@ constructor(
         }
       },
       error: err => {
-        console.error(err);
-        alert(err.error?.errors?.Password?.[0] || err.error?.message || 'API Error');
+        console.error('Create Error:', err);
+        alert(err.error?.errors?.Password?.[0] || err.error?.message || 'API Error. Check Console.');
       }
     });
   }

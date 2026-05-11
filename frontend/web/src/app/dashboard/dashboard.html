@@ -1,167 +1,184 @@
-    <!-- TopNavBar -->
+<!DOCTYPE html>
+<html class="light" lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta content="width=device-width, initial-scale=1.0" name="viewport" />
+  <title>Dashboard</title>
+  <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet" />
+  <script id="tailwind-config">
+    tailwind.config = {
+      darkMode: "class",
+      theme: {
+        extend: {
+          "colors": {
+            "surface": "#f8f9fa",
+            "on-surface": "#191c1d",
+            "primary": "#005bbf",
+          },
+          "fontFamily": {
+            "headline": ["Inter"],
+            "body": ["Inter"],
+            "label": ["Inter"]
+          }
+        },
+      },
+    }
+  </script>
+  <style>
+    body { font-family: 'Inter', sans-serif; }
+    .custom-scrollbar::-webkit-scrollbar { width: 6px; }
+    .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
+    .custom-scrollbar::-webkit-scrollbar-thumb { background-color: #cbd5e1; border-radius: 10px; }
+    .custom-scrollbar:hover::-webkit-scrollbar-thumb { background-color: #94a3b8; }
+  </style>
+</head>
 
-    <header style="padding-top: 7px; padding-bottom: 7px;"
-        class="fixed top-0 w-full z-50 bg-slate-50/80 backdrop-blur-xl border-b border-slate-200/50 shadow-sm">
+<body class="bg-surface text-on-surface overflow-hidden">
 
-        <div class="flex justify-between items-center px-6 h-16 w-full max-w-[1920px] mx-auto">
-            <div class="flex items-center gap-8">
+  <header style="padding-top: 7px; padding-bottom: 7px;" class="fixed top-0 w-full z-50 bg-slate-50/80 backdrop-blur-xl border-b border-slate-200/50 shadow-sm">
+      <div class="flex justify-between items-center px-6 h-16 w-full max-w-[1920px] mx-auto">
+          <div class="flex items-center gap-8">
+              <nav class="hidden md:flex gap-6 text-sm font-sans tracking-tight ">
+                  <img src="imgs/logo.png" alt="logo" style="width:150px; height: fit-content; margin-left: 20px; ">
+              </nav>
+          </div>
+          <div class="flex items-center gap-4">
+              <a href="/Alerts">
+                  <button class="p-2 text-slate-500 hover:bg-slate-100/50 transition-all duration-200 active:scale-95 rounded-full">
+                      <span class="material-symbols-outlined" data-icon="notifications">notifications</span>
+                  </button>
+              </a>
+              <button class="p-2 text-slate-500 hover:bg-slate-100/50 transition-all duration-200 active:scale-95 rounded-full">
+                  <span class="material-symbols-outlined" data-icon="settings">settings</span>
+              </button>
+              <div class="w-8 h-8 rounded-full overflow-hidden bg-slate-200 border border-slate-300">
+                  <img alt="Administrator profile" src="https://lh3.googleusercontent.com/aida-public/AB6AXuD1gFb8rW8bBh7Q7n-fUYlzdznMbfbtPnfUzbwsieTvqtKz4PzrBkZeG-NOgxEs2mGzSllahsVxyX5XHGOQP04N99JQTXuYU3U00E_uiREUq4utywLgBKlWieiJDDBFhfKgbxelAiCMua6NxbIoGZ2XCwGifXbKKLbrr5qJGKyYhRzfkEh8_oqa51KPa5swXJFpNHRHIfiDcmveSaWjidVNcSlOdYO3PSCsZPo7uwta9WrHTd6W5Cxj4f61V1CcTiAWDWPj8aOngNRx" />
+              </div>
+          </div>
+      </div>
+  </header>
 
-                <nav class="hidden md:flex gap-6 text-sm font-sans tracking-tight ">
+  <aside style="padding-top: 40px;" class="fixed left-0 top-16 h-[calc(100vh-4rem)] w-64 z-40 bg-slate-50/80 backdrop-blur-xl flex flex-col py-4 px-2 border-r border-slate-200/50">
+      <nav class="flex-1 space-y-1">
+          <a class="flex items-center gap-3 px-4 py-3 text-sm font-medium bg-blue-50 text-blue-700 border-l-4 border-blue-700 transition-colors duration-150 rounded-r-lg group" href="/Dashboard">
+              <span class="material-symbols-outlined text-blue-700" style="font-variation-settings: 'FILL' 1;">dashboard</span> Dashboard
+          </a>
+          <a class="flex items-center gap-3 px-4 py-3 text-sm font-medium text-slate-600 hover:bg-slate-100 rounded-lg transition-colors duration-150" href="/CameraConfiguration">
+              <span class="material-symbols-outlined text-slate-400 group-hover:text-blue-700">videocam</span> Camera Config
+          </a>
+          <a class="flex items-center gap-3 px-4 py-3 text-sm font-medium text-slate-600 hover:bg-slate-100 transition-colors duration-150 rounded-lg group" href="#">
+              <span class="material-symbols-outlined text-slate-400 group-hover:text-blue-700">database</span> Storage
+          </a>
+          <a class="flex items-center gap-3 px-4 py-3 text-sm font-medium text-slate-600 hover:bg-slate-100 transition-colors duration-150 rounded-lg group" href="/usermanagement">
+              <span class="material-symbols-outlined text-slate-400 group-hover:text-blue-700">group</span> User Management
+          </a>
+          <a class="flex items-center gap-3 px-4 py-3 text-sm font-medium text-slate-600 hover:bg-slate-100 transition-colors duration-150 rounded-lg group" href="/rolemanagement">
+              <span class="material-symbols-outlined text-slate-400 group-hover:text-blue-700">key</span> Role Management
+          </a>
+          <a class="flex items-center gap-3 px-4 py-3 text-sm font-medium text-slate-600 hover:bg-slate-100 transition-colors duration-150 rounded-lg group" href="/detectionmanagement">
+              <span class="material-symbols-outlined text-slate-400 group-hover:text-blue-700">radar</span> Detections
+          </a>
+          <a class="flex items-center gap-3 px-4 py-3 text-sm font-medium text-slate-600 hover:bg-slate-100 transition-colors duration-150 rounded-lg group" href="/Alerts">
+              <span class="material-symbols-outlined text-slate-400 group-hover:text-blue-700">notifications</span> Notification Management
+          </a>
+      </nav>
+  </aside>
 
-                    <img src="imgs/logo.png" alt="logo" style="width:150; height: fit-content; margin-left: 20px; ">
-                </nav>
-            </div>
-            <div class="flex items-center gap-4">
-                <a href="/Alerts">
-                    <button
-                        class="p-2 text-slate-500 hover:bg-slate-100/50 transition-all duration-200 active:scale-95">
-                        <span class="material-symbols-outlined" data-icon="notifications">notifications</span>
-                    </button>
-                </a>
-                <button class="p-2 text-slate-500 hover:bg-slate-100/50 transition-all duration-200 active:scale-95">
-                    <span class="material-symbols-outlined" data-icon="settings">settings</span>
-                </button>
-                <div class="w-8 h-8 rounded-full overflow-hidden bg-slate-200">
-                    <img alt="Administrator profile"
-                        data-alt="Close up portrait of a senior system administrator in a professional setting with soft office lighting"
-                        src="https://lh3.googleusercontent.com/aida-public/AB6AXuD1gFb8rW8bBh7Q7n-fUYlzdznMbfbtPnfUzbwsieTvqtKz4PzrBkZeG-NOgxEs2mGzSllahsVxyX5XHGOQP04N99JQTXuYU3U00E_uiREUq4utywLgBKlWieiJDDBFhfKgbxelAiCMua6NxbIoGZ2XCwGifXbKKLbrr5qJGKyYhRzfkEh8_oqa51KPa5swXJFpNHRHIfiDcmveSaWjidVNcSlOdYO3PSCsZPo7uwta9WrHTd6W5Cxj4f61V1CcTiAWDWPj8aOngNRx" />
-                </div>
-            </div>
-        </div>
-    </header>
-    <!-- SideNavBar -->
-    <aside style="padding-top: 40px;"
-        class="fixed left-0 top-16 h-[calc(100vh-4rem)] w-64 z-40 bg-slate-50/80 backdrop-blur-xl flex flex-col py-4 px-2 border-r border-slate-200/20">
+  <main class="ml-64 mt-16 p-6 h-[calc(100vh-4rem)] flex gap-6 bg-surface overflow-hidden">
 
-        <nav class="flex-1 space-y-1">
-
-            <a class="flex items-center gap-3 px-4 py-3 text-sm font-medium bg-blue-50 text-blue-700 border-l-4 border-blue-700 transition-colors duration-150 rounded-r-lg group"
-                href="/Dashboard">
-
-                <span class="material-symbols-outlined text-blue-700">
-                    dashboard
-                </span>
-
-                Dashboard
-            </a>
-            <a class="flex items-center gap-3 px-4 py-3 text-sm font-medium text-slate-600 hover:bg-slate-100 rounded-lg"
-                href="/CameraConfiguration">
-
-                <span class="material-symbols-outlined">videocam</span>
-                Camera Config
-            </a>
-            <a class="flex items-center gap-3 px-4 py-3 text-sm font-medium text-slate-600 hover:bg-slate-100 transition-colors duration-150 rounded-lg group"
-                href="#">
-                <span class="material-symbols-outlined text-slate-400 group-hover:text-blue-700"
-                    data-icon="database">database</span>
-                Storage
-            </a>
-            <a class="flex items-center gap-3 px-4 py-3 text-sm font-medium text-slate-600 hover:bg-slate-100 transition-colors duration-150 rounded-lg group"
-                href="/usermanagement">
-                <span class="material-symbols-outlined text-slate-400 group-hover:text-blue-700"
-                    data-icon="group">group</span>
-                User Management
-            </a>
-            <a class="flex items-center gap-3 px-4 py-3 text-sm font-medium text-slate-600 hover:bg-slate-100 transition-colors duration-150 rounded-lg group"
-                href="/rolemanagement">
-                <span class="material-symbols-outlined text-slate-400 group-hover:text-blue-700"
-                    data-icon="key">key</span>
-                Role Management
-            </a>
-            <a class="flex items-center gap-3 px-4 py-3 text-sm font-medium text-slate-600 hover:bg-slate-100 transition-colors duration-150 rounded-lg group"
-                href="/detectionmanagement">
-                <span class="material-symbols-outlined text-slate-400 group-hover:text-blue-700"
-                    data-icon="radar">radar</span>
-                Detections
-            </a>
-            <a class="flex items-center gap-3 px-4 py-3 text-sm font-medium text-slate-600 hover:bg-slate-100 transition-colors duration-150 rounded-lg group"
-                href="/Alerts">
-                <span class="material-symbols-outlined group-hover:text-blue-700"
-                    data-icon="notifications">notifications</span>
-                Notification Management
-            </a>
-        </nav>
-
-    </aside>
-    <!-- Main Content -->
-    <main class="ml-64 mt-16 p-8 min-h-screen bg-surface">
-
-        <!-- Top Live Camera -->
-        <div class="bg-black rounded-2xl overflow-hidden relative mb-8 h-64">
-
-            <img *ngIf="!videoReady" src="imgs/placeholder.jpg"
-                class="absolute inset-0 w-full h-full object-cover opacity-80" />
-
+      <div class="w-[320px] bg-white rounded-2xl shadow-sm border border-slate-200 flex flex-col shrink-0 overflow-hidden">
           
-            <video #videoPlayer autoplay playsinline muted class="w-full h-64 object-cover">
-            </video>
-            <div class="absolute top-4 left-4 text-white">
-                <span class="bg-white/20 px-2 py-1 rounded text-xs">IDLE</span>
-                <h2 class="text-xl font-bold mt-2">Parking Lot</h2>
-                <p class="text-sm opacity-70">North parking · 720p</p>
-            </div>
+          <div class="px-6 py-4 bg-slate-50 border-b border-slate-100 flex justify-between items-center shrink-0">
+              <span class="text-[11px] font-extrabold tracking-widest text-slate-500 uppercase">Select Camera</span>
+              <span class="bg-blue-100 text-blue-700 text-[10px] font-bold px-2 py-0.5 rounded-full">{{ cameras.length }}</span>
+          </div>
 
+          <div *ngIf="errorMessage" class="p-4 text-red-500 text-sm text-center bg-red-50 m-4 rounded-xl border border-red-100">
+              <span class="material-symbols-outlined block mb-1">error</span>
+              {{ errorMessage }}
+          </div>
 
+          <div class="flex-1 overflow-y-auto p-4 space-y-3 custom-scrollbar">
+              <div *ngFor="let cam of cameras" 
+                   (click)="selectCamera(cam)" 
+                   class="flex items-center gap-4 p-3 rounded-xl cursor-pointer transition-all duration-200 border"
+                   [ngClass]="selectedCamera?.id === cam.id ? 'bg-blue-50 border-blue-500 shadow-sm' : 'bg-white border-slate-100 hover:border-blue-300 hover:bg-slate-50 hover:shadow-md'">
+                  
+                  <div class="w-11 h-11 rounded-lg flex items-center justify-center shrink-0 transition-colors"
+                       [ngClass]="selectedCamera?.id === cam.id ? 'bg-blue-600 text-white shadow-md shadow-blue-600/30' : 'bg-slate-100 text-slate-500'">
+                      <span class="material-symbols-outlined text-[22px]" [style.font-variation-settings]="selectedCamera?.id === cam.id ? '\'FILL\' 1' : '\'FILL\' 0'">videocam</span>
+                  </div>
 
+                  <div class="flex-1 min-w-0">
+                      <h3 class="text-sm font-bold truncate transition-colors" 
+                          [ngClass]="selectedCamera?.id === cam.id ? 'text-blue-900' : 'text-slate-700'">{{ cam.name }}</h3>
+                      <p class="text-[11px] font-mono truncate mt-0.5 transition-colors"
+                         [ngClass]="selectedCamera?.id === cam.id ? 'text-blue-600 font-semibold' : 'text-slate-400'">{{ cam.ipAddress || 'localhost' }}:{{ cam.port || '8554' }}</p>
+                  </div>
 
-        </div>
-        <div class="mt-4">
-            <div *ngIf="loading" class="text-slate-500 py-4">Loading cameras...</div>
-            <div *ngIf="errorMessage" class="text-red-500 py-4">{{ errorMessage }}</div>
-            <div class="flex gap-2 flex-wrap" *ngIf="!loading && cameras.length > 0">
-                <button *ngFor="let cam of cameras" (click)="selectCamera(cam.id)" class="group relative flex items-center gap-2 px-4 py-2 rounded-xl
-           bg-blue-600/90 hover:bg-blue-500
-           text-white text-sm font-medium
-           hover:scale-105 active:scale-95
-           transition-all duration-200 shadow-lg">
-                    <span class="w-2 h-2 rounded-full bg-green-400 group-hover:animate-pulse"></span>
+                  <div class="w-2.5 h-2.5 rounded-full shrink-0 border-2 border-white transition-all"
+                       [ngClass]="selectedCamera?.id === cam.id ? 'bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.8)] scale-110' : 'bg-slate-300'"></div>
+              </div>
+          </div>
+      </div>
 
-                 {{ cam.name }}
-                </button>
-            </div>
-            <div *ngIf="!loading && !errorMessage && cameras.length === 0" class="text-slate-500 py-4">
-              No cameras available.
-            </div>
-        </div>
-        <!-- Sensors Section -->
-        <div>
-            <div class="flex justify-between items-center mb-4">
-                <h2 class="text-lg font-bold">Sensors</h2>
-                <span class="text-sm text-gray-400">Tap for details</span>
-            </div>
+      <div class="flex-1 bg-white rounded-2xl shadow-sm border border-slate-200 flex flex-col overflow-hidden relative">
+          
+          <div *ngIf="!selectedCamera" class="absolute inset-0 flex flex-col items-center justify-center bg-slate-50 z-30">
+              <div class="w-24 h-24 bg-white rounded-full flex items-center justify-center mb-6 shadow-sm border border-slate-100">
+                  <span class="material-symbols-outlined text-[48px] text-slate-300">videocam_off</span>
+              </div>
+              <h2 class="text-xl font-extrabold text-slate-700 mb-2">No Camera Selected</h2>
+              <p class="text-sm font-medium text-slate-500 text-center max-w-xs">Select a camera from the list on the left to view the live streaming feed.</p>
+          </div>
 
-            <div class="grid grid-cols-2 gap-4">
+          <div [hidden]="!selectedCamera" class="flex-1 flex flex-col relative w-full h-full">
+              
+              <div class="h-16 bg-white border-b border-slate-100 text-slate-800 flex items-center justify-between px-6 shrink-0 z-20">
+                  <div class="flex items-center gap-4">
+                      <div class="w-9 h-9 bg-blue-50 text-blue-600 rounded-lg flex items-center justify-center border border-blue-100">
+                          <span class="material-symbols-outlined text-[18px]">videocam</span>
+                      </div>
+                      <div>
+                          <h2 class="text-sm font-extrabold leading-tight text-slate-800">{{ selectedCamera?.name }}</h2>
+                          <p class="text-[10px] text-slate-500 font-mono font-medium">{{ selectedCamera?.ipAddress || 'localhost' }}:{{ selectedCamera?.port || '8554' }}</p>
+                      </div>
+                      <span class="ml-4 px-2.5 py-1 rounded-md bg-red-50 border border-red-200 text-red-600 text-[10px] font-black flex items-center gap-1.5 uppercase tracking-wide">
+                          <span class="w-1.5 h-1.5 rounded-full bg-red-600 animate-pulse"></span> LIVE
+                      </span>
+                  </div>
+                  <div class="flex items-center gap-2 text-slate-500 bg-slate-50 px-3 py-1.5 rounded-lg border border-slate-100 text-xs font-semibold">
+                      <span class="material-symbols-outlined text-[16px] text-slate-400">hub</span> WebRTC / WHEP
+                  </div>
+              </div>
 
-                <!-- Smoke -->
-                <div class="bg-white p-4 rounded-xl shadow">
-                    <p class="text-sm text-gray-400">Smoke</p>
-                    <h3 class="text-2xl font-bold">0 PPM</h3>
-                    <p class="text-green-500 text-sm">Normal</p>
-                </div>
+              <div class="flex-1 relative bg-slate-900 flex items-center justify-center overflow-hidden">
+                  
+                  <div *ngIf="!videoReady" class="absolute inset-0 flex items-center justify-center z-0 bg-slate-800">
+                      <div class="flex flex-col items-center gap-4">
+                          <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
+                          <span class="text-slate-400 font-medium text-sm tracking-wide">Establishing secure connection...</span>
+                      </div>
+                  </div>
 
-                <!-- Temperature -->
-                <div class="bg-white p-4 rounded-xl shadow">
-                    <p class="text-sm text-gray-400">Temperature</p>
-                    <h3 class="text-2xl font-bold">27°C</h3>
-                    <p class="text-orange-500 text-sm">High</p>
-                </div>
+                  <video #videoPlayer autoplay playsinline muted class="absolute inset-0 w-full h-full object-contain z-10 transition-opacity duration-300" [class.opacity-0]="!videoReady" [class.opacity-100]="videoReady"></video>
 
-                <!-- Humidity -->
-                <div class="bg-white p-4 rounded-xl shadow">
-                    <p class="text-sm text-gray-400">Humidity</p>
-                    <h3 class="text-2xl font-bold">57%</h3>
-                    <p class="text-blue-500 text-sm">Good</p>
-                </div>
+                  <div class="absolute bottom-0 left-0 w-full pt-24 pb-6 px-8 bg-gradient-to-t from-black/90 via-black/40 to-transparent z-20 flex items-end justify-between transition-opacity duration-300 pointer-events-none" [class.opacity-0]="!videoReady">
+                      <div>
+                          <h2 class="text-white text-3xl font-extrabold tracking-tight drop-shadow-md">{{ selectedCamera?.name }}</h2>
+                          <p class="text-slate-300 text-sm font-mono mt-1 drop-shadow-md">{{ selectedCamera?.ipAddress || 'localhost' }}:{{ selectedCamera?.port || '8554' }}</p>
+                      </div>
+                      <div class="flex items-center gap-2 text-green-400 text-sm font-bold mb-1 drop-shadow-md bg-black/40 px-3 py-1.5 rounded-full backdrop-blur-md border border-white/10">
+                          <span class="w-2.5 h-2.5 rounded-full bg-green-400 shadow-[0_0_10px_rgba(74,222,128,1)] animate-pulse"></span> Streaming Normal
+                      </div>
+                  </div>
 
-                <!-- Motion -->
-                <div class="bg-white p-4 rounded-xl shadow">
-                    <p class="text-sm text-gray-400">Motion</p>
-                    <h3 class="text-2xl font-bold">3 events</h3>
-                    <p class="text-red-500 text-sm">Active</p>
-                </div>
+              </div>
+          </div>
+      </div>
 
-            </div>
-        </div>
-
-
-    </main>
+  </main>
+</body>
+</html>

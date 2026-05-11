@@ -15,59 +15,72 @@ export class Dashboard implements OnInit {
 
   cameras: any[] = [];
   errorMessage: string | null = null;
-  loading = false;
   private pc!: RTCPeerConnection;
 
   videoReady: boolean = false;
+  selectedCamera: any = null;
 
   constructor(private dashboardService: DashboardService) {}
 
   ngOnInit() {
+    // 1. هات الكاميرات من الذاكرة واعرضها فوراً
+    this.loadFromCache();
+    
+    // 2. حدث الداتا من السيرفر في الخلفية
     this.loadCameras();
   }
 
+  loadFromCache() {
+    try {
+      const cached = localStorage.getItem('camguard_dashboard_cameras');
+      if (cached) {
+        this.cameras = JSON.parse(cached);
+      }
+    } catch (e) {
+      console.error('Cache read error', e);
+    }
+  }
+
   loadCameras() {
-    this.loading = true;
     this.errorMessage = null;
 
     this.dashboardService.getCameras().subscribe(
       res => {
-        console.log('Dashboard cameras response', res);
         this.cameras = (res && (res.data ?? res)) || [];
-        this.loading = false;
+        // احفظ الداتا الجديدة في الكاش للريفريش الجاي
+        localStorage.setItem('camguard_dashboard_cameras', JSON.stringify(this.cameras));
       },
       error => {
         console.error('Failed to load cameras', error);
-        this.errorMessage = 'Unable to load cameras. Check the API and browser console.';
-        this.cameras = [];
-        this.loading = false;
+        this.errorMessage = 'Unable to connect to camera service.';
       }
     );
   }
 
-  async selectCamera(id: number) {
-    await this.startWebRTC(id);
+  async selectCamera(cam: any) {
+    this.selectedCamera = cam;
     
+    setTimeout(async () => {
+      await this.startWebRTC(cam.id);
+    }, 0);
   }
 
   async startWebRTC(id: number) {
-
-  
     if (this.pc) {
       this.pc.close();
     }
 
     this.videoReady = false;
-
     this.pc = new RTCPeerConnection();
 
     this.pc.ontrack = (event) => {
       const stream = event.streams[0];
-
-      this.videoPlayer.nativeElement.srcObject = stream;
-      this.videoPlayer.nativeElement.play();
-
-      this.videoReady = true; 
+      
+      if (this.videoPlayer && this.videoPlayer.nativeElement) {
+        this.videoPlayer.nativeElement.srcObject = stream;
+        this.videoPlayer.nativeElement.play();
+        this.videoReady = true; 
+      }
     };
 
     const offer = await this.pc.createOffer();
@@ -82,5 +95,4 @@ export class Dashboard implements OnInit {
 
     await this.pc.setRemoteDescription(answer);
   }
-  
 }

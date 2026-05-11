@@ -1,79 +1,22 @@
 <!DOCTYPE html>
-
 <html class="light" lang="en">
 
 <head>
   <meta charset="utf-8" />
   <meta content="width=device-width, initial-scale=1.0" name="viewport" />
-  <title>User-Management</title>
+  <title>User Management</title>
   <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&amp;display=swap"
-    rel="stylesheet" />
-  <link
-    href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap"
-    rel="stylesheet" />
-  <link
-    href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap"
-    rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet" />
   <script id="tailwind-config">
     tailwind.config = {
       darkMode: "class",
       theme: {
         extend: {
           "colors": {
-            "inverse-on-surface": "#f0f1f2",
-            "on-primary-container": "#ffffff",
-            "on-error": "#ffffff",
-            "on-tertiary-container": "#0e0200",
-            "on-primary-fixed-variant": "#004493",
-            "on-primary": "#ffffff",
-            "on-surface-variant": "#414754",
-            "surface-variant": "#e1e3e4",
-            "on-secondary": "#ffffff",
-            "primary-fixed": "#d8e2ff",
-            "on-secondary-fixed-variant": "#3d4854",
-            "inverse-primary": "#adc7ff",
-            "tertiary-fixed-dim": "#ffb691",
-            "surface-container-lowest": "#ffffff",
-            "on-error-container": "#93000a",
-            "surface-container-highest": "#e1e3e4",
-            "on-tertiary-fixed": "#341100",
-            "on-secondary-fixed": "#121d27",
             "surface": "#f8f9fa",
-            "surface-container-low": "#f3f4f5",
-            "surface-container-high": "#e7e8e9",
-            "secondary-container": "#d5e1ef",
-            "on-tertiary-fixed-variant": "#783100",
-            "primary": "#005bbf",
-            "outline-variant": "#c1c6d6",
-            "secondary-fixed": "#d8e4f2",
-            "secondary-fixed-dim": "#bcc8d6",
-            "on-primary-fixed": "#001a41",
-            "surface-tint": "#005bc0",
-            "on-background": "#191c1d",
-            "error-container": "#ffdad6",
-            "tertiary-container": "#c55500",
-            "primary-fixed-dim": "#adc7ff",
-            "primary-container": "#1a73e8",
-            "outline": "#727785",
-            "background": "#f8f9fa",
-            "tertiary-fixed": "#ffdbcb",
             "on-surface": "#191c1d",
-            "surface-dim": "#d9dadb",
-            "error": "#ba1a1a",
-            "surface-bright": "#f8f9fa",
-            "tertiary": "#9e4300",
-            "on-tertiary": "#ffffff",
-            "on-secondary-container": "#596470",
-            "surface-container": "#edeeef",
-            "inverse-surface": "#2e3132",
-            "secondary": "#545f6c"
-          },
-          "borderRadius": {
-            "DEFAULT": "0.125rem",
-            "lg": "0.25rem",
-            "xl": "0.5rem",
-            "full": "0.75rem"
+            "primary": "#005bbf",
           },
           "fontFamily": {
             "headline": ["Inter"],
@@ -85,184 +28,220 @@
     }
   </script>
   <style>
-    body {
-      font-family: 'Inter', sans-serif;
-    }
-
-    .glass-nav {
-      backdrop-filter: blur(20px);
-    }
-
-    .material-symbols-outlined {
-      font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
-    }
+    body { font-family: 'Inter', sans-serif; }
+    .material-symbols-outlined { font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24; }
+    .custom-scrollbar::-webkit-scrollbar { width: 6px; height: 6px; }
+    .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
+    .custom-scrollbar::-webkit-scrollbar-thumb { background-color: #cbd5e1; border-radius: 20px; }
   </style>
 </head>
 
 <body class="bg-surface text-on-surface">
-  <!-- TopNavBar -->
-  <header style="padding-top: 7px; padding-bottom: 7px;"
-    class="fixed top-0 w-full z-50 bg-slate-50/80 backdrop-blur-xl border-b border-slate-200/50 shadow-sm">
+  <header style="padding-top: 7px; padding-bottom: 7px;" class="fixed top-0 w-full z-50 bg-slate-50/80 backdrop-blur-xl border-b border-slate-200/50 shadow-sm">
     <div class="flex justify-between items-center px-6 h-50 w-full max-w-[1920px] mx-auto">
       <div class="flex items-center gap-8">
-        <img src="imgs/logo.png" alt="logo" style="width:150; height: fit-content; margin-left: 20px;">
-
-        <nav class="hidden md:flex gap-6 text-sm font-sans tracking-tight">
-
-        </nav>
+        <img src="imgs/logo.png" alt="logo" style="width:150px; height: fit-content; margin-left: 20px;">
+        <nav class="hidden md:flex gap-6 text-sm font-sans tracking-tight"></nav>
       </div>
       <div class="flex items-center gap-4">
         <a href="/Alerts">
-                <button class="p-2 text-slate-500 hover:bg-slate-100/50 transition-all duration-200 active:scale-95" >
-                    <span class="material-symbols-outlined" data-icon="notifications">notifications</span>
-                </button>
-                </a>
+          <button class="p-2 text-slate-500 hover:bg-slate-100/50 transition-all duration-200 active:scale-95">
+            <span class="material-symbols-outlined" data-icon="notifications">notifications</span>
+          </button>
+        </a>
         <button class="p-2 text-slate-500 hover:bg-slate-100/50 transition-all duration-200 active:scale-95">
           <span class="material-symbols-outlined" data-icon="settings">settings</span>
         </button>
         <div class="w-8 h-8 rounded-full overflow-hidden bg-slate-200">
-          <img alt="Administrator profile"
-            data-alt="Close up portrait of a senior system administrator in a professional setting with soft office lighting"
-            src="https://lh3.googleusercontent.com/aida-public/AB6AXuD1gFb8rW8bBh7Q7n-fUYlzdznMbfbtPnfUzbwsieTvqtKz4PzrBkZeG-NOgxEs2mGzSllahsVxyX5XHGOQP04N99JQTXuYU3U00E_uiREUq4utywLgBKlWieiJDDBFhfKgbxelAiCMua6NxbIoGZ2XCwGifXbKKLbrr5qJGKyYhRzfkEh8_oqa51KPa5swXJFpNHRHIfiDcmveSaWjidVNcSlOdYO3PSCsZPo7uwta9WrHTd6W5Cxj4f61V1CcTiAWDWPj8aOngNRx" />
+          <img alt="Administrator profile" src="https://lh3.googleusercontent.com/aida-public/AB6AXuD1gFb8rW8bBh7Q7n-fUYlzdznMbfbtPnfUzbwsieTvqtKz4PzrBkZeG-NOgxEs2mGzSllahsVxyX5XHGOQP04N99JQTXuYU3U00E_uiREUq4utywLgBKlWieiJDDBFhfKgbxelAiCMua6NxbIoGZ2XCwGifXbKKLbrr5qJGKyYhRzfkEh8_oqa51KPa5swXJFpNHRHIfiDcmveSaWjidVNcSlOdYO3PSCsZPo7uwta9WrHTd6W5Cxj4f61V1CcTiAWDWPj8aOngNRx" />
         </div>
       </div>
     </div>
   </header>
-  <!-- SideNavBar -->
-  <aside
-    class="fixed left-0 top-10 h-[calc(100vh-4rem)] w-64 z-40 bg-slate-50/80 backdrop-blur-xl flex flex-col py-4 px-2 border-r border-slate-200/20">
-    <div class="px-4 py-2 mb-6">
-      <div class="flex items-center gap-3">
 
-
-      </div>
-    </div>
+  <aside class="fixed left-0 top-10 h-[calc(100vh-4rem)] w-64 z-40 bg-slate-50/80 backdrop-blur-xl flex flex-col py-4 px-2 border-r border-slate-200/20">
+    <div class="px-4 py-2 mb-6"></div>
     <nav class="flex-1 space-y-1">
-      <a class="flex items-center gap-3 px-4 py-3 text-sm font-medium text-slate-600 hover:bg-slate-100 transition-colors duration-150 rounded-lg group"
-        href="/Dashboard">
-        <span class="material-symbols-outlined text-slate-400 group-hover:text-blue-700"
-          data-icon="dashboard">dashboard</span>
-        Dashboard
+      <a class="flex items-center gap-3 px-4 py-3 text-sm font-medium text-slate-600 hover:bg-slate-100 transition-colors duration-150 rounded-lg group" href="/Dashboard">
+        <span class="material-symbols-outlined text-slate-400 group-hover:text-blue-700">dashboard</span> Dashboard
       </a>
-      <a class="flex items-center gap-3 px-4 py-3 text-sm font-medium text-slate-600 hover:bg-slate-100 transition-colors duration-150 rounded-lg group"
-        href="/CameraConfiguration">
-        <span class="material-symbols-outlined text-slate-400 group-hover:text-blue-700" data-icon="videocam"
-          style="font-variation-settings: 'FILL' 1;">videocam</span>
-        Camera Config
+      <a class="flex items-center gap-3 px-4 py-3 text-sm font-medium text-slate-600 hover:bg-slate-100 transition-colors duration-150 rounded-lg group" href="/CameraConfiguration">
+        <span class="material-symbols-outlined text-slate-400 group-hover:text-blue-700">videocam</span> Camera Config
       </a>
-      <a class="flex items-center gap-3 px-4 py-3 text-sm font-medium text-slate-600 hover:bg-slate-100 transition-colors duration-150 rounded-lg group"
-        href="#">
-        <span class="material-symbols-outlined text-slate-400 group-hover:text-blue-700"
-          data-icon="database">database</span>
-        Sensor Configuration
+      <a class="flex items-center gap-3 px-4 py-3 text-sm font-medium text-slate-600 hover:bg-slate-100 transition-colors duration-150 rounded-lg group" href="#">
+        <span class="material-symbols-outlined text-slate-400 group-hover:text-blue-700">database</span> Sensor Configuration
       </a>
-      <a class="flex items-center gap-3 px-4 py-3 text-sm font-medium bg-blue-50 text-blue-700 border-l-4 border-blue-700 transition-colors duration-150 rounded-r-lg group"
-        href="/usermanagement">
-        <span class="material-symbols-outlined text-blue-700" data-icon="group">group</span>
-        User Management
+      <a class="flex items-center gap-3 px-4 py-3 text-sm font-medium bg-blue-50 text-blue-700 border-l-4 border-blue-700 transition-colors duration-150 rounded-r-lg group" href="/usermanagement">
+        <span class="material-symbols-outlined text-blue-700" style="font-variation-settings: 'FILL' 1;">group</span> User Management
       </a>
-       <a class="flex items-center gap-3 px-4 py-3 text-sm font-medium text-slate-600 hover:bg-slate-100 transition-colors duration-150 rounded-lg group"
-                href="/rolemanagement">
-                <span class="material-symbols-outlined text-slate-400 group-hover:text-blue-700"
-                    data-icon="key">key</span>
-                Role Management
-            </a>
-      <a class="flex items-center gap-3 px-4 py-3 text-sm font-medium text-slate-600 hover:bg-slate-100 transition-colors duration-150 rounded-lg group"
-        href="/detectionmanagement">
-        <span class="material-symbols-outlined text-slate-400 group-hover:text-blue-700"
-          data-icon="radar">radar</span>
-        Detections
+      <a class="flex items-center gap-3 px-4 py-3 text-sm font-medium text-slate-600 hover:bg-slate-100 transition-colors duration-150 rounded-lg group" href="/rolemanagement">
+        <span class="material-symbols-outlined text-slate-400 group-hover:text-blue-700">key</span> Role Management
       </a>
-      <a class="flex items-center gap-3 px-4 py-3 text-sm font-medium text-slate-600 hover:bg-slate-100 transition-colors duration-150 rounded-lg group"
-        href="/Alerts">
-        <span class="material-symbols-outlined text-slate-400 group-hover:text-blue-700"
-          data-icon="notifications">notifications</span>
-        Notification Management
+      <a class="flex items-center gap-3 px-4 py-3 text-sm font-medium text-slate-600 hover:bg-slate-100 transition-colors duration-150 rounded-lg group" href="/detectionmanagement">
+        <span class="material-symbols-outlined text-slate-400 group-hover:text-blue-700">radar</span> Detections
+      </a>
+      <a class="flex items-center gap-3 px-4 py-3 text-sm font-medium text-slate-600 hover:bg-slate-100 transition-colors duration-150 rounded-lg group" href="/Alerts">
+        <span class="material-symbols-outlined text-slate-400 group-hover:text-blue-700">notifications</span> Notification Management
       </a>
     </nav>
-
   </aside>
-  <!-- Main Content -->
 
   <main class="ml-64 mt-16 p-8 min-h-screen bg-surface">
 
-    <!-- HEADER -->
-    <div class="flex justify-between items-center mb-6">
-      <div>
-        <h1 class="text-3xl font-extrabold">User Management</h1>
-        <p class="text-sm text-on-surface-variant">Manage all users</p>
+    <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 mb-8 flex justify-between items-center">
+      <div class="flex items-center gap-4">
+        <div class="w-12 h-12 bg-blue-50 text-blue-600 rounded-xl flex items-center justify-center shadow-inner">
+          <span class="material-symbols-outlined text-2xl">manage_accounts</span>
+        </div>
+        <div>
+          <h1 class="text-2xl font-extrabold text-slate-800 tracking-tight">User Management</h1>
+          <p class="text-sm text-slate-500 font-medium mt-0.5">Manage system access, user profiles, and roles</p>
+        </div>
       </div>
 
-      <button (click)="openCreate()" 
-        class="px-4 py-2 bg-primary text-white rounded shadow hover:bg-primary-container">
-        + Add User
+      <button (click)="openCreate()" class="flex items-center gap-2 px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-semibold shadow-md shadow-blue-600/20 transition-all duration-200 active:scale-95">
+        <span class="material-symbols-outlined text-xl">person_add</span>
+        Add User
       </button>
     </div>
 
-    <!-- TABLE -->
-    <div class="bg-white rounded-xl border overflow-hidden">
+    <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+      
+      <div class="overflow-x-auto custom-scrollbar">
+        <table class="w-full text-left text-sm whitespace-nowrap">
+          <thead class="bg-slate-50 border-b border-slate-200 text-slate-500">
+            <tr>
+              <th class="px-6 py-4 font-bold uppercase tracking-wider text-[11px]">User Profile</th>
+              <th class="px-6 py-4 font-bold uppercase tracking-wider text-[11px]">Contact Info</th>
+              <th class="px-6 py-4 font-bold uppercase tracking-wider text-[11px]">Username</th>
+              <th class="px-6 py-4 font-bold uppercase tracking-wider text-[11px] text-center w-32">Actions</th>
+            </tr>
+          </thead>
 
-      <table class="w-full text-sm">
-        <thead class="bg-slate-100 text-xs uppercase">
-          <tr>
-            <th class="p-3 text-center">Id</th>
-            <th class="text-center">Email</th>
-            <th class="text-center">User Name</th>
-            <th class="text-center">First Name</th>
-            <th class="text-center">Last Name</th>
-            <th class="text-center">Actions</th>
-          </tr>
-        </thead>
+          <tbody class="divide-y divide-slate-100 text-slate-700">
+            
+            <tr *ngIf="users?.length === 0">
+              <td colspan="4" class="px-6 py-12 text-center text-slate-500">
+                <span class="material-symbols-outlined text-4xl mb-2 opacity-50">group_off</span>
+                <p class="font-medium">No users found. Add your first user to get started.</p>
+              </td>
+            </tr>
 
-        <tbody>
-          <tr *ngFor="let user of users" class="border-t">
-            <td class="p-3 text-center">{{ user.id }}</td>
-            <td class="text-center">{{ user.email }}</td>
-            <td class="text-center">{{ user.userName }}</td>
-            <td class="text-center">{{ user.firstName }}</td>
-            <td class="text-center">{{ user.lastName }}</td>
-            <td class="text-center space-x-2 py-2">
-              <button (click)="openEdit(user)" class="px-3 py-1 bg-blue-600 text-white rounded text-xs">
-                Edit
-              </button>
-              <button (click)="deleteUser(user)" class="px-3 py-1 bg-red-600 text-white rounded text-xs">
-                Delete
-              </button>
-            </td>
-          </tr>
-        </tbody>
-      </table>
+            <tr *ngFor="let user of users" class="hover:bg-slate-50/80 transition-colors duration-150 group">
+              
+              <td class="px-6 py-4">
+                <div class="flex items-center gap-3">
+                  <div class="w-9 h-9 rounded-full bg-gradient-to-tr from-blue-100 to-blue-50 flex items-center justify-center text-blue-600 border border-blue-200">
+                    <span class="material-symbols-outlined text-[18px]">person</span>
+                  </div>
+                  <div class="flex flex-col">
+                    <span class="font-bold text-slate-800">{{ user.firstName }} {{ user.lastName }}</span>
+                  </div>
+                </div>
+              </td>
+              
+              <td class="px-6 py-4">
+                <div class="flex items-center gap-2">
+                  <span class="material-symbols-outlined text-[16px] text-slate-400">mail</span>
+                  <span class="text-sm font-medium text-slate-600">{{ user.email }}</span>
+                </div>
+              </td>
+              
+              <td class="px-6 py-4">
+                <span class="font-mono text-xs font-semibold text-slate-600 bg-slate-100 px-2.5 py-1 rounded-md border border-slate-200">
+                  @{{ user.userName }}
+                </span>
+              </td>
 
+              <td class="px-6 py-4">
+                <div class="flex items-center justify-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+                  <button (click)="openEdit(user)" class="p-2 text-blue-600 bg-blue-50 hover:bg-blue-100 rounded-lg transition-colors" title="Edit User">
+                    <span class="material-symbols-outlined text-[18px]">edit</span>
+                  </button>
+                  <button (click)="deleteUser(user)" class="p-2 text-red-600 bg-red-50 hover:bg-red-100 rounded-lg transition-colors" title="Delete User">
+                    <span class="material-symbols-outlined text-[18px]">delete</span>
+                  </button>
+                </div>
+              </td>
+
+            </tr>
+          </tbody>
+        </table>
+      </div>
     </div>
 
   </main>
 
-  <!-- MODAL -->
-  <div *ngIf="isModalOpen" class="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-    <div class="bg-white w-[420px] p-6 rounded-xl shadow-lg">
-
-      <h2 class="text-lg font-bold mb-4">
-        {{ isEditMode ? 'Edit User' : 'Add User' }}
-      </h2>
-
-      <div class="space-y-3">
-        <input [(ngModel)]="form.email" placeholder="Email" class="w-full p-2 border rounded" />
-
-        <input [(ngModel)]="form.password" type="password" placeholder="Password"
-               class="w-full p-2 border rounded" />
-        <p *ngIf="isEditMode" class="text-xs text-slate-500">Leave password blank to keep current password.</p>
-
-        <input [(ngModel)]="form.firstName" placeholder="First Name" class="w-full p-2 border rounded" />
-        <input [(ngModel)]="form.lastName" placeholder="Last Name" class="w-full p-2 border rounded" />
-        <input [(ngModel)]="form.userName" placeholder="User Name" class="w-full p-2 border rounded" />
+  <div *ngIf="isModalOpen" class="fixed inset-0 bg-slate-900/40 backdrop-blur-sm flex items-center justify-center z-50 p-4" (click)="closeModal()">
+    
+    <div class="bg-white w-full max-w-[550px] rounded-2xl shadow-2xl overflow-hidden" (click)="$event.stopPropagation()">
+      
+      <div class="px-6 py-4 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
+        <h2 class="text-lg font-extrabold text-slate-800 flex items-center gap-2">
+          <span class="material-symbols-outlined text-blue-600">{{ isEditMode ? 'manage_accounts' : 'person_add' }}</span>
+          {{ isEditMode ? 'Edit User Details' : 'Add New User' }}
+        </h2>
+        <button (click)="closeModal()" class="w-8 h-8 flex items-center justify-center text-slate-400 hover:text-slate-600 hover:bg-slate-200 rounded-full transition-colors">
+          <span class="material-symbols-outlined text-xl">close</span>
+        </button>
       </div>
 
-      <div class="flex justify-end gap-2 mt-4">
-        <button (click)="closeModal()" class="px-3 py-1">
+      <div class="p-6 space-y-5">
+        
+        <div class="grid grid-cols-2 gap-4">
+          <div>
+            <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">First Name</label>
+            <div class="relative">
+              <span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-[18px]">badge</span>
+              <input [(ngModel)]="form.firstName" placeholder="e.g. John" class="w-full pl-10 pr-3 py-2.5 bg-slate-50 border border-slate-200 text-slate-800 text-sm rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all" />
+            </div>
+          </div>
+          <div>
+            <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">Last Name</label>
+            <div class="relative">
+              <input [(ngModel)]="form.lastName" placeholder="e.g. Doe" class="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 text-slate-800 text-sm rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all" />
+            </div>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-2 gap-4">
+          <div>
+            <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">Username</label>
+            <div class="relative">
+              <span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-[18px]">account_circle</span>
+              <input [(ngModel)]="form.userName" placeholder="johndoe123" class="w-full pl-10 pr-3 py-2.5 bg-slate-50 border border-slate-200 text-slate-800 font-mono text-sm rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all" />
+            </div>
+          </div>
+          <div>
+            <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">Email Address</label>
+            <div class="relative">
+              <span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-[18px]">alternate_email</span>
+              <input [(ngModel)]="form.email" placeholder="john@example.com" class="w-full pl-10 pr-3 py-2.5 bg-slate-50 border border-slate-200 text-slate-800 text-sm rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all" />
+            </div>
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">Password</label>
+          <div class="relative">
+            <span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-[18px]">lock</span>
+            <input [(ngModel)]="form.password" type="password" placeholder="••••••••" class="w-full pl-10 pr-3 py-2.5 bg-slate-50 border border-slate-200 text-slate-800 text-sm rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all" />
+          </div>
+          <p *ngIf="isEditMode" class="text-xs text-blue-600 font-medium mt-2 flex items-center gap-1">
+            <span class="material-symbols-outlined text-[14px]">info</span>
+            Leave password blank to keep the current password.
+          </p>
+        </div>
+
+      </div>
+
+      <div class="px-6 py-4 bg-slate-50 border-t border-slate-100 flex justify-end gap-3">
+        <button (click)="closeModal()" class="px-5 py-2.5 text-sm font-semibold text-slate-600 hover:bg-slate-200 rounded-xl transition-colors">
           Cancel
         </button>
-        <button (click)="save()" class="px-3 py-1 bg-primary text-white rounded">
-          {{ isEditMode ? 'Update' : 'Save' }}
+        <button (click)="save()" class="flex items-center gap-2 px-6 py-2.5 bg-blue-600 hover:bg-blue-700 text-white text-sm font-bold rounded-xl shadow-md transition-all active:scale-95">
+          <span class="material-symbols-outlined text-[18px]">{{ isEditMode ? 'sync' : 'save' }}</span>
+          {{ isEditMode ? 'Update User' : 'Save User' }}
         </button>
       </div>
 

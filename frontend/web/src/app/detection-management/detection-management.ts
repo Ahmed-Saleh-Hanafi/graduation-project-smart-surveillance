@@ -39,30 +39,19 @@ export class DetectionManagement implements OnInit {
   ) {}
 
   ngOnInit() {
-    // 1. نقرأ الكاميرات والديتيكشنز من الذاكرة عشان يظهروا فوراً مع بعض
     this.loadFromCache();
-    
-    // 2. نجيب الداتا الجديدة من السيرفر في الخلفية ونحدث بيها الصفحة
     this.loadInitialData();
   }
 
-  // دالة قراءة الكاميرات والديتيكشنز من الذاكرة (Local Storage)
   loadFromCache() {
     try {
       const cachedCameras = localStorage.getItem('camguard_cameras');
       const cachedDetections = localStorage.getItem('camguard_detections');
       
-      if (cachedCameras) {
-        this.cameras = JSON.parse(cachedCameras);
-      }
-      if (cachedDetections) {
-        this.allDetections = JSON.parse(cachedDetections);
-      }
+      if (cachedCameras) this.cameras = JSON.parse(cachedCameras);
+      if (cachedDetections) this.allDetections = JSON.parse(cachedDetections);
 
-      // لو في كاميرات في الذاكرة، ابنِ الكروت واعطِها الديتيكشنز فوراً
-      if (this.cameras.length > 0) {
-        this.buildGroups(); 
-      }
+      if (this.cameras.length > 0) this.buildGroups(); 
     } catch (e) {
       console.error('Error reading from cache', e);
     }
@@ -72,27 +61,23 @@ export class DetectionManagement implements OnInit {
     this.errorMessage = null;
     this.isFetching = true;
 
-    // نجيب الكاميرات من الـ API
     this.cameraService.getAll().pipe(
       map((res: any) => (res && (res.data ?? res)) || []),
       catchError(() => of([]))
     ).subscribe((cameras: any[]) => {
-      
       if (cameras.length > 0) {
         this.cameras = cameras;
         localStorage.setItem('camguard_cameras', JSON.stringify(cameras));
         this.buildGroups();
       }
 
-      // بعدين نجيب كل الـ Detections في الخلفية
       this.detectionService.getAll().pipe(
         map((res: any) => (res && (res.data ?? res)) || []),
         catchError(() => of([]))
-      ).subscribe((detections: any[]) => {
+      ).subscribe((detections: Detection[]) => {
         this.allDetections = detections;
-        // نحفظ الديتيكشنز في الذاكرة عشان الريفريش اللي جاي
         localStorage.setItem('camguard_detections', JSON.stringify(detections));
-        this.buildGroups(); // نحدث الكروت بالديتيكشنز الجديدة
+        this.buildGroups();
         this.isFetching = false;
       });
     });
@@ -125,21 +110,37 @@ export class DetectionManagement implements OnInit {
   }
 
   get totalDetections(): number {
-    return this.cameraGroups.reduce(
-      (sum, g) => sum + g.detections.length,
-      0
-    );
+    return this.cameraGroups.reduce((sum, g) => sum + g.detections.length, 0);
   }
 
   get totalCameras(): number {
     return this.cameraGroups.length;
   }
 
-  // --- Detection Details Modal ---
-
+  // --- الفانكشناليتي بتاعة الـ Resolve ---
   openDetectionModal(det: Detection) {
     this.selectedDetection = det;
     this.isDetectionModalOpen = true;
+
+    // لو الديتيكشن لسه محلصلوش Resolve
+    if (!det.isResolved) {
+      // 1. نقلب اللون أخضر في الواجهة فوراً عشان الـ UX
+      det.isResolved = true; 
+      
+      // 2. نبعت الطلب للباك إند (POST Request زي ما في الـ Swagger)
+      this.detectionService.markAsResolved(det.id).subscribe({
+        next: () => {
+          console.log(`Detection ${det.id} successfully resolved in backend.`);
+          // 3. نحدث الكاش عشان لو اليوزر عمل ريفريش يفضل لونه أخضر وميرجعش أحمر تاني
+          localStorage.setItem('camguard_detections', JSON.stringify(this.allDetections));
+        },
+        error: (err) => {
+          console.error('Error resolving detection in backend:', err);
+          // لو حصل مشكلة في الباك إند (مثلا السيرفر واقع)، نرجع اللون أحمر تاني
+          det.isResolved = false; 
+        }
+      });
+    }
   }
 
   closeDetectionModal() {
@@ -159,7 +160,7 @@ export class DetectionManagement implements OnInit {
     this.detectionService.getByDay(this.filterDate).pipe(
       map((res: any) => (res && (res.data ?? res)) || []),
       catchError(() => of([]))
-    ).subscribe((detections: any) => {
+    ).subscribe((detections: Detection[]) => {
       this.allDetections = detections;
       this.buildGroups();
       this.isFetching = false;

@@ -148,11 +148,17 @@
           </div>
 
           <div *ngFor="let det of group.detections" (click)="openDetectionModal(det)"
-               class="w-full bg-white border border-slate-200 rounded-lg p-3 hover:border-blue-300 hover:shadow-md transition-all duration-200 cursor-pointer flex items-center gap-4 group/item">
+               class="w-full bg-white border-2 rounded-lg p-3 shadow-sm hover:shadow-md transition-all duration-200 cursor-pointer flex items-center gap-4 group/item"
+               [ngClass]="det.isResolved ? 'border-green-400 hover:border-green-500 bg-green-50/30' : 'border-red-400 hover:border-red-500 bg-red-50/30'">
             
-            <div class="w-16 h-16 shrink-0 rounded-md overflow-hidden bg-slate-100 flex items-center justify-center border border-slate-100">
+            <div class="w-16 h-16 shrink-0 rounded-md overflow-hidden bg-slate-100 flex items-center justify-center border border-slate-100 relative">
               <img *ngIf="det.snapShotUrl" [src]="det.snapShotUrl" alt="Snapshot" class="w-full h-full object-cover group-hover/item:scale-110 transition-transform duration-300" />
               <span *ngIf="!det.snapShotUrl" class="material-symbols-outlined text-slate-300">image_not_supported</span>
+              
+              <div class="absolute top-1 right-1 rounded-full bg-white p-0.5 shadow-sm">
+                <span *ngIf="det.isResolved" class="material-symbols-outlined text-[10px] text-green-500 font-bold block">check</span>
+                <span *ngIf="!det.isResolved" class="material-symbols-outlined text-[10px] text-red-500 font-bold block">priority_high</span>
+              </div>
             </div>
             
             <div class="flex-1 min-w-0">
@@ -164,14 +170,12 @@
                 </span>
               </div>
               <p class="text-xs text-slate-500 truncate" title="{{ det.description }}">{{ det.description }}</p>
-              <div class="flex items-center gap-1 mt-1.5 text-[11px] font-semibold text-slate-400">
-                <span class="material-symbols-outlined text-[13px]">schedule</span>
-                {{ formatFullDate(det.detectedAt) }}
+              <div class="flex items-center justify-between mt-1.5">
+                <div class="flex items-center gap-1 text-[11px] font-semibold text-slate-400">
+                  <span class="material-symbols-outlined text-[13px]">schedule</span>
+                  {{ formatFullDate(det.detectedAt) }}
+                </div>
               </div>
-            </div>
-            
-            <div class="shrink-0 text-slate-300 group-hover/item:text-blue-500 transition-colors pl-2">
-              <span class="material-symbols-outlined">open_in_new</span>
             </div>
           </div>
         </div>
@@ -182,16 +186,19 @@
 
   <div *ngIf="isDetectionModalOpen && selectedDetection" class="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50 p-4" (click)="closeDetectionModal()">
     
-    <div class="bg-white w-full max-w-[600px] rounded-2xl shadow-2xl overflow-hidden animate-modal-in flex flex-col" (click)="$event.stopPropagation()">
+    <div class="bg-white w-full max-w-[600px] rounded-2xl shadow-2xl overflow-hidden animate-modal-in flex flex-col border-t-4 border-t-green-500" (click)="$event.stopPropagation()">
       
       <div *ngIf="selectedDetection.snapShotUrl" class="relative">
         <img [src]="selectedDetection.snapShotUrl" alt="Detection Snapshot" class="w-full h-56 object-cover" />
         <button (click)="closeDetectionModal()" class="absolute top-3 right-3 w-8 h-8 flex items-center justify-center bg-black/50 hover:bg-black/70 text-white rounded-full transition-colors backdrop-blur-sm">
           <span class="material-symbols-outlined text-xl">close</span>
         </button>
-        <div class="absolute bottom-3 left-3">
+        <div class="absolute bottom-3 left-3 flex gap-2">
           <span class="text-xs font-bold px-3 py-1 rounded-full text-white shadow-lg backdrop-blur-sm" [style.background-color]="getTypeColor(selectedDetection.type)">
             {{ selectedDetection.type }}
+          </span>
+          <span class="text-xs font-bold px-3 py-1 rounded-full text-green-700 bg-green-100 border border-green-200 shadow-lg backdrop-blur-sm flex items-center gap-1">
+            <span class="material-symbols-outlined text-[14px]">task_alt</span> Resolved
           </span>
         </div>
       </div>
@@ -200,6 +207,9 @@
         <div class="flex items-center gap-3">
           <span class="text-xs font-bold px-3 py-1 rounded-full text-white shadow-md" [style.background-color]="getTypeColor(selectedDetection.type)">
             {{ selectedDetection.type }}
+          </span>
+          <span class="text-xs font-bold px-3 py-1 rounded-full text-green-700 bg-green-100 border border-green-200 shadow-md flex items-center gap-1">
+            <span class="material-symbols-outlined text-[14px]">task_alt</span> Resolved
           </span>
         </div>
         <button (click)="closeDetectionModal()" class="w-8 h-8 flex items-center justify-center text-slate-500 hover:bg-slate-200 rounded-full transition-colors">
