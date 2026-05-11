@@ -11,6 +11,7 @@ export interface Detection {
   cameraId: number;
   detectedAt: string;
   snapShotUrl?: string;
+  isResolved?: boolean; // ضفنا الأتريبيوت هنا عشان الـ TypeScript ميعملش إيرور
 }
 
 @Injectable({
@@ -32,5 +33,10 @@ export class DetectionService {
 
   getByDay(date: string): Observable<any> {
     return this.http.get(`${this.baseUrl}/day/${date}`);
+  }
+
+  // التعديل هنا: استخدام POST زي ما موجود في الـ Swagger عندك
+  markAsResolved(detectionId: number): Observable<any> {
+    return this.http.post(`${this.baseUrl}/${detectionId}/resolve`, {});
   }
 }
