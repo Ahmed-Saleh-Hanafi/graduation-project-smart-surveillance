@@ -5,6 +5,7 @@ import {
   KeyboardAvoidingView, ActivityIndicator, Alert,
   Pressable, FlatList,
 } from 'react-native';
+import dayjs from 'dayjs';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -167,12 +168,6 @@ const FaceCard = ({
     <Image source={{ uri: face.imageUrl }} style={styles.avatar} resizeMode="cover" />
     <View style={styles.cardInfo}>
       <Text style={styles.cardName} numberOfLines={1}>{face.name}</Text>
-      <Text style={styles.cardDate}>
-        Added{' '}
-        {new Date(face.createdAt).toLocaleDateString('en-US', {
-          month: 'short', day: 'numeric', year: 'numeric',
-        })}
-      </Text>
     </View>
     <TouchableOpacity
       style={styles.deleteBtn}
@@ -300,10 +295,10 @@ const AddFaceModal: React.FC<AddFaceModalProps> = ({
             {errors.image && <Text style={styles.fieldError}>{errors.image}</Text>}
 
             {/* Name */}
-            <Text style={styles.fieldLabel}>Full Name *</Text>
+            <Text style={styles.fieldLabel}> Name *</Text>
             <TextInput
               style={[styles.input, errors.name && styles.inputError]}
-              placeholder="e.g. Ahmed Hassan"
+              
               placeholderTextColor="#AEAEB2"
               value={name}
               onChangeText={setName}
@@ -599,7 +594,6 @@ const styles = StyleSheet.create({
   avatar:   { width: 58, height: 58, borderRadius: 14, backgroundColor: '#F2F2F7' },
   cardInfo: { flex: 1, marginLeft: 12 },
   cardName: { fontSize: 15, fontWeight: '700', color: '#1C1C1E' },
-  cardDate: { fontSize: 11, color: '#C7C7CC', marginTop: 4 },
   deleteBtn: {
     width: 36, height: 36, borderRadius: 18,
     backgroundColor: '#E5E5EA', justifyContent: 'center', alignItems: 'center',

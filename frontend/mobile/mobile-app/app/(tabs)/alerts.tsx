@@ -2,11 +2,15 @@ import React, { useState, useEffect, useCallback, useRef } from 'react';
 import {
   View, Text, StyleSheet, ScrollView, TouchableOpacity,
   Platform, Alert, Modal, ActivityIndicator, RefreshControl,
-  Image, Animated,
+  Image, Animated, Linking,
 } from 'react-native';
+import dayjs from 'dayjs';
+import utc from 'dayjs/plugin/utc';
+import timezone from 'dayjs/plugin/timezone';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { Linking } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { Video, ResizeMode } from 'expo-av';
+
 import * as FileSystem from 'expo-file-system/legacy';
 import * as MediaLibrary from 'expo-media-library';
 import * as Notifications from 'expo-notifications';
@@ -15,6 +19,8 @@ import axios from 'axios';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as signalR from '@microsoft/signalr';
 
+dayjs.extend(utc);
+dayjs.extend(timezone);
 // ─── Notification setup ───────────────────────────────────────────────────────
 
 Notifications.setNotificationHandler({
@@ -65,9 +71,9 @@ api.interceptors.request.use(async (c) => {
 });
 
 const SEV: Record<string, { color: string; label: string; icon: any }> = {
-  intrusion: { color: '#FF3B30', label: 'Intrusion', icon: 'warning'  },
-  motion:    { color: '#FF9500', label: 'Motion',    icon: 'walk'      },
-  default:   { color: '#378ADD', label: 'Detection', icon: 'camera'    },
+  intrusion: { color: '#FF3B30', label: 'Intrusion', icon: 'warning' },
+  motion:    { color: '#FF9500', label: 'Motion',    icon: 'walk'    },
+  default:   { color: '#378ADD', label: 'Detection', icon: 'camera'  },
 };
 
 const TABS = ['All', 'Not Resolved', 'Resolved'];
@@ -93,16 +99,18 @@ interface DetectionItem {
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
 const fmtDate = (ts: string) => !ts ? '--' :
-  new Date(ts).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
+  dayjs.utc(ts).tz('Europe/London').format('DD MMM YYYY');
 
 const fmtTime = (ts: string) => !ts ? '--:--' :
-  new Date(ts).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  dayjs.utc(ts).format('HH:mm');
 
 const buildUrl = (raw?: string | null): string | null => {
-  if (!raw) return null;
+  if (!raw || !raw.trim()) return null;
   if (raw.startsWith('http')) return raw;
+  // fix backslashes then encode spaces/special chars in each path segment
   const clean = raw.replace(/\\/g, '/').replace(/^\/+/, '');
-  return `${BASE_URL}/${clean}`;
+  const encoded = clean.split('/').map(encodeURIComponent).join('/');
+  return `${BASE_URL}/${encoded}`;
 };
 
 const getSeverity = (type: string): 'intrusion' | 'motion' | 'default' => {
@@ -113,7 +121,7 @@ const getSeverity = (type: string): 'intrusion' | 'motion' | 'default' => {
 };
 
 const mapItem = (item: any, cameraMap: Record<number, string>): DetectionItem => {
-  const ts = item.detectedAt ?? item.timestamp ?? item.createdAt ?? '';
+  let ts = item.detectedAt ?? item.timestamp ?? item.createdAt ?? '';
   return {
     id:          String(item.id ?? Math.random()),
     name:        item.name        ?? 'Detection',
@@ -168,70 +176,36 @@ const downloadToGallery = async (
   url: string, filename: string, onProgress: (p: number) => void,
 ): Promise<'saved' | 'error'> => {
   try {
-    console.log('⬇️ downloading:', url);
-
-    // 1. اطلب الـ permission
     const { status } = await MediaLibrary.requestPermissionsAsync();
-    console.log('Permission status:', status);
-
     if (status !== 'granted') {
-      Alert.alert(
-        'Permission Required',
-        'Please allow media library access from Settings to save files.',
-        [
-          { text: 'Cancel', style: 'cancel' },
-          { text: 'Open Settings', onPress: () => Linking.openSettings() },
-        ]
-      );
+      Alert.alert('Permission Required', 'Please allow media library access.', [
+        { text: 'Cancel', style: 'cancel' },
+        { text: 'Open Settings', onPress: () => Linking.openSettings() },
+      ]);
       return 'error';
     }
-
-    // 2. حمّل الملف في الـ cache
     const token    = await AsyncStorage.getItem('userToken');
     const headers  = token ? { Authorization: `Bearer ${token}` } : {};
     const localUri = `${FileSystem.cacheDirectory}${filename}`;
-
-    const dl = FileSystem.createDownloadResumable(
-      url, localUri, { headers },
+    const dl = FileSystem.createDownloadResumable(url, localUri, { headers },
       ({ totalBytesWritten, totalBytesExpectedToWrite }) => {
         if (totalBytesExpectedToWrite > 0)
           onProgress(Math.round((totalBytesWritten / totalBytesExpectedToWrite) * 100));
-      }
-    );
-
+      });
     const result = await dl.downloadAsync();
-    console.log('Download result:', result?.status, result?.uri);
-
-    if (!result || result.status !== 200) {
-      Alert.alert('Error', `Server returned status: ${result?.status}`);
-      return 'error';
-    }
-
-    // 3. احفظ في الـ gallery باستخدام saveToLibraryAsync (بيتجنب مشكلة الـ album permission)
+    if (!result || result.status !== 200) return 'error';
     await MediaLibrary.saveToLibraryAsync(result.uri);
-
-    // 4. جرب تضيف لـ album بشكل آمن — لو فشل مش مشكلة، الملف اتحفظ
     try {
       const asset  = await MediaLibrary.createAssetAsync(result.uri);
       const albums = await MediaLibrary.getAlbumsAsync();
       const existing = albums.find(a => a.title === 'Security Detections');
-      if (existing) {
-        await MediaLibrary.addAssetsToAlbumAsync([asset], existing, false);
-      } else {
-        await MediaLibrary.createAlbumAsync('Security Detections', asset, false);
-      }
-    } catch {
-      console.warn('Album step failed — file already saved to gallery');
-    }
-
-    // 5. امسح الـ cache
+      if (existing) await MediaLibrary.addAssetsToAlbumAsync([asset], existing, false);
+      else await MediaLibrary.createAlbumAsync('Security Detections', asset, false);
+    } catch { /* already saved */ }
     await FileSystem.deleteAsync(result.uri, { idempotent: true });
-
     return 'saved';
-
-  } catch (e: any) {
-    console.error('dl error:', e);
-    console.error('dl error message:', JSON.stringify(e));
+  } catch (e) {
+    console.error('download error:', e);
     return 'error';
   }
 };
@@ -327,7 +301,6 @@ const lb = StyleSheet.create({
 
 const DetectionCard = ({ item, onPress }: { item: DetectionItem; onPress: (i: DetectionItem) => void }) => {
   const { color } = SEV[item.severity] ?? SEV.default;
-
   return (
     <View style={[card.wrap, item.resolved && card.resolved]}>
       <TouchableOpacity activeOpacity={0.74} onPress={() => onPress(item)}>
@@ -371,20 +344,20 @@ const DetectionCard = ({ item, onPress }: { item: DetectionItem; onPress: (i: De
   );
 };
 const card = StyleSheet.create({
-  wrap:    { backgroundColor: '#fff', borderRadius: 18, overflow: 'hidden', shadowColor: '#000', shadowOpacity: 0.04, shadowRadius: 8, shadowOffset: { width: 0, height: 3 }, elevation: 2, borderWidth: 0.5, borderColor: 'rgba(0,0,0,0.06)' },
-  resolved:{ opacity: 0.55 },
-  inner:   { flexDirection: 'row', alignItems: 'center', gap: 12 },
-  strip:   { width: 4, alignSelf: 'stretch', borderTopLeftRadius: 18, borderBottomLeftRadius: 18 },
-  imgBox:  { width: 52, height: 52, borderRadius: 14, alignItems: 'center', justifyContent: 'center', overflow: 'hidden', flexShrink: 0 },
-  img:     { width: 52, height: 52 },
-  content: { flex: 1, paddingVertical: 14 },
-  row:     { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 6, marginBottom: 3 },
-  name:    { fontSize: 14, fontWeight: '700', color: '#1C1C1E', flex: 1 },
-  desc:    { fontSize: 11, color: '#8E8E93', marginBottom: 5, fontStyle: 'italic' },
-  meta:    { flexDirection: 'row', alignItems: 'center', gap: 4, flexWrap: 'wrap' },
-  metaTxt: { fontSize: 11, color: '#AEAEB2' },
-  sep:     { width: 3, height: 3, borderRadius: 2, backgroundColor: '#D1D1D6', marginHorizontal: 2 },
-  right:   { paddingRight: 14 },
+  wrap:     { backgroundColor: '#fff', borderRadius: 18, overflow: 'hidden', shadowColor: '#000', shadowOpacity: 0.04, shadowRadius: 8, shadowOffset: { width: 0, height: 3 }, elevation: 2, borderWidth: 0.5, borderColor: 'rgba(0,0,0,0.06)' },
+  resolved: { opacity: 0.55 },
+  inner:    { flexDirection: 'row', alignItems: 'center', gap: 12 },
+  strip:    { width: 4, alignSelf: 'stretch', borderTopLeftRadius: 18, borderBottomLeftRadius: 18 },
+  imgBox:   { width: 52, height: 52, borderRadius: 14, alignItems: 'center', justifyContent: 'center', overflow: 'hidden', flexShrink: 0 },
+  img:      { width: 52, height: 52 },
+  content:  { flex: 1, paddingVertical: 14 },
+  row:      { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 6, marginBottom: 3 },
+  name:     { fontSize: 14, fontWeight: '700', color: '#1C1C1E', flex: 1 },
+  desc:     { fontSize: 11, color: '#8E8E93', marginBottom: 5, fontStyle: 'italic' },
+  meta:     { flexDirection: 'row', alignItems: 'center', gap: 4, flexWrap: 'wrap' },
+  metaTxt:  { fontSize: 11, color: '#AEAEB2' },
+  sep:      { width: 3, height: 3, borderRadius: 2, backgroundColor: '#D1D1D6', marginHorizontal: 2 },
+  right:    { paddingRight: 14 },
 });
 
 // ─── Detail Modal ─────────────────────────────────────────────────────────────
@@ -394,7 +367,12 @@ const DetailModal = ({ item, onClose, onResolved }: {
 }) => {
   const [resolving, setResolving] = useState(false);
   const [imgError,  setImgError]  = useState(false);
+
+  // swipe down to close — بس trigger مش animation
+  const startY = useRef(0);
+
   useEffect(() => { setImgError(false); }, [item?.id]);
+
   if (!item) return null;
   const { color } = SEV[item.severity] ?? SEV.default;
 
@@ -405,15 +383,32 @@ const DetailModal = ({ item, onClose, onResolved }: {
     finally { setResolving(false); }
   };
 
+  // الـ download يحمل الفيديو لو موجود، الصورة لو مفيش فيديو
+  const dlUrl      = item.videoUrl ?? item.snapshotUrl;
+  const dlFilename = item.videoUrl ? `vid_${item.id}.mp4` : `snap_${item.id}.jpg`;
+  const dlIcon     = item.videoUrl ? 'videocam-outline' : 'image-outline';
+  const dlLabel    = item.videoUrl ? 'Download Video' : 'Download Snapshot';
+
   return (
     <Modal visible animationType="slide" transparent onRequestClose={onClose}>
       <View style={dm.overlay}>
         <TouchableOpacity style={StyleSheet.absoluteFill} onPress={onClose} />
         <View style={dm.sheet}>
-          <View style={dm.handle} />
-
+          <View
+            style={dm.handleWrap}
+            onStartShouldSetResponder={() => true}
+            onMoveShouldSetResponder={() => true}
+            onResponderGrant={e => { startY.current = e.nativeEvent.pageY; }}
+            onResponderRelease={e => {
+              const dy = e.nativeEvent.pageY - startY.current;
+              if (dy > 80) onClose();
+            }}
+          >
+            <View style={dm.handle} />
+          </View>
           <ScrollView showsVerticalScrollIndicator={false}>
 
+            {/* Header */}
             <View style={dm.headerRow}>
               <View style={[dm.headerIcon, { backgroundColor: color + '18' }]}>
                 <Ionicons name={SEV[item.severity]?.icon ?? 'camera'} size={22} color={color} />
@@ -425,6 +420,7 @@ const DetailModal = ({ item, onClose, onResolved }: {
               <SeverityPill severity={item.severity} />
             </View>
 
+            {/* Date / Time / Status */}
             <View style={dm.dateRow}>
               <View style={dm.dateChip}>
                 <Ionicons name="calendar-outline" size={13} color="#8E8E93" />
@@ -445,24 +441,34 @@ const DetailModal = ({ item, onClose, onResolved }: {
               </View>
             </View>
 
-            {item.snapshotUrl && !imgError ? (
+            {/* ── Media: فيديو لو موجود، صورة لو مفيش ── */}
+            {item.videoUrl ? (
+              <Video
+                source={{ uri: item.videoUrl }}
+                style={dm.media}
+                useNativeControls
+                resizeMode={ResizeMode.CONTAIN}
+                shouldPlay={false}
+              />
+            ) : item.snapshotUrl && !imgError ? (
               <Image
                 source={{ uri: item.snapshotUrl }}
-                style={[dm.snapshot, { borderColor: color + '30' }]}
+                style={dm.media}
                 resizeMode="cover"
                 onError={() => setImgError(true)}
               />
             ) : (
-              <View style={[dm.snapPh, { borderColor: color + '30' }]}>
-                <Ionicons name="image-outline" size={36} color={color + '50'} />
-                <Text style={[dm.snapPhTxt, { color: color + '80' }]}>
-                  {item.snapshotUrl ? 'Image unavailable' : 'No snapshot'}
+              <View style={dm.mediaPh}>
+                <Ionicons name="image-outline" size={36} color="#AEAEB2" />
+                <Text style={dm.mediaPhTxt}>
+                  {item.snapshotUrl ? 'Image unavailable' : 'No media'}
                 </Text>
               </View>
             )}
 
             {!!item.description && <Text style={dm.desc}>{item.description}</Text>}
 
+            {/* Details */}
             <Text style={dm.sec}>DETAILS</Text>
             <View style={dm.grid}>
               {([
@@ -478,22 +484,13 @@ const DetailModal = ({ item, onClose, onResolved }: {
               ))}
             </View>
 
+            {/* Download */}
             <Text style={dm.sec}>EVIDENCE</Text>
             <View style={dm.dlRow}>
-              <DownloadBtn
-                url={item.snapshotUrl}
-                filename={`snap_${item.id}.jpg`}
-                icon="image-outline"
-                label="Snapshot"
-              />
-              <DownloadBtn
-                url={item.videoUrl}
-                filename={`vid_${item.id}.mp4`}
-                icon="videocam-outline"
-                label="Video"
-              />
+              <DownloadBtn url={dlUrl} filename={dlFilename} icon={dlIcon} label={dlLabel} />
             </View>
 
+            {/* Resolve */}
             {!item.resolved && (
               <>
                 <Text style={dm.sec}>ACTION</Text>
@@ -510,10 +507,7 @@ const DetailModal = ({ item, onClose, onResolved }: {
               </>
             )}
 
-            <TouchableOpacity style={dm.closeBtn} onPress={onClose}>
-              <Text style={dm.closeTxt}>Close</Text>
-            </TouchableOpacity>
-            <View style={{ height: 20 }} />
+            <View style={{ height: 32 }} />
           </ScrollView>
         </View>
       </View>
@@ -522,9 +516,9 @@ const DetailModal = ({ item, onClose, onResolved }: {
 };
 const dm = StyleSheet.create({
   overlay:     { flex: 1, backgroundColor: 'rgba(0,0,0,0.45)', justifyContent: 'flex-end' },
-  sheet:       { backgroundColor: '#fff', borderTopLeftRadius: 28, borderTopRightRadius: 28, padding: 20, maxHeight: '92%', overflow: 'hidden' },
-  accent:      { height: 0 },
-  handle:      { width: 36, height: 4, backgroundColor: 'rgba(0,0,0,0.12)', borderRadius: 2, alignSelf: 'center', marginBottom: 14 },
+  sheet:       { backgroundColor: '#fff', borderTopLeftRadius: 28, borderTopRightRadius: 28, padding: 20, maxHeight: '92%' },
+  handleWrap:  { alignItems: 'center', paddingVertical: 12, marginTop: -12 },
+  handle:      { width: 36, height: 4, backgroundColor: 'rgba(0,0,0,0.12)', borderRadius: 2 },
   headerRow:   { flexDirection: 'row', alignItems: 'center', gap: 12, marginBottom: 12 },
   headerIcon:  { width: 44, height: 44, borderRadius: 14, alignItems: 'center', justifyContent: 'center' },
   title:       { fontSize: 16, fontWeight: '700', color: '#1C1C1E' },
@@ -533,9 +527,10 @@ const dm = StyleSheet.create({
   dateChip:    { flexDirection: 'row', alignItems: 'center', gap: 5, backgroundColor: '#F2F2F7', paddingHorizontal: 10, paddingVertical: 6, borderRadius: 10 },
   statusChip:  { flexDirection: 'row', alignItems: 'center', gap: 5, paddingHorizontal: 10, paddingVertical: 6, borderRadius: 10, borderWidth: 0.5 },
   dateChipTxt: { fontSize: 12, fontWeight: '600', color: '#3C3C43' },
-  snapshot:    { width: '100%', height: 200, borderRadius: 16, borderWidth: 1, marginBottom: 14, backgroundColor: '#0D0D0D' },
-  snapPh:      { width: '100%', height: 130, borderRadius: 16, borderWidth: 1, backgroundColor: '#0D0D0D', alignItems: 'center', justifyContent: 'center', gap: 8, marginBottom: 14 },
-  snapPhTxt:   { fontSize: 12, fontWeight: '600' },
+  // media box — صورة أو فيديو في نفس المكان
+  media:       { width: '100%', height: 220, borderRadius: 16, marginBottom: 14, backgroundColor: '#0D0D0D' },
+  mediaPh:     { width: '100%', height: 130, borderRadius: 16, backgroundColor: '#F2F2F7', alignItems: 'center', justifyContent: 'center', gap: 8, marginBottom: 14 },
+  mediaPhTxt:  { fontSize: 12, color: '#AEAEB2', fontWeight: '500' },
   desc:        { fontSize: 13, color: '#555', marginBottom: 16, fontStyle: 'italic' },
   sec:         { fontSize: 10, fontWeight: '700', color: '#AEAEB2', letterSpacing: 1, marginBottom: 10, marginTop: 4 },
   grid:        { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 20 },
@@ -591,7 +586,6 @@ export default function AlertsScreen() {
       conn = new signalR.HubConnectionBuilder()
         .withUrl(HUB_URL, {
           accessTokenFactory: () => token ?? '',
-          
           transport: signalR.HttpTransportType.WebSockets,
         })
         .withAutomaticReconnect([0, 2000, 5000, 10000])
@@ -601,21 +595,17 @@ export default function AlertsScreen() {
       conn.on('ReceiveDetectionAlert', (payload: any) => {
         const allowed = allowedCamIdsRef.current;
         if (allowed.size > 0 && !allowed.has(payload.cameraId)) return;
-
         const newItem: DetectionItem = { ...mapItem(payload, cameraMapRef.current), isNew: true };
-
         setItems(prev => {
           if (prev.some(i => i.id === newItem.id)) return prev;
           return [newItem, ...prev];
         });
-
         const { label } = SEV[newItem.severity] ?? SEV.default;
         sendLocalNotification(
           `🚨 ${label} Alert`,
           `${newItem.name} detected on ${newItem.cameraName}`,
           { detectionId: newItem.id },
         );
-
         setTimeout(() => {
           setItems(prev => prev.map(i => i.id === newItem.id ? { ...i, isNew: false } : i));
         }, 2500);
@@ -624,7 +614,6 @@ export default function AlertsScreen() {
       conn.onreconnecting(() => setConnected(false));
       conn.onreconnected(() => setConnected(true));
       conn.onclose(() => setConnected(false));
-
       try { await conn.start(); setConnected(true); }
       catch (e) { console.warn('SignalR error:', e); setConnected(false); }
       hubRef.current = conn;
@@ -647,19 +636,13 @@ export default function AlertsScreen() {
 
   return (
     <View style={S.container}>
-
       <View style={S.selectorCard}>
         <View style={S.topRow}>
           <View>
             <Text style={S.selectorLabel}>ALERTS</Text>
-            <View style={{ flexDirection: 'row', alignItems: 'baseline', gap: 4 }}>
-              <Text style={S.statsHighlight}>{unresolved}</Text>
-              <Text style={S.statsDim}>active · {total} total</Text>
-            </View>
+            
           </View>
-          <LiveBadge connected={connected} />
         </View>
-
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={S.selectorRow}>
           {TABS.map(tab => {
             const active = activeTab === tab;
@@ -667,12 +650,7 @@ export default function AlertsScreen() {
               ? tab === 'Resolved' ? '#34C759' : tab === 'Not Resolved' ? '#FF3B30' : '#007AFF'
               : '#AEAEB2';
             return (
-              <TouchableOpacity
-                key={tab}
-                style={[S.chip, active && S.chipActive]}
-                onPress={() => setActiveTab(tab)}
-                activeOpacity={0.75}
-              >
+              <TouchableOpacity key={tab} style={[S.chip, active && S.chipActive]} onPress={() => setActiveTab(tab)} activeOpacity={0.75}>
                 <View style={[S.chipDot, { backgroundColor: dotColor }]} />
                 <Text style={[S.chipText, active && S.chipTextActive]}>{tab}</Text>
               </TouchableOpacity>
@@ -690,13 +668,7 @@ export default function AlertsScreen() {
         <ScrollView
           contentContainerStyle={[S.list, { paddingBottom: insets.bottom + 55 }]}
           showsVerticalScrollIndicator={false}
-          refreshControl={
-            <RefreshControl
-              refreshing={refreshing}
-              onRefresh={() => { setRefreshing(true); load(true); }}
-              tintColor="#1C1C1E"
-            />
-          }
+          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); load(true); }} tintColor="#1C1C1E" />}
         >
           {filtered.length === 0 ? (
             <View style={S.empty}>
@@ -718,8 +690,6 @@ export default function AlertsScreen() {
     </View>
   );
 }
-
-// ─── Screen Styles ────────────────────────────────────────────────────────────
 
 const S = StyleSheet.create({
   container:      { flex: 1, backgroundColor: '#F2F2F7' },
