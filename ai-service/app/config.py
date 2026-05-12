@@ -11,7 +11,7 @@ class Settings:
     
     # Mapping of camera IDs to RTSP URLs that is acctive {cam_id: rtsp_url}
     CAMERA_SOURCES = {}
-    
+    CAMERA_DEVICE_ID = 1
     # mode must be test or work
     MODE = 'test'     
     
@@ -41,8 +41,9 @@ class Settings:
     
     # config about models
     DET_MODEL = "buffalo_l"   
-    WEAPON_ONN_MODEL_PATH = BASE_DIR / "ai-service" / "app"/ "models" / "best (1).onnx"
+    WEAPON_ONN_MODEL_PATH = BASE_DIR / "ai-service" / "app"/ "models" / "weabon_v1.onnx"
     ABNORMAL_MODEL_PATH = BASE_DIR / "ai-service" / "app"/ "models" / "abnormal_v1.pth"
-    WEAPON_THRESHOLD = 0.5
+    WEAPON_THRESHOLD = 0.7
+    ABNORMAL_THRESHOLD = 0.6
 
 settings = Settings()

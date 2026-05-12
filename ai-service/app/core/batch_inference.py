@@ -13,11 +13,18 @@ from app.comunication.alert import AlertRequest, send_alert
 from app.data.faces_dp import FaceDatabase
 from app.core.batch_queue import alert_queue
 
+cam_id_frames = {} 
 async def run_inference(batch):
+    for cam_id, frame, tim in batch:
+        if cam_id in cam_id_frames:
+            cam_id_frames[cam_id]['frames'].append(frame)
+            cam_id_frames[cam_id]['time'].append(tim)
+        else: cam_id_frames[cam_id] = {'frames':[], 'time':[]}
+        
     await asyncio.gather(
         run_restricted_area_access(batch),
         run_weapon(batch),
-        #run_abnormal(batch)
+        run_abnormal()
     )
     
 
@@ -97,5 +104,27 @@ async def run_weapon(batch: List[Tuple[int, any, str]])-> None:
                 pass
 
 
+async def run_abnormal():
+    for key in cam_id_frames.keys():
+        if len(cam_id_frames[key]['frames']) >= 16:
+            score = models.abnormal_detector.predict(cam_id_frames[key]['frames'][:16])
+            print(score)
+            if score > settings.ABNORMAL_THRESHOLD:
+                try:
+                    alert_queue.put_nowait(
+                        (
+                            key,
+                            "abnormal",
+                            cam_id_frames[key]['time'][7],
+                            cam_id_frames[key]['frames'][7],
+                            {
+                                "bboxs": 'No',
+                            }
+                        )
+                    )
 
+                except asyncio.QueueFull:
+                    pass
+            cam_id_frames[key] =  {'frames':[], 'time':[]}
+            
     

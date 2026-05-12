@@ -15,11 +15,12 @@ def add_cameras(cameras:Dict[int, str])->None:
 
     success_read_camera = 0
     for cam_id , rtsp_url in cameras.items():
-        if cam_id == 1: 
+        if cam_id == settings.CAMERA_DEVICE_ID: 
             rtsp_url = 0             # for test
-        if check_rtsp(str(rtsp_url)):
-            logging.warning(f'can not read stream from: {cam_id} that has rtsp_url: {rtsp_url}')
-            continue
+        if cam_id != settings.CAMERA_DEVICE_ID:
+            if  not check_rtsp(str(rtsp_url)):
+                logging.warning(f'can not read stream from: {cam_id} that has rtsp_url: {rtsp_url}')
+                continue
         success_read_camera+= 1
         settings.CAMERA_SOURCES[cam_id] = rtsp_url
         logging.info(f'Loaded camera: {cam_id} that has rtsp_url: {rtsp_url}')
