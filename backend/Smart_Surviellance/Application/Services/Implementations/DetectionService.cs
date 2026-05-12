@@ -35,6 +35,7 @@ namespace Application.Services.Implementations
                 return ApiResponse<CreateDetectionDto>.Fail("Camera not found.");
             }
 
+            detectionDto.Name = "AI Detection";
             //face , abnormal , weapon
 
             if(detectionDto.Type == "face")
@@ -59,7 +60,7 @@ namespace Application.Services.Implementations
                 Description = detectionDto.Description,
                 Type = detectionDto.Type,
                 VideoUrl = detectionDto.VideoUrl,
-                SnapShotUrl = detectionDto.SnapshotUrl,
+                SnapShotUrl = "http://localhost:5198/" + detectionDto.SnapshotUrl,
             };
 
             var New_detection= await _detectionRepository.AddDetectionAsync(detection);
