@@ -14,10 +14,8 @@ export class DashboardService {
     return this.http.get<any>(this.baseUrl);
   }
 
-  startStream(id: number, offer: RTCSessionDescriptionInit) {
-    return this.http.post<RTCSessionDescriptionInit>(
-      `${this.baseUrl}/${id}/webrtc`,
-      offer
-    ).toPromise();
+  // الدالة دي بقت GET زي ما مكتوب عندك في الـ C# بالظبط
+  getWebRTCUrl(id: number) {
+    return this.http.get<any>(`${this.baseUrl}/${id}/webrtc`);
   }
 }

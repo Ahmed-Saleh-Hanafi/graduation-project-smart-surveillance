@@ -28,9 +28,13 @@ async def send_alert(alert: AlertRequest) -> dict:
     """
     api_url = settings.BACKEND_ALERT_API
     async with httpx.AsyncClient(timeout=30.0) as client:
+        print("Hamadah Yel3ab")
+        json=alert.model_dump()
+        print(json)
         response = await client.post(
             api_url,
             json=alert.model_dump()
         )
+        print(response)
         response.raise_for_status()
         return response.json()

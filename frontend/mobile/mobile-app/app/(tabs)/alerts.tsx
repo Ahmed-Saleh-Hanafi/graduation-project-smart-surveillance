@@ -1,528 +1,713 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import {
   View, Text, StyleSheet, ScrollView, TouchableOpacity,
-  Platform, Alert, Modal, ActivityIndicator,
+  Platform, Alert, Modal, ActivityIndicator, RefreshControl,
+  Image, Animated, Linking,
 } from 'react-native';
+import dayjs from 'dayjs';
+import utc from 'dayjs/plugin/utc';
+import timezone from 'dayjs/plugin/timezone';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
-import * as FileSystem from 'expo-file-system';
+import { Ionicons } from '@expo/vector-icons';
+import { Video, ResizeMode } from 'expo-av';
+
+import * as FileSystem from 'expo-file-system/legacy';
 import * as MediaLibrary from 'expo-media-library';
+import * as Notifications from 'expo-notifications';
+import * as Device from 'expo-device';
 import axios from 'axios';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import * as signalR from '@microsoft/signalr';
 
-const BASE_URL = 'http://192.168.1.229:5198';
+dayjs.extend(utc);
+dayjs.extend(timezone);
+// ─── Notification setup ───────────────────────────────────────────────────────
 
-const api = axios.create({ baseURL: BASE_URL });
-
-api.interceptors.request.use(async (config) => {
-  const token = await AsyncStorage.getItem('userToken');
-  if (token) config.headers.Authorization = `Bearer ${token}`;
-  return config;
+Notifications.setNotificationHandler({
+  handleNotification: async () => ({
+    shouldShowAlert: true,
+    shouldPlaySound: true,
+    shouldSetBadge:  true,
+  }),
 });
 
-// ─── Config ───────────────────────────────────────────────────────────────────
-const SEVERITY_COLOR = {
-  intrusion: '#FF3B30',
-  motion:    '#FF9500',
-  default:   '#378ADD',
+const registerForNotifications = async () => {
+  if (!Device.isDevice) return;
+  const { status: existing } = await Notifications.getPermissionsAsync();
+  let final = existing;
+  if (existing !== 'granted') {
+    const { status } = await Notifications.requestPermissionsAsync();
+    final = status;
+  }
+  if (final !== 'granted') return;
+  if (Platform.OS === 'android') {
+    await Notifications.setNotificationChannelAsync('security', {
+      name:             'Security Alerts',
+      importance:       Notifications.AndroidImportance.MAX,
+      vibrationPattern: [0, 250, 250, 250],
+      lightColor:       '#FF3B30',
+      sound:            'default',
+    });
+  }
 };
 
-const STATUS_BADGE = {
-  pending:  { bg: '#FFF0F0', text: '#B91C1C', label: 'Pending' },
-  resolved: { bg: '#F0FDF4', text: '#166534', label: 'Resolved' },
+const sendLocalNotification = async (title: string, body: string, data?: object) => {
+  await Notifications.scheduleNotificationAsync({
+    content: { title, body, data, sound: 'default', priority: Notifications.AndroidNotificationPriority.MAX },
+    trigger: null,
+  });
 };
 
-const TABS = ['All', 'Pending', 'Resolved'];
+// ─── Constants ────────────────────────────────────────────────────────────────
+
+const BASE_URL = 'http://192.168.1.229:5198';
+const HUB_URL  = `${BASE_URL}/hub/alerts`;
+
+const api = axios.create({ baseURL: BASE_URL });
+api.interceptors.request.use(async (c) => {
+  const t = await AsyncStorage.getItem('userToken');
+  if (t) c.headers.Authorization = `Bearer ${t}`;
+  return c;
+});
+
+const SEV: Record<string, { color: string; label: string; icon: any }> = {
+  intrusion: { color: '#FF3B30', label: 'Intrusion', icon: 'warning' },
+  motion:    { color: '#FF9500', label: 'Motion',    icon: 'walk'    },
+  default:   { color: '#378ADD', label: 'Detection', icon: 'camera'  },
+};
+
+const TABS = ['All', 'Not Resolved', 'Resolved'];
+
+// ─── Types ────────────────────────────────────────────────────────────────────
+
+interface DetectionItem {
+  id: string;
+  name: string;
+  description: string;
+  type: string;
+  cameraId: number;
+  cameraName: string;
+  date: string;
+  time: string;
+  severity: 'intrusion' | 'motion' | 'default';
+  snapshotUrl: string | null;
+  videoUrl: string | null;
+  resolved: boolean;
+  isNew?: boolean;
+}
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
-function formatDate(ts) {
-  if (!ts) return '--';
-  const d = new Date(ts);
-  return d.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
-}
 
-function formatTime(ts) {
-  if (!ts) return '--:--';
-  return new Date(ts).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-}
+const fmtDate = (ts: string) => !ts ? '--' :
+  dayjs.utc(ts).tz('Europe/London').format('DD MMM YYYY');
 
-// ─── API Functions ────────────────────────────────────────────────────────────
-async function fetchCameras() {
+const fmtTime = (ts: string) => !ts ? '--:--' :
+  dayjs.utc(ts).format('HH:mm');
+
+const buildUrl = (raw?: string | null): string | null => {
+  if (!raw || !raw.trim()) return null;
+  if (raw.startsWith('http')) return raw;
+  // fix backslashes then encode spaces/special chars in each path segment
+  const clean = raw.replace(/\\/g, '/').replace(/^\/+/, '');
+  const encoded = clean.split('/').map(encodeURIComponent).join('/');
+  return `${BASE_URL}/${encoded}`;
+};
+
+const getSeverity = (type: string): 'intrusion' | 'motion' | 'default' => {
+  const t = (type ?? '').toLowerCase();
+  if (t === 'intrusion') return 'intrusion';
+  if (t === 'motion')    return 'motion';
+  return 'default';
+};
+
+const mapItem = (item: any, cameraMap: Record<number, string>): DetectionItem => {
+  let ts = item.detectedAt ?? item.timestamp ?? item.createdAt ?? '';
+  return {
+    id:          String(item.id ?? Math.random()),
+    name:        item.name        ?? 'Detection',
+    description: item.description ?? '',
+    type:        item.type        ?? '',
+    cameraId:    item.cameraId,
+    cameraName:  cameraMap[item.cameraId] ?? `Camera ${item.cameraId ?? '?'}`,
+    date:        fmtDate(ts),
+    time:        fmtTime(ts),
+    severity:    getSeverity(item.type),
+    snapshotUrl: buildUrl(item.snapShotUrl ?? item.snapshotUrl),
+    videoUrl:    buildUrl(item.videoUrl),
+    resolved:    item.isResolved ?? item.resolved ?? false,
+  };
+};
+
+// ─── API ──────────────────────────────────────────────────────────────────────
+
+const fetchCameraMap = async (): Promise<Record<number, string>> => {
   try {
-    const res = await api.get('/api/cameras');
-    const data = res.data?.data ?? res.data;
-    if (!Array.isArray(data)) return {};
-    // نحول الـ array لـ map: { 2: "street", 3: "Camera_Entrance", ... }
-    return Object.fromEntries(data.map(c => [c.id, c.name]));
-  } catch {
-    return {};
-  }
-}
+    const res = await api.get('/api/Camera');
+    const data: any[] = res.data?.data ?? res.data ?? [];
+    return Object.fromEntries(data.map((c: any) => [c.id, c.name]));
+  } catch { return {}; }
+};
 
-async function fetchAlerts(cameraMap) {
+const fetchAllowedCameraIds = async (): Promise<Set<number>> => {
   try {
-    const res = await api.get('/api/alerts');
-    const data = res.data?.data ?? res.data;
-    if (!Array.isArray(data)) return [];
+    const res = await api.get('/api/Camera');
+    const data: any[] = res.data?.data ?? res.data ?? [];
+    return new Set(data.map((c: any) => c.id));
+  } catch { return new Set(); }
+};
 
-    return data.map((item, index) => {
-      try {
-        return {
-          id: item.id?.toString() ?? `item-${index}`,
-          title: item.type
-            ? item.type.charAt(0).toUpperCase() + item.type.slice(1)
-            : 'Alert',
-          description: item.description ?? '',
-          cameraName: cameraMap[item.cameraId] ?? `Camera ${item.cameraId ?? '?'}`,
-          date: formatDate(item.timestamp),
-          time: formatTime(item.timestamp),
-          createdAt: formatTime(item.createdAt),
-          severity: item.type === 'intrusion' ? 'intrusion' : 'motion',
-          status: item.isResolved ? 'resolved' : 'pending',
-          type: item.type === 'motion' ? 'camera' : 'door',
-          snapshotUrl: item.snapshotUrl ?? null,
-          videoUrl: item.videoUrl ?? null,
-        };
-      } catch {
-        return null;
-      }
-    }).filter(Boolean);
+const fetchAllDetections = async (
+  cameraMap: Record<number, string>,
+  allowedIds: Set<number>,
+): Promise<DetectionItem[]> => {
+  const res = await api.get('/api/Detection');
+  const raw: any[] = res.data?.data ?? res.data ?? [];
+  return raw
+    .filter(d => allowedIds.size === 0 || allowedIds.has(d.cameraId))
+    .map(d => mapItem(d, cameraMap))
+    .reverse();
+};
 
-  } catch (err) {
-    if (err.response) {
-      throw new Error(`Server returned ${err.response.status}`);
+const resolveDetection = async (id: string) => { await api.post(`/api/Detection/${id}/resolve`); };
+
+// ─── Download ─────────────────────────────────────────────────────────────────
+
+const downloadToGallery = async (
+  url: string, filename: string, onProgress: (p: number) => void,
+): Promise<'saved' | 'error'> => {
+  try {
+    const { status } = await MediaLibrary.requestPermissionsAsync();
+    if (status !== 'granted') {
+      Alert.alert('Permission Required', 'Please allow media library access.', [
+        { text: 'Cancel', style: 'cancel' },
+        { text: 'Open Settings', onPress: () => Linking.openSettings() },
+      ]);
+      return 'error';
     }
-    throw new Error(`Network error — is the server running? (${err.message})`);
-  }
-}
-
-async function resolveAlert(id) {
-  try {
-    await api.put(`/api/alerts/${id}/resolve`);
-    return true;
-  } catch (err) {
-    throw new Error(err.response ? `Failed: ${err.response.status}` : err.message);
-  }
-}
-
-// ─── Download Helper ──────────────────────────────────────────────────────────
-export async function downloadEvidence(url, filename, onProgress) {
-  if (!url) return 'no_url';
-  const { status } = await MediaLibrary.requestPermissionsAsync();
-  if (status !== 'granted') return 'permission_denied';
-  try {
-    const localUri = FileSystem.cacheDirectory + filename;
-    const dl = FileSystem.createDownloadResumable(
-      url, localUri, {},
-      onProgress
-        ? ({ totalBytesWritten, totalBytesExpectedToWrite }) => {
-            if (totalBytesExpectedToWrite > 0)
-              onProgress(totalBytesWritten / totalBytesExpectedToWrite);
-          }
-        : undefined
-    );
-    const { uri } = await dl.downloadAsync();
-    const asset = await MediaLibrary.createAssetAsync(uri);
-    await MediaLibrary.createAlbumAsync('Security Alerts', asset, false);
+    const token    = await AsyncStorage.getItem('userToken');
+    const headers  = token ? { Authorization: `Bearer ${token}` } : {};
+    const localUri = `${FileSystem.cacheDirectory}${filename}`;
+    const dl = FileSystem.createDownloadResumable(url, localUri, { headers },
+      ({ totalBytesWritten, totalBytesExpectedToWrite }) => {
+        if (totalBytesExpectedToWrite > 0)
+          onProgress(Math.round((totalBytesWritten / totalBytesExpectedToWrite) * 100));
+      });
+    const result = await dl.downloadAsync();
+    if (!result || result.status !== 200) return 'error';
+    await MediaLibrary.saveToLibraryAsync(result.uri);
+    try {
+      const asset  = await MediaLibrary.createAssetAsync(result.uri);
+      const albums = await MediaLibrary.getAlbumsAsync();
+      const existing = albums.find(a => a.title === 'Security Detections');
+      if (existing) await MediaLibrary.addAssetsToAlbumAsync([asset], existing, false);
+      else await MediaLibrary.createAlbumAsync('Security Detections', asset, false);
+    } catch { /* already saved */ }
+    await FileSystem.deleteAsync(result.uri, { idempotent: true });
     return 'saved';
   } catch (e) {
-    console.error('downloadEvidence error:', e);
+    console.error('download error:', e);
     return 'error';
   }
-}
+};
 
-// ─── Sub-components ───────────────────────────────────────────────────────────
-function TypeIcon({ type, size = 26, color = '#aaa' }) {
-  if (type === 'door')
-    return <MaterialCommunityIcons name="door-open" size={size} color={color} />;
-  return <Ionicons name="camera-outline" size={size} color={color} />;
-}
+// ─── SeverityPill ─────────────────────────────────────────────────────────────
 
-function StatusBadge({ status }) {
-  const s = STATUS_BADGE[status] || STATUS_BADGE.pending;
+const SeverityPill = ({ severity }: { severity: string }) => {
+  const { color, label } = SEV[severity] ?? SEV.default;
   return (
-    <View style={[styles.badge, { backgroundColor: s.bg }]}>
-      <Text style={[styles.badgeText, { color: s.text }]}>{s.label}</Text>
+    <View style={[pill.wrap, { backgroundColor: color + '18', borderColor: color + '40' }]}>
+      <View style={[pill.dot, { backgroundColor: color }]} />
+      <Text style={[pill.txt, { color }]}>{label}</Text>
     </View>
   );
-}
+};
+const pill = StyleSheet.create({
+  wrap: { flexDirection: 'row', alignItems: 'center', gap: 4, paddingHorizontal: 8, paddingVertical: 3, borderRadius: 8, borderWidth: 0.5 },
+  dot:  { width: 5, height: 5, borderRadius: 3 },
+  txt:  { fontSize: 10, fontWeight: '700', letterSpacing: 0.3 },
+});
 
-function DownloadButton({ alert, type }) {
-  const [progress, setProgress] = useState(null);
+// ─── DownloadBtn ──────────────────────────────────────────────────────────────
+
+const DownloadBtn = ({ url, filename, icon, label }: {
+  url: string | null; filename: string; icon: any; label: string;
+}) => {
+  const [pct, setPct]   = useState<number | null>(null);
   const [done, setDone] = useState(false);
-
-  const url      = type === 'video' ? alert.videoUrl : alert.snapshotUrl;
-  const filename = type === 'video'
-    ? `alert_${alert.id}_video.mp4`
-    : `alert_${alert.id}_snapshot.jpg`;
-  const label = type === 'video' ? 'Download video' : 'Download snapshot';
-  const icon  = type === 'video' ? 'videocam-outline' : 'image-outline';
-
-  const handlePress = async () => {
-    if (!url) {
-      Alert.alert('Not available', `No ${type} attached to this alert yet.`);
-      return;
-    }
-    setProgress(0); setDone(false);
-    const result = await downloadEvidence(url, filename, setProgress);
-    setProgress(null);
-    if (result === 'saved') {
-      setDone(true);
-      Alert.alert('Saved', `${type === 'video' ? 'Video' : 'Snapshot'} saved to gallery.`);
-    } else if (result === 'permission_denied') {
-      Alert.alert('Permission denied', 'Allow media library access in Settings.');
-    } else if (result === 'no_url') {
-      Alert.alert('Not available', `No ${type} attached yet.`);
-    } else {
-      Alert.alert('Error', 'Download failed. Please try again.');
-    }
+  const press = async () => {
+    if (!url) { Alert.alert('Not available', `No ${label} attached.`); return; }
+    setPct(0); setDone(false);
+    const r = await downloadToGallery(url, filename, setPct);
+    setPct(null);
+    if (r === 'saved') { setDone(true); Alert.alert('✅ Saved', `${label} saved to gallery.`); }
+    else Alert.alert('Error', 'Download failed.');
   };
-
+  const busy = pct !== null;
   return (
     <TouchableOpacity
-      style={[styles.downloadBtn, done && styles.downloadBtnDone]}
-      onPress={handlePress}
-      disabled={progress !== null}
+      style={[db.btn, done && db.done, !url && db.dis]}
+      onPress={press}
+      disabled={busy || !url}
+      activeOpacity={0.75}
     >
+      {busy && <View style={[db.bar, { width: `${pct ?? 0}%` as any }]} />}
       <Ionicons
-        name={done ? 'checkmark-circle-outline' : icon}
-        size={13}
-        color={done ? '#166534' : '#1D4ED8'}
+        name={done ? 'checkmark-circle' : busy ? 'cloud-download-outline' : icon}
+        size={14}
+        color={done ? '#166534' : !url ? '#C7C7CC' : '#1D4ED8'}
       />
-      <Text style={[styles.downloadBtnText, done && styles.downloadBtnTextDone]}>
-        {progress !== null ? `${Math.round(progress * 100)}%` : done ? 'Saved' : label}
+      <Text style={[db.txt, done && db.doneTxt, !url && db.disTxt]}>
+        {busy ? `${pct}%` : done ? 'Saved' : label}
       </Text>
-      {progress !== null && (
-        <View style={styles.downloadProgress}>
-          <View style={[styles.downloadProgressFill, { width: `${Math.round(progress * 100)}%` }]} />
-        </View>
-      )}
     </TouchableOpacity>
   );
-}
+};
+const db = StyleSheet.create({
+  btn:     { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, paddingVertical: 11, borderRadius: 12, backgroundColor: '#EFF6FF', borderWidth: 0.5, borderColor: '#BFDBFE', overflow: 'hidden', position: 'relative' },
+  done:    { backgroundColor: '#F0FDF4', borderColor: '#BBF7D0' },
+  dis:     { backgroundColor: '#F5F5F5', borderColor: 'rgba(0,0,0,0.06)' },
+  bar:     { position: 'absolute', left: 0, top: 0, bottom: 0, backgroundColor: '#BFDBFE60' },
+  txt:     { fontSize: 12, fontWeight: '600', color: '#1D4ED8' },
+  doneTxt: { color: '#166534' },
+  disTxt:  { color: '#C7C7CC' },
+});
 
-function AlertCard({ alert, onResolve, onViewEvent }) {
-  const accentColor = SEVERITY_COLOR[alert.severity] || SEVERITY_COLOR.default;
+// ─── LiveBadge ────────────────────────────────────────────────────────────────
 
+const LiveBadge = ({ connected }: { connected: boolean }) => {
+  const pulse = useRef(new Animated.Value(1)).current;
+  useEffect(() => {
+    if (!connected) return;
+    const a = Animated.loop(Animated.sequence([
+      Animated.timing(pulse, { toValue: 0.3, duration: 700, useNativeDriver: true }),
+      Animated.timing(pulse, { toValue: 1,   duration: 700, useNativeDriver: true }),
+    ]));
+    a.start(); return () => a.stop();
+  }, [connected]);
   return (
-    <View style={styles.card}>
-      <View style={[styles.accent, { backgroundColor: accentColor }]} />
-      <View style={styles.cardInner}>
-
-        <View style={styles.thumb}>
-          <TypeIcon type={alert.type} />
-          <View style={styles.timeBadge}>
-            <Text style={styles.timeText}>{alert.time}</Text>
-          </View>
-          {alert.status === 'pending' && <View style={styles.liveDot} />}
-        </View>
-
-        <View style={styles.info}>
-          <View style={styles.titleRow}>
-            <Text style={styles.alertTitle} numberOfLines={1}>{alert.title}</Text>
-            <StatusBadge status={alert.status} />
-          </View>
-
-          {/* Description */}
-          {!!alert.description && (
-            <Text style={styles.descText} numberOfLines={1}>{alert.description}</Text>
-          )}
-
-          {/* Camera name + date */}
-          <View style={styles.metaRow}>
-            <Ionicons name="camera-outline" size={11} color="#8E8E93" />
-            <Text style={styles.metaText}>{alert.cameraName}</Text>
-            <Text style={styles.metaDot}>·</Text>
-            <Ionicons name="calendar-outline" size={11} color="#8E8E93" />
-            <Text style={styles.metaText}>{alert.date}</Text>
-          </View>
-
-          <View style={styles.btnRow}>
-            {alert.status === 'pending' && (
-              <TouchableOpacity style={styles.btnGreen} onPress={() => onResolve(alert.id)}>
-                <Ionicons name="checkmark" size={12} color="#fff" />
-                <Text style={styles.btnGreenText}>Resolve</Text>
-              </TouchableOpacity>
-            )}
-            <TouchableOpacity style={styles.btnBlue} onPress={() => onViewEvent(alert)}>
-              <Ionicons name="eye-outline" size={12} color="#1D4ED8" />
-              <Text style={styles.btnBlueText}>View details</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-
-      </View>
+    <View style={lb.wrap}>
+      <Animated.View style={[lb.dot, { opacity: pulse, backgroundColor: connected ? '#34C759' : '#FF3B30' }]} />
+      <Text style={[lb.txt, { color: connected ? '#34C759' : '#FF3B30' }]}>{connected ? 'Live' : 'Offline'}</Text>
     </View>
   );
-}
+};
+const lb = StyleSheet.create({
+  wrap: { flexDirection: 'row', alignItems: 'center', gap: 5, backgroundColor: 'rgba(0,0,0,0.05)', paddingHorizontal: 10, paddingVertical: 4, borderRadius: 20 },
+  dot:  { width: 6, height: 6, borderRadius: 3 },
+  txt:  { fontSize: 11, fontWeight: '700' },
+});
+
+// ─── Detection Card ───────────────────────────────────────────────────────────
+
+const DetectionCard = ({ item, onPress }: { item: DetectionItem; onPress: (i: DetectionItem) => void }) => {
+  const { color } = SEV[item.severity] ?? SEV.default;
+  return (
+    <View style={[card.wrap, item.resolved && card.resolved]}>
+      <TouchableOpacity activeOpacity={0.74} onPress={() => onPress(item)}>
+        <View style={card.inner}>
+          <View style={[card.strip, { backgroundColor: color }]} />
+          <View style={[card.imgBox, { backgroundColor: color + '10' }]}>
+            {item.snapshotUrl ? (
+              <Image source={{ uri: item.snapshotUrl }} style={card.img} resizeMode="cover" />
+            ) : (
+              <Ionicons name={SEV[item.severity]?.icon ?? 'camera'} size={24} color={color} />
+            )}
+          </View>
+          <View style={card.content}>
+            <View style={card.row}>
+              <Text style={card.name} numberOfLines={1}>{item.name}</Text>
+              <SeverityPill severity={item.severity} />
+            </View>
+            {!!item.description && (
+              <Text style={card.desc} numberOfLines={1}>{item.description}</Text>
+            )}
+            <View style={card.meta}>
+              <Ionicons name="videocam-outline" size={11} color="#AEAEB2" />
+              <Text style={card.metaTxt}>{item.cameraName}</Text>
+              <View style={card.sep} />
+              <Ionicons name="calendar-outline" size={11} color="#AEAEB2" />
+              <Text style={card.metaTxt}>{item.date}</Text>
+              <View style={card.sep} />
+              <Ionicons name="time-outline" size={11} color="#AEAEB2" />
+              <Text style={card.metaTxt}>{item.time}</Text>
+            </View>
+          </View>
+          <View style={card.right}>
+            {item.resolved
+              ? <Ionicons name="checkmark-circle" size={20} color="#34C759" />
+              : <Ionicons name="chevron-forward"  size={18} color="#C7C7CC" />
+            }
+          </View>
+        </View>
+      </TouchableOpacity>
+    </View>
+  );
+};
+const card = StyleSheet.create({
+  wrap:     { backgroundColor: '#fff', borderRadius: 18, overflow: 'hidden', shadowColor: '#000', shadowOpacity: 0.04, shadowRadius: 8, shadowOffset: { width: 0, height: 3 }, elevation: 2, borderWidth: 0.5, borderColor: 'rgba(0,0,0,0.06)' },
+  resolved: { opacity: 0.55 },
+  inner:    { flexDirection: 'row', alignItems: 'center', gap: 12 },
+  strip:    { width: 4, alignSelf: 'stretch', borderTopLeftRadius: 18, borderBottomLeftRadius: 18 },
+  imgBox:   { width: 52, height: 52, borderRadius: 14, alignItems: 'center', justifyContent: 'center', overflow: 'hidden', flexShrink: 0 },
+  img:      { width: 52, height: 52 },
+  content:  { flex: 1, paddingVertical: 14 },
+  row:      { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 6, marginBottom: 3 },
+  name:     { fontSize: 14, fontWeight: '700', color: '#1C1C1E', flex: 1 },
+  desc:     { fontSize: 11, color: '#8E8E93', marginBottom: 5, fontStyle: 'italic' },
+  meta:     { flexDirection: 'row', alignItems: 'center', gap: 4, flexWrap: 'wrap' },
+  metaTxt:  { fontSize: 11, color: '#AEAEB2' },
+  sep:      { width: 3, height: 3, borderRadius: 2, backgroundColor: '#D1D1D6', marginHorizontal: 2 },
+  right:    { paddingRight: 14 },
+});
+
+// ─── Detail Modal ─────────────────────────────────────────────────────────────
+
+const DetailModal = ({ item, onClose, onResolved }: {
+  item: DetectionItem | null; onClose: () => void; onResolved: (id: string) => void;
+}) => {
+  const [resolving, setResolving] = useState(false);
+  const [imgError,  setImgError]  = useState(false);
+
+  // swipe down to close — بس trigger مش animation
+  const startY = useRef(0);
+
+  useEffect(() => { setImgError(false); }, [item?.id]);
+
+  if (!item) return null;
+  const { color } = SEV[item.severity] ?? SEV.default;
+
+  const handleResolve = async () => {
+    setResolving(true);
+    try { await resolveDetection(item.id); onResolved(item.id); onClose(); }
+    catch (e: any) { Alert.alert('Error', e?.message ?? 'Could not resolve.'); }
+    finally { setResolving(false); }
+  };
+
+  // الـ download يحمل الفيديو لو موجود، الصورة لو مفيش فيديو
+  const dlUrl      = item.videoUrl ?? item.snapshotUrl;
+  const dlFilename = item.videoUrl ? `vid_${item.id}.mp4` : `snap_${item.id}.jpg`;
+  const dlIcon     = item.videoUrl ? 'videocam-outline' : 'image-outline';
+  const dlLabel    = item.videoUrl ? 'Download Video' : 'Download Snapshot';
+
+  return (
+    <Modal visible animationType="slide" transparent onRequestClose={onClose}>
+      <View style={dm.overlay}>
+        <TouchableOpacity style={StyleSheet.absoluteFill} onPress={onClose} />
+        <View style={dm.sheet}>
+          <View
+            style={dm.handleWrap}
+            onStartShouldSetResponder={() => true}
+            onMoveShouldSetResponder={() => true}
+            onResponderGrant={e => { startY.current = e.nativeEvent.pageY; }}
+            onResponderRelease={e => {
+              const dy = e.nativeEvent.pageY - startY.current;
+              if (dy > 80) onClose();
+            }}
+          >
+            <View style={dm.handle} />
+          </View>
+          <ScrollView showsVerticalScrollIndicator={false}>
+
+            {/* Header */}
+            <View style={dm.headerRow}>
+              <View style={[dm.headerIcon, { backgroundColor: color + '18' }]}>
+                <Ionicons name={SEV[item.severity]?.icon ?? 'camera'} size={22} color={color} />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={dm.title}>{item.name}</Text>
+                <Text style={dm.sub}>{item.cameraName}</Text>
+              </View>
+              <SeverityPill severity={item.severity} />
+            </View>
+
+            {/* Date / Time / Status */}
+            <View style={dm.dateRow}>
+              <View style={dm.dateChip}>
+                <Ionicons name="calendar-outline" size={13} color="#8E8E93" />
+                <Text style={dm.dateChipTxt}>{item.date}</Text>
+              </View>
+              <View style={dm.dateChip}>
+                <Ionicons name="time-outline" size={13} color="#8E8E93" />
+                <Text style={dm.dateChipTxt}>{item.time}</Text>
+              </View>
+              <View style={[dm.statusChip, {
+                backgroundColor: item.resolved ? '#F0FDF4' : '#FFF5F5',
+                borderColor:     item.resolved ? '#BBF7D0' : '#FECACA',
+              }]}>
+                <Ionicons name={item.resolved ? 'checkmark-circle' : 'ellipse'} size={12} color={item.resolved ? '#34C759' : '#FF3B30'} />
+                <Text style={[dm.dateChipTxt, { color: item.resolved ? '#166534' : '#FF3B30' }]}>
+                  {item.resolved ? 'Resolved' : 'Active'}
+                </Text>
+              </View>
+            </View>
+
+            {/* ── Media: فيديو لو موجود، صورة لو مفيش ── */}
+            {item.videoUrl ? (
+              <Video
+                source={{ uri: item.videoUrl }}
+                style={dm.media}
+                useNativeControls
+                resizeMode={ResizeMode.CONTAIN}
+                shouldPlay={false}
+              />
+            ) : item.snapshotUrl && !imgError ? (
+              <Image
+                source={{ uri: item.snapshotUrl }}
+                style={dm.media}
+                resizeMode="cover"
+                onError={() => setImgError(true)}
+              />
+            ) : (
+              <View style={dm.mediaPh}>
+                <Ionicons name="image-outline" size={36} color="#AEAEB2" />
+                <Text style={dm.mediaPhTxt}>
+                  {item.snapshotUrl ? 'Image unavailable' : 'No media'}
+                </Text>
+              </View>
+            )}
+
+            {!!item.description && <Text style={dm.desc}>{item.description}</Text>}
+
+            {/* Details */}
+            <Text style={dm.sec}>DETAILS</Text>
+            <View style={dm.grid}>
+              {([
+                ['Camera', item.cameraName],
+                ['Type',   SEV[item.severity]?.label ?? 'Detection'],
+                ['Date',   item.date],
+                ['Time',   item.time],
+              ] as [string, string][]).map(([l, v]) => (
+                <View key={l} style={dm.cell}>
+                  <Text style={dm.cellL}>{l}</Text>
+                  <Text style={dm.cellV}>{v}</Text>
+                </View>
+              ))}
+            </View>
+
+            {/* Download */}
+            <Text style={dm.sec}>EVIDENCE</Text>
+            <View style={dm.dlRow}>
+              <DownloadBtn url={dlUrl} filename={dlFilename} icon={dlIcon} label={dlLabel} />
+            </View>
+
+            {/* Resolve */}
+            {!item.resolved && (
+              <>
+                <Text style={dm.sec}>ACTION</Text>
+                <TouchableOpacity
+                  style={[dm.resolveBtn, resolving && { opacity: 0.7 }]}
+                  onPress={handleResolve}
+                  disabled={resolving}
+                >
+                  {resolving
+                    ? <ActivityIndicator color="#fff" size="small" />
+                    : <><Ionicons name="checkmark-circle-outline" size={18} color="#fff" /><Text style={dm.resolveTxt}>Mark as Resolved</Text></>
+                  }
+                </TouchableOpacity>
+              </>
+            )}
+
+            <View style={{ height: 32 }} />
+          </ScrollView>
+        </View>
+      </View>
+    </Modal>
+  );
+};
+const dm = StyleSheet.create({
+  overlay:     { flex: 1, backgroundColor: 'rgba(0,0,0,0.45)', justifyContent: 'flex-end' },
+  sheet:       { backgroundColor: '#fff', borderTopLeftRadius: 28, borderTopRightRadius: 28, padding: 20, maxHeight: '92%' },
+  handleWrap:  { alignItems: 'center', paddingVertical: 12, marginTop: -12 },
+  handle:      { width: 36, height: 4, backgroundColor: 'rgba(0,0,0,0.12)', borderRadius: 2 },
+  headerRow:   { flexDirection: 'row', alignItems: 'center', gap: 12, marginBottom: 12 },
+  headerIcon:  { width: 44, height: 44, borderRadius: 14, alignItems: 'center', justifyContent: 'center' },
+  title:       { fontSize: 16, fontWeight: '700', color: '#1C1C1E' },
+  sub:         { fontSize: 11, color: '#8E8E93', marginTop: 2 },
+  dateRow:     { flexDirection: 'row', gap: 8, marginBottom: 14, flexWrap: 'wrap' },
+  dateChip:    { flexDirection: 'row', alignItems: 'center', gap: 5, backgroundColor: '#F2F2F7', paddingHorizontal: 10, paddingVertical: 6, borderRadius: 10 },
+  statusChip:  { flexDirection: 'row', alignItems: 'center', gap: 5, paddingHorizontal: 10, paddingVertical: 6, borderRadius: 10, borderWidth: 0.5 },
+  dateChipTxt: { fontSize: 12, fontWeight: '600', color: '#3C3C43' },
+  // media box — صورة أو فيديو في نفس المكان
+  media:       { width: '100%', height: 220, borderRadius: 16, marginBottom: 14, backgroundColor: '#0D0D0D' },
+  mediaPh:     { width: '100%', height: 130, borderRadius: 16, backgroundColor: '#F2F2F7', alignItems: 'center', justifyContent: 'center', gap: 8, marginBottom: 14 },
+  mediaPhTxt:  { fontSize: 12, color: '#AEAEB2', fontWeight: '500' },
+  desc:        { fontSize: 13, color: '#555', marginBottom: 16, fontStyle: 'italic' },
+  sec:         { fontSize: 10, fontWeight: '700', color: '#AEAEB2', letterSpacing: 1, marginBottom: 10, marginTop: 4 },
+  grid:        { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 20 },
+  cell:        { flex: 1, minWidth: '45%', backgroundColor: '#F2F2F7', borderRadius: 12, padding: 12 },
+  cellL:       { fontSize: 10, color: '#8E8E93', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 4 },
+  cellV:       { fontSize: 14, fontWeight: '600', color: '#1C1C1E' },
+  dlRow:       { flexDirection: 'row', gap: 8, marginBottom: 20 },
+  resolveBtn:  { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, backgroundColor: '#34C759', borderRadius: 14, paddingVertical: 14, marginBottom: 10 },
+  resolveTxt:  { fontSize: 15, fontWeight: '700', color: '#fff' },
+  closeBtn:    { backgroundColor: '#F2F2F7', borderRadius: 14, paddingVertical: 14, alignItems: 'center' },
+  closeTxt:    { fontSize: 15, fontWeight: '600', color: '#1C1C1E' },
+});
 
 // ─── Main Screen ──────────────────────────────────────────────────────────────
+
 export default function AlertsScreen() {
-  const [alerts, setAlerts]       = useState([]);
-  const [loading, setLoading]     = useState(true);
-  const [activeTab, setActiveTab] = useState('All');
-  const [selected, setSelected]   = useState(null);
+  const insets = useSafeAreaInsets();
+  const [items,      setItems]      = useState<DetectionItem[]>([]);
+  const [loading,    setLoading]    = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+  const [activeTab,  setActiveTab]  = useState('All');
+  const [selected,   setSelected]   = useState<DetectionItem | null>(null);
+  const [connected,  setConnected]  = useState(false);
+  const hubRef           = useRef<signalR.HubConnection | null>(null);
+  const cameraMapRef     = useRef<Record<number, string>>({});
+  const allowedCamIdsRef = useRef<Set<number>>(new Set());
 
-  useEffect(() => {
-    let cancelled = false;
-    setLoading(true);
+  useEffect(() => { registerForNotifications(); }, []);
 
-    const load = async () => {
-      try {
-        // نجيب الكاميرات الأول عشان نعمل map للأسماء
-        const cameraMap = await fetchCameras();
-        const data = await fetchAlerts(cameraMap);
-        if (!cancelled) setAlerts(data);
-      } catch (e) {
-        console.error('load error:', e);
-        if (!cancelled) Alert.alert('Could not load alerts', e?.message ?? String(e));
-      } finally {
-        if (!cancelled) setLoading(false);
-      }
-    };
-
-    load();
-    return () => { cancelled = true; };
+  const load = useCallback(async (silent = false) => {
+    if (!silent) setLoading(true);
+    try {
+      const cameraMap  = await fetchCameraMap();
+      const allowedIds = await fetchAllowedCameraIds();
+      cameraMapRef.current     = cameraMap;
+      allowedCamIdsRef.current = allowedIds;
+      const data = await fetchAllDetections(cameraMap, allowedIds);
+      setItems(data);
+    } catch (e: any) {
+      Alert.alert('Error', e?.message ?? 'Could not load detections.');
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
+    }
   }, []);
 
-  const filtered = alerts.filter(a => {
-    if (activeTab === 'Pending')  return a.status === 'pending';
-    if (activeTab === 'Resolved') return a.status === 'resolved';
+  useEffect(() => { load(); }, []);
+
+  useEffect(() => {
+    let conn: signalR.HubConnection;
+    const startHub = async () => {
+      const token = await AsyncStorage.getItem('userToken');
+      conn = new signalR.HubConnectionBuilder()
+        .withUrl(HUB_URL, {
+          accessTokenFactory: () => token ?? '',
+          transport: signalR.HttpTransportType.WebSockets,
+        })
+        .withAutomaticReconnect([0, 2000, 5000, 10000])
+        .configureLogging(signalR.LogLevel.Warning)
+        .build();
+
+      conn.on('ReceiveDetectionAlert', (payload: any) => {
+        const allowed = allowedCamIdsRef.current;
+        if (allowed.size > 0 && !allowed.has(payload.cameraId)) return;
+        const newItem: DetectionItem = { ...mapItem(payload, cameraMapRef.current), isNew: true };
+        setItems(prev => {
+          if (prev.some(i => i.id === newItem.id)) return prev;
+          return [newItem, ...prev];
+        });
+        const { label } = SEV[newItem.severity] ?? SEV.default;
+        sendLocalNotification(
+          `🚨 ${label} Alert`,
+          `${newItem.name} detected on ${newItem.cameraName}`,
+          { detectionId: newItem.id },
+        );
+        setTimeout(() => {
+          setItems(prev => prev.map(i => i.id === newItem.id ? { ...i, isNew: false } : i));
+        }, 2500);
+      });
+
+      conn.onreconnecting(() => setConnected(false));
+      conn.onreconnected(() => setConnected(true));
+      conn.onclose(() => setConnected(false));
+      try { await conn.start(); setConnected(true); }
+      catch (e) { console.warn('SignalR error:', e); setConnected(false); }
+      hubRef.current = conn;
+    };
+    startHub();
+    return () => { conn?.stop(); hubRef.current = null; };
+  }, []);
+
+  const handleResolved = (id: string) =>
+    setItems(prev => prev.map(i => i.id === id ? { ...i, resolved: true } : i));
+
+  const filtered = items.filter(a => {
+    if (activeTab === 'Not Resolved') return !a.resolved;
+    if (activeTab === 'Resolved')     return  a.resolved;
     return true;
   });
 
-  const pendingCount = alerts.filter(a => a.status === 'pending').length;
-
-  const handleResolve = async (id) => {
-    try {
-      await resolveAlert(id);
-      setAlerts(prev =>
-        prev.map(a => a.id === id ? { ...a, status: 'resolved' } : a)
-      );
-      setSelected(prev =>
-        prev?.id === id ? { ...prev, status: 'resolved' } : prev
-      );
-    } catch {
-      Alert.alert('Error', 'Could not resolve alert. Try again.');
-    }
-  };
+  const total      = items.length;
+  const unresolved = items.filter(i => !i.resolved).length;
 
   return (
-    <View style={styles.container}>
-
-      {/* Tabs */}
-      <View style={styles.tabBar}>
-        {TABS.map(tab => (
-          <TouchableOpacity
-            key={tab}
-            style={[styles.tab, activeTab === tab && styles.tabActive]}
-            onPress={() => setActiveTab(tab)}
-          >
-            <Text style={[styles.tabText, activeTab === tab && styles.tabTextActive]}>
-              {tab}{tab === 'Pending' && pendingCount > 0 ? `  ${pendingCount}` : ''}
-            </Text>
-          </TouchableOpacity>
-        ))}
+    <View style={S.container}>
+      <View style={S.selectorCard}>
+        <View style={S.topRow}>
+          <View>
+            <Text style={S.selectorLabel}>ALERTS</Text>
+            
+          </View>
+        </View>
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={S.selectorRow}>
+          {TABS.map(tab => {
+            const active = activeTab === tab;
+            const dotColor = active
+              ? tab === 'Resolved' ? '#34C759' : tab === 'Not Resolved' ? '#FF3B30' : '#007AFF'
+              : '#AEAEB2';
+            return (
+              <TouchableOpacity key={tab} style={[S.chip, active && S.chipActive]} onPress={() => setActiveTab(tab)} activeOpacity={0.75}>
+                <View style={[S.chipDot, { backgroundColor: dotColor }]} />
+                <Text style={[S.chipText, active && S.chipTextActive]}>{tab}</Text>
+              </TouchableOpacity>
+            );
+          })}
+        </ScrollView>
       </View>
 
-      {/* List */}
       {loading ? (
-        <ActivityIndicator style={{ marginTop: 60 }} size="large" color="#1C1C1E" />
+        <View style={S.centered}>
+          <ActivityIndicator size="large" color="#1C1C1E" />
+          <Text style={S.loadingText}>Loading…</Text>
+        </View>
       ) : (
-        <ScrollView contentContainerStyle={styles.list} showsVerticalScrollIndicator={false}>
-          {filtered.length === 0 && (
-            <Text style={styles.empty}>No alerts here</Text>
+        <ScrollView
+          contentContainerStyle={[S.list, { paddingBottom: insets.bottom + 55 }]}
+          showsVerticalScrollIndicator={false}
+          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); load(true); }} tintColor="#1C1C1E" />}
+        >
+          {filtered.length === 0 ? (
+            <View style={S.empty}>
+              <Ionicons name="shield-checkmark-outline" size={56} color="#D1D1D6" />
+              <Text style={S.emptyTitle}>No detections</Text>
+              <Text style={S.emptySub}>Pull down to refresh</Text>
+            </View>
+          ) : (
+            <View style={{ gap: 10 }}>
+              {filtered.map(item => (
+                <DetectionCard key={item.id} item={item} onPress={setSelected} />
+              ))}
+            </View>
           )}
-          {filtered.map(alert => (
-            <AlertCard
-              key={alert.id}
-              alert={alert}
-              onResolve={handleResolve}
-              onViewEvent={setSelected}
-            />
-          ))}
         </ScrollView>
       )}
 
-      {/* Detail Modal */}
-      <Modal
-        visible={!!selected}
-        animationType="slide"
-        transparent
-        onRequestClose={() => setSelected(null)}
-      >
-        <View style={styles.modalOverlay}>
-          <TouchableOpacity style={StyleSheet.absoluteFill} onPress={() => setSelected(null)} />
-          <ScrollView
-            style={styles.modalScroll}
-            contentContainerStyle={styles.modal}
-            showsVerticalScrollIndicator={false}
-            bounces={false}
-          >
-            {selected && (
-              <>
-                <View style={styles.modalHandle} />
-
-                {/* Header */}
-                <View style={styles.modalHeaderRow}>
-                  <Text style={styles.modalTitle}>{selected.title}</Text>
-                  <StatusBadge status={selected.status} />
-                </View>
-
-                {/* Description */}
-                {!!selected.description && (
-                  <Text style={styles.modalDesc}>{selected.description}</Text>
-                )}
-
-                {/* Event preview */}
-                <View style={styles.eventShot}>
-                  <TypeIcon type={selected.type} size={36} color="rgba(52,199,89,0.4)" />
-                </View>
-
-                {/* Download buttons */}
-                <View style={styles.downloadRow}>
-                  <DownloadButton alert={selected} type="snapshot" />
-                  <DownloadButton alert={selected} type="video" />
-                </View>
-
-                {/* Detail grid — بدون ID */}
-                <View style={styles.detailGrid}>
-                  {[
-                    ['Camera',      selected.cameraName],
-                    ['Status',      STATUS_BADGE[selected.status]?.label || selected.status],
-                    ['Date',        selected.date],
-                    ['Time',        selected.time],
-                  ].map(([label, value]) => (
-                    <View key={label} style={styles.detailCell}>
-                      <Text style={styles.detailLabel}>{label}</Text>
-                      <Text style={styles.detailValue}>{value}</Text>
-                    </View>
-                  ))}
-                </View>
-
-                {/* Actions */}
-                <View style={styles.modalActions}>
-                  {selected.status === 'pending' ? (
-                    <TouchableOpacity
-                      style={[styles.modalBtn, styles.modalBtnPrimary]}
-                      onPress={() => { handleResolve(selected.id); setSelected(null); }}
-                    >
-                      <Text style={styles.modalBtnPrimaryText}>Mark resolved</Text>
-                    </TouchableOpacity>
-                  ) : null}
-                  <TouchableOpacity
-                    style={[styles.modalBtn, styles.modalBtnSecondary]}
-                    onPress={() => setSelected(null)}
-                  >
-                    <Text style={styles.modalBtnSecondaryText}>Close</Text>
-                  </TouchableOpacity>
-                </View>
-              </>
-            )}
-          </ScrollView>
-        </View>
-      </Modal>
-
+      <DetailModal item={selected} onClose={() => setSelected(null)} onResolved={handleResolved} />
     </View>
   );
 }
 
-// ─── Styles ───────────────────────────────────────────────────────────────────
-const styles = StyleSheet.create({
-  container:          { flex: 1, backgroundColor: '#F2F3F7' },
-  tabBar: {
-    flexDirection: 'row', gap: 6,
-    paddingHorizontal: 16, paddingBottom: 12,
-    paddingTop: Platform.OS === 'ios' ? 56 : 36,
-    backgroundColor: '#F2F2F7',
-    borderBottomWidth: 0.5, borderBottomColor: 'rgba(0,0,0,0.08)',
-  },
-  tab: {
-    paddingHorizontal: 14, paddingVertical: 6,
-    borderRadius: 99, borderWidth: 0.5,
-    borderColor: 'rgba(0,0,0,0.12)', backgroundColor: '#fff',
-  },
-  tabActive:          { backgroundColor: '#1C1C1E', borderColor: 'transparent' },
-  tabText:            { fontSize: 12, fontWeight: '500', color: '#8E8E93' },
-  tabTextActive:      { color: '#fff' },
-  list:               { padding: 12, gap: 10 },
-  empty:              { textAlign: 'center', marginTop: 60, fontSize: 13, color: '#8E8E93' },
-
-  // Card
-  card: {
-    backgroundColor: '#fff', borderRadius: 18,
-    borderWidth: 0.5, borderColor: 'rgba(0,0,0,0.08)', overflow: 'hidden',
-  },
-  accent:             { position: 'absolute', left: 0, top: 0, bottom: 0, width: 4 },
-  cardInner:          { flexDirection: 'row', padding: 12, paddingLeft: 16, gap: 11, alignItems: 'flex-start' },
-  thumb: {
-    width: 84, height: 84, borderRadius: 14,
-    backgroundColor: '#E5E8EE', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
-  },
-  timeBadge: {
-    position: 'absolute', bottom: 5, left: 5,
-    backgroundColor: 'rgba(0,0,0,0.6)',
-    paddingHorizontal: 6, paddingVertical: 2, borderRadius: 5,
-  },
-  timeText:           { color: '#fff', fontSize: 9, fontWeight: '500' },
-  liveDot: {
-    position: 'absolute', top: 6, right: 6,
-    width: 8, height: 8, borderRadius: 4,
-    backgroundColor: '#FF3B30', borderWidth: 1.5, borderColor: '#fff',
-  },
-  info:               { flex: 1, gap: 5 },
-  titleRow:           { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', gap: 5 },
-  alertTitle:         { fontSize: 13, fontWeight: '500', color: '#1C1C1E', flex: 1 },
-  descText:           { fontSize: 11, color: '#555', fontStyle: 'italic' },
-  badge:              { paddingHorizontal: 8, paddingVertical: 3, borderRadius: 7 },
-  badgeText:          { fontSize: 10, fontWeight: '500' },
-  metaRow:            { flexDirection: 'row', alignItems: 'center', gap: 4 },
-  metaDot:            { color: '#8E8E93', fontSize: 11 },
-  metaText:           { fontSize: 11, color: '#8E8E93' },
-  btnRow:             { flexDirection: 'row', gap: 5, marginTop: 2 },
-  btnGreen: {
-    flexDirection: 'row', alignItems: 'center', gap: 3,
-    backgroundColor: '#34C759', paddingHorizontal: 10, paddingVertical: 6, borderRadius: 9,
-  },
-  btnGreenText:       { fontSize: 11, fontWeight: '500', color: '#fff' },
-  btnBlue: {
-    flexDirection: 'row', alignItems: 'center', gap: 3,
-    backgroundColor: '#EFF6FF', paddingHorizontal: 10, paddingVertical: 6,
-    borderRadius: 9, borderWidth: 0.5, borderColor: '#BFDBFE',
-  },
-  btnBlueText:        { fontSize: 11, fontWeight: '500', color: '#1D4ED8' },
-
-  // Modal
-  modalOverlay:       { flex: 1, backgroundColor: 'rgba(0,0,0,0.4)', justifyContent: 'flex-end' },
-  modalScroll:        { backgroundColor: '#fff', borderTopLeftRadius: 24, borderTopRightRadius: 24, maxHeight: '80%' },
-  modal:              { padding: 18, paddingBottom: 32 },
-  modalHandle:        { width: 36, height: 4, backgroundColor: 'rgba(0,0,0,0.15)', borderRadius: 2, alignSelf: 'center', marginBottom: 14 },
-  modalHeaderRow:     { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 },
-  modalTitle:         { fontSize: 16, fontWeight: '600', color: '#1C1C1E' },
-  modalDesc:          { fontSize: 13, color: '#555', marginBottom: 14, fontStyle: 'italic' },
-  eventShot: {
-    width: '100%', height: 148, backgroundColor: '#111827',
-    borderRadius: 14, alignItems: 'center', justifyContent: 'center', marginBottom: 12,
-  },
-  downloadRow:        { flexDirection: 'row', gap: 7, marginBottom: 12 },
-  downloadBtn: {
-    flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
-    gap: 5, paddingVertical: 9, borderRadius: 11,
-    backgroundColor: '#EFF6FF', borderWidth: 0.5, borderColor: '#BFDBFE',
-    overflow: 'hidden', position: 'relative',
-  },
-  downloadBtnDone:    { backgroundColor: '#F0FDF4', borderColor: '#BBF7D0' },
-  downloadBtnText:    { fontSize: 12, fontWeight: '500', color: '#1D4ED8' },
-  downloadBtnTextDone:{ color: '#166534' },
-  downloadProgress:   { position: 'absolute', bottom: 0, left: 0, right: 0, height: 2, backgroundColor: '#BFDBFE' },
-  downloadProgressFill:{ height: '100%', backgroundColor: '#1D4ED8' },
-  detailGrid:         { flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginBottom: 12 },
-  detailCell:         { flex: 1, minWidth: '45%', backgroundColor: '#F2F2F7', borderRadius: 8, padding: 10 },
-  detailLabel:        { fontSize: 10, color: '#8E8E93', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 2 },
-  detailValue:        { fontSize: 13, fontWeight: '500', color: '#1C1C1E' },
-  modalActions:       { flexDirection: 'row', gap: 7, marginTop: 14 },
-  modalBtn:           { flex: 1, paddingVertical: 12, borderRadius: 12, alignItems: 'center' },
-  modalBtnPrimary:    { backgroundColor: '#1C1C1E' },
-  modalBtnPrimaryText:{ fontSize: 13, fontWeight: '500', color: '#fff' },
-  modalBtnSecondary:  { backgroundColor: '#F2F2F7', borderWidth: 0.5, borderColor: 'rgba(0,0,0,0.08)' },
-  modalBtnSecondaryText:{ fontSize: 13, fontWeight: '500', color: '#1C1C1E' },
+const S = StyleSheet.create({
+  container:      { flex: 1, backgroundColor: '#F2F2F7' },
+  centered:       { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 12 },
+  loadingText:    { fontSize: 14, color: '#AEAEB2' },
+  selectorCard:   { backgroundColor: '#fff', paddingTop: Platform.OS === 'ios' ? 56 : 36, paddingBottom: 16, borderBottomWidth: 0.5, borderBottomColor: 'rgba(0,0,0,0.08)', shadowColor: '#000', shadowOpacity: 0.04, shadowRadius: 4, elevation: 2 },
+  topRow:         { flexDirection: 'row', alignItems: 'flex-end', justifyContent: 'space-between', paddingHorizontal: 16, marginBottom: 14 },
+  selectorLabel:  { fontSize: 11, fontWeight: '700', color: '#AEAEB2', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 4 },
+  statsHighlight: { fontSize: 26, fontWeight: '800', color: '#1C1C1E' },
+  statsDim:       { fontSize: 13, color: '#AEAEB2' },
+  selectorRow:    { paddingHorizontal: 16, gap: 8 },
+  chip:           { flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 14, paddingVertical: 9, borderRadius: 20, backgroundColor: '#F2F2F7', borderWidth: 0.5, borderColor: 'rgba(0,0,0,0.08)' },
+  chipActive:     { backgroundColor: '#1C1C1E', borderColor: '#1C1C1E' },
+  chipDot:        { width: 6, height: 6, borderRadius: 3 },
+  chipText:       { fontSize: 13, fontWeight: '600', color: '#AEAEB2' },
+  chipTextActive: { color: '#fff' },
+  list:           { padding: 16 },
+  empty:          { alignItems: 'center', paddingTop: 80, gap: 10 },
+  emptyTitle:     { fontSize: 16, color: '#AEAEB2', fontWeight: '600' },
+  emptySub:       { fontSize: 13, color: '#C7C7CC' },
 });

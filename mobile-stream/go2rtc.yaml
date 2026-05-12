@@ -1,0 +1,8 @@
+streams:
+  street: 
+    - rtsp://192.168.1.229:554/stream
+  radwa:
+    - rtsp://192.168.1.229:554/streeet
+record:
+  dir:
+    - /recordings   # المجلد اللي بيتحفظ فيه

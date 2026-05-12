@@ -14,6 +14,7 @@ namespace Application.Services.Interfaces
         Task<ApiResponse<List<DetectionDto>>> GetAllDetectionsAsync();
         Task<ApiResponse<List<DetectionDto>>> GetDetectionsByCameraAsync(int cameraId);
         Task<ApiResponse<List<DetectionDto>>> GetDetectionsByDayAsync(DateTime date);
-        
+        Task<ApiResponse<DetectionDto>> ResolveDetectionAsync(int id);
+
     }
 }

@@ -1,4 +1,4 @@
-import { Component, OnInit, ViewChild, ElementRef } from '@angular/core';
+import { Component, OnInit, ViewChild, ElementRef, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { DashboardService } from '../services/dashboard.service';
 
@@ -7,69 +7,129 @@ import { DashboardService } from '../services/dashboard.service';
   standalone: true,
   imports: [CommonModule],
   templateUrl: './dashboard.html',
-  styleUrl: './dashboard.css',
+  styleUrls: ['./dashboard.css'],
 })
 export class Dashboard implements OnInit {
 
   @ViewChild('videoPlayer') videoPlayer!: ElementRef<HTMLVideoElement>;
 
   cameras: any[] = [];
+  errorMessage: string | null = null;
   private pc!: RTCPeerConnection;
 
-  // 👇 مهم عشان الـ placeholder
   videoReady: boolean = false;
+  selectedCamera: any = null;
 
-  constructor(private dashboardService: DashboardService) {}
+  constructor(
+    private dashboardService: DashboardService,
+    private cdr: ChangeDetectorRef // 1. ضفنا الـ ChangeDetectorRef هنا
+  ) {}
 
   ngOnInit() {
+    this.loadFromCache();
     this.loadCameras();
   }
 
-  loadCameras() {
-    this.dashboardService.getCameras().subscribe(res => {
-      this.cameras = res.data;
-    });
+  loadFromCache() {
+    try {
+      const cached = localStorage.getItem('camguard_dashboard_cameras');
+      if (cached) {
+        this.cameras = JSON.parse(cached);
+      }
+    } catch (e) {
+      console.error('Cache read error', e);
+    }
   }
 
-  async selectCamera(id: number) {
-    await this.startWebRTC(id);
+  loadCameras() {
+    this.errorMessage = null;
+
+    this.dashboardService.getCameras().subscribe(
+      res => {
+        this.cameras = (res && (res.data ?? res)) || [];
+        localStorage.setItem('camguard_dashboard_cameras', JSON.stringify(this.cameras));
+      },
+      error => {
+        console.error('Failed to load cameras', error);
+        this.errorMessage = 'Unable to connect to camera service.';
+      }
+    );
+  }
+
+  async selectCamera(cam: any) {
+    this.selectedCamera = cam;
+    this.cdr.detectChanges(); // نحدث الشاشة عشان نظهر كارد التحميل (اختياري بس بيسرع الاستجابة)
     
+    setTimeout(async () => {
+      await this.startWebRTC(cam.id);
+    }, 0);
   }
 
   async startWebRTC(id: number) {
-
-    // لو فيه اتصال قديم اقفله
     if (this.pc) {
       this.pc.close();
     }
 
     this.videoReady = false;
-
     this.pc = new RTCPeerConnection();
+    
+    // نقول لـ WebRTC إننا داخلين نستقبل فيديو
+    this.pc.addTransceiver('video', { direction: 'recvonly' });
 
-    // 🎥 استقبال الفيديو
+    // الحدث ده بيحصل لما الفيديو يوصل من السيرفر
     this.pc.ontrack = (event) => {
       const stream = event.streams[0];
+      if (this.videoPlayer && this.videoPlayer.nativeElement) {
+        this.videoPlayer.nativeElement.srcObject = stream;
+        this.videoPlayer.nativeElement.play().then(() => {
+          this.videoReady = true; 
+          
+          // 2. السطر ده هو اللي هيحل مشكلة الضغطتين، بيجبر الصفحة تتحدث فوراً
+          this.cdr.detectChanges(); 
 
-      this.videoPlayer.nativeElement.srcObject = stream;
-      this.videoPlayer.nativeElement.play();
-
-      this.videoReady = true; // 👈 الفيديو اشتغل
+        }).catch(err => console.error('Play prevented by browser:', err));
+      }
     };
 
-    // 📡 create offer
-    const offer = await this.pc.createOffer();
-    await this.pc.setLocalDescription(offer);
+    try {
+      const offer = await this.pc.createOffer();
+      await this.pc.setLocalDescription(offer);
 
-    // 📡 send to backend
-    const answer = await this.dashboardService.startStream(id, offer);
+      this.dashboardService.getWebRTCUrl(id).subscribe(async (res) => {
+        if (!res.isSuccess || !res.data?.webRTCUrl) {
+          console.error('Failed to get WebRTC URL from backend');
+          return;
+        }
 
-    if (!answer) {
-      console.error('No answer from server');
-      return;
+        let mediaMtxUrl = res.data.webRTCUrl;
+        
+        if(!mediaMtxUrl.endsWith('/whep')) {
+          mediaMtxUrl = `${mediaMtxUrl}/whep`;
+        }
+
+        const sdpResponse = await fetch(mediaMtxUrl, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/sdp'
+          },
+          body: offer.sdp 
+        });
+
+        if (!sdpResponse.ok) {
+          console.error('MediaMTX rejected the offer', await sdpResponse.text());
+          return;
+        }
+
+        const answerSdp = await sdpResponse.text();
+        await this.pc.setRemoteDescription({
+          type: 'answer',
+          sdp: answerSdp
+        });
+
+      });
+
+    } catch (err) {
+      console.error('WebRTC Initialization Error:', err);
     }
-
-    await this.pc.setRemoteDescription(answer);
   }
-  
 }
