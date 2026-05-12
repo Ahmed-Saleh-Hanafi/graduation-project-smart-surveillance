@@ -47,3 +47,11 @@ async def process_alert(alert):
         )
 
         await send_alert(alert)
+    elif type == 'abnormal':
+        url = save_frame_and_get_url(frame)
+        alert = AlertRequest(
+            cameraId=int(cam_id),
+            type="abnormal",
+            snapshotUrl=str(url)
+        )
+        await send_alert(alert)

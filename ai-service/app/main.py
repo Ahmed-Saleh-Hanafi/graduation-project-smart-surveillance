@@ -55,7 +55,7 @@ async def start(mode: str):
     
     # assign worker to each camera
     if settings.MODE == 'test':
-        workers = [asyncio.create_task(camera_worker(list(settings.CAMERA_SOURCES.keys())[0], 0))]
+        workers = [asyncio.create_task(camera_worker(settings.CAMERA_DEVICE_ID, 0))]
     else:
         workers = [
             asyncio.create_task(camera_worker(cam_id, url))
