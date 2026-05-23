@@ -249,6 +249,102 @@ namespace Infrastructure.Migrations
                     b.ToTable("Persons");
                 });
 
+            modelBuilder.Entity("Domain.Entities.Sensor", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<double>("Threshold")
+                        .HasColumnType("float");
+
+                    b.Property<int>("Type")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("Sensors");
+                });
+
+            modelBuilder.Entity("Domain.Entities.SensorAlert", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<bool>("IsResolved")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("Message")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int>("SensorId")
+                        .HasColumnType("int");
+
+                    b.Property<int?>("SensorId1")
+                        .HasColumnType("int");
+
+                    b.Property<string>("SensorName")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<double>("Threshold")
+                        .HasColumnType("float");
+
+                    b.Property<DateTime>("TriggeredAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<double>("TriggeredValue")
+                        .HasColumnType("float");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("SensorId");
+
+                    b.HasIndex("SensorId1");
+
+                    b.ToTable("SensorAlerts");
+                });
+
+            modelBuilder.Entity("Domain.Entities.SensorReading", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime>("RecordedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int>("SensorId")
+                        .HasColumnType("int");
+
+                    b.Property<double>("SensorValue")
+                        .HasColumnType("float");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("SensorId");
+
+                    b.ToTable("SensorReadings");
+                });
+
             modelBuilder.Entity("Domain.Entities.User", b =>
                 {
                     b.Property<string>("Id")
@@ -535,6 +631,32 @@ namespace Infrastructure.Migrations
                     b.Navigation("Camera");
                 });
 
+            modelBuilder.Entity("Domain.Entities.SensorAlert", b =>
+                {
+                    b.HasOne("Domain.Entities.Sensor", "Sensor")
+                        .WithMany()
+                        .HasForeignKey("SensorId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("Domain.Entities.Sensor", null)
+                        .WithMany("SensorAlerts")
+                        .HasForeignKey("SensorId1");
+
+                    b.Navigation("Sensor");
+                });
+
+            modelBuilder.Entity("Domain.Entities.SensorReading", b =>
+                {
+                    b.HasOne("Domain.Entities.Sensor", "Sensor")
+                        .WithMany("SensorReadings")
+                        .HasForeignKey("SensorId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Sensor");
+                });
+
             modelBuilder.Entity("Domain.Entities.UserCamera", b =>
                 {
                     b.HasOne("Domain.Entities.Camera", "Camera")
@@ -623,6 +745,13 @@ namespace Infrastructure.Migrations
                     b.Navigation("CameraPersonLists");
 
                     b.Navigation("Detections");
+                });
+
+            modelBuilder.Entity("Domain.Entities.Sensor", b =>
+                {
+                    b.Navigation("SensorAlerts");
+
+                    b.Navigation("SensorReadings");
                 });
 
             modelBuilder.Entity("Domain.Entities.User", b =>

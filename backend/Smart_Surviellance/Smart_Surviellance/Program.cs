@@ -7,6 +7,7 @@ using Infrastructure.Data.Seed;
 using Infrastructure.Repositories;
 using Infrastructure.Services;
 using Infrastructure.SignalR;
+using Infrastructure.MQTT;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
@@ -98,6 +99,10 @@ builder.Services.AddScoped<IDetectionRepository, DetectionRepository>();
 builder.Services.AddScoped<IUserCameraRepository, UserCameraRepository>();
 builder.Services.AddScoped<IFaceRepository, FaceRepository>();
 builder.Services.AddScoped<IEventRecordedRepository, EventRecordedRepository>();
+builder.Services.AddScoped<ISensorRepository , SensorRepository>();
+builder.Services.AddScoped<ISensorReadingRerpository, SensorReadingRepository>();
+builder.Services.AddScoped<ISensorAlertRepository, SensorAlertRepository>();
+
 
 // Services
 builder.Services.AddScoped<IAuthService, AuthService>();
@@ -117,6 +122,11 @@ builder.Services.AddScoped<ICurrentUserService, CurrentUserService>();
 builder.Services.AddScoped<IImageService, ImageService>();
 builder.Services.AddScoped<IEventRecordedService, EventRecordedService>();
 builder.Services.AddScoped<IVideoService, VideoService>();
+builder.Services.AddScoped<ISensorService, SensorService>();
+builder.Services.AddScoped<ISensorNotifier, SensorNotifier>();
+
+builder.Services.AddHostedService<MQTTBackgroundService>();
+
 builder.Services.AddHttpContextAccessor();
 
 

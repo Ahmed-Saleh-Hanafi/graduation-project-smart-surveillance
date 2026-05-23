@@ -22,6 +22,9 @@ namespace Infrastructure.Data
         public DbSet<UserCamera> UserCameras { get; set; }
         public DbSet<Face> Faces { get; set; }
         public DbSet<EventRecorded> EventsRecorded { get; set; }
+        public DbSet<Sensor> Sensors { get; set; }
+        public DbSet<SensorReading> SensorReadings { get; set; }
+        public DbSet<SensorAlert> SensorAlerts { get; set; }
 
         protected override void OnModelCreating(ModelBuilder builder)
         {
@@ -74,11 +77,23 @@ namespace Infrastructure.Data
                 .HasForeignKey(e => e.CameraId)
                 .OnDelete(DeleteBehavior.Restrict);
 
+            builder.Entity<SensorReading>()
+                .HasOne(sr => sr.Sensor)
+                .WithMany(s => s.SensorReadings)
+                .HasForeignKey(sr => sr.SensorId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            builder.Entity<SensorAlert>()
+                .HasOne(sa => sa.Sensor)
+                .WithMany()
+                .HasForeignKey(sa => sa.SensorId)
+                .OnDelete(DeleteBehavior.Cascade);
 
 
 
 
 
+            
         }
 
 
