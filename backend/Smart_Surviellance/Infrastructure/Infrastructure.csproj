@@ -28,6 +28,7 @@
     </PackageReference>
     <PackageReference Include="Microsoft.Extensions.Configuration.FileExtensions" Version="10.0.7" />
     <PackageReference Include="Microsoft.Extensions.Configuration.Json" Version="10.0.7" />
+    <PackageReference Include="MQTTnet" Version="5.1.0.1559" />
   </ItemGroup>
 
 </Project>

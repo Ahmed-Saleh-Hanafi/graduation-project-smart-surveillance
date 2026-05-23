@@ -41,6 +41,14 @@ namespace Infrastructure.SignalR
                 }
             }
 
+            var sensorIds = await _context.Sensors
+            .Where(s => s.IsActive)
+            .Select(s => s.Id)
+            .ToListAsync();
+            foreach (var sensorId in sensorIds)
+                await Groups.AddToGroupAsync(Context.ConnectionId, $"sensor-{sensorId}");
+
+
             await base.OnConnectedAsync();
         }
     }
