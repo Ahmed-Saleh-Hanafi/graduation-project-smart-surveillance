@@ -49,7 +49,7 @@ namespace Application.Services.Implementations
                 Threshold = createSensorDto.Threshold,
             };
 
-            _sensorRepository.AddAsync(sensor);
+            await _sensorRepository.AddAsync(sensor);
 
             return ApiResponse<bool>.Success(true, "Sensor added successfully.");
 
@@ -67,6 +67,117 @@ namespace Application.Services.Implementations
             await _sensorRepository.DeleteAsync(sensorId);
 
             return ApiResponse<bool>.Success(true, "Sensor deleted successfully.");
+
+
+        }
+
+        public async Task<ApiResponse<SensorAlertDto>> GetAlertById(int alertId)
+        {
+            var alert = await _sensorAlertRepository.GetAlertById(alertId);
+            if(alert == null)
+            {
+                return ApiResponse<SensorAlertDto>.Fail("There is not alerts For this sensor");
+            }
+            var alertDto = new SensorAlertDto
+            {
+                Id = alert.Id,
+                SensorId = alert.SensorId,
+                SensorName = alert.SensorName,
+                SensorType = alert.Sensor.Type.ToString(),
+                TriggeredValue = alert.TriggeredValue,
+                Threshold = alert.Threshold,
+                Message = alert.Message,
+                IsResolved = alert.IsResolved,
+                TriggeredAt = alert.TriggeredAt
+            };
+
+
+            return ApiResponse<SensorAlertDto>.Success(alertDto, "Alert retrieved successfully.");
+
+        }
+
+        public async Task<ApiResponse<SensorAlertDto>> GetAlertByIdAsync(int id)
+        {
+            var alert = await _sensorAlertRepository.GetAlertById(id);
+            if(alert == null)
+            {
+                return ApiResponse<SensorAlertDto>.Fail("There is not alerts For this sensor");
+            }
+
+            var alertDto = new SensorAlertDto
+            {
+                Id = alert.Id,
+                SensorId = alert.SensorId,
+                SensorName = alert.SensorName,
+                SensorType = alert.Sensor.Type.ToString(),
+                TriggeredValue = alert.TriggeredValue,
+                Threshold = alert.Threshold,
+                Message = alert.Message,
+                IsResolved = alert.IsResolved,
+                TriggeredAt = alert.TriggeredAt
+            };
+
+            return ApiResponse<SensorAlertDto>.Success(alertDto, "Alert retrieved successfully.");
+
+
+
+
+
+        }
+
+        public async Task<ApiResponse<List<SensorAlertDto>>> GetAlertBySensorIdAsync(int id)
+        {
+            var sensor = _sensorRepository.GetByIdAsync(id);
+            if (sensor == null)
+            {
+                return ApiResponse<List<SensorAlertDto>>.Fail("Sensor not found.");
+            }
+            var alerts = await _sensorAlertRepository.GetBySensorIdAsync(id);
+            if(!alerts.Any())
+            {
+                return ApiResponse<List<SensorAlertDto>>.Fail("There is not alerts For this sensor");
+            }
+
+            var alertDtos = alerts.Select(alert => new SensorAlertDto
+            {
+                Id = alert.Id,
+                SensorId = alert.SensorId,
+                SensorName = alert.SensorName,
+                SensorType = alert.Sensor.Type.ToString(),
+                TriggeredValue = alert.TriggeredValue,
+                Threshold = alert.Threshold,
+                Message = alert.Message,
+                IsResolved = alert.IsResolved,
+                TriggeredAt = alert.TriggeredAt
+            }).ToList();
+
+            return ApiResponse<List< SensorAlertDto >>.Success(alertDtos, "Alerts retrieved successfully.");
+
+
+        }
+
+        public async Task<ApiResponse<List<SensorAlertDto>>> GetAllAlertsAsync()
+        {
+            var alerts = await _sensorAlertRepository.GetAllAsync();
+            if (!alerts.Any())
+            {
+                return ApiResponse<List<SensorAlertDto>>.Fail("There is not alerts For this sensor");
+            }
+
+            var alertDtos = alerts.Select(alert => new SensorAlertDto
+            {
+                Id = alert.Id,
+                SensorId = alert.SensorId,
+                SensorName = alert.SensorName,
+                SensorType = alert.Sensor.Type.ToString(),
+                TriggeredValue = alert.TriggeredValue,
+                Threshold = alert.Threshold,
+                Message = alert.Message,
+                IsResolved = alert.IsResolved,
+                TriggeredAt = alert.TriggeredAt
+            }).ToList();
+
+            return ApiResponse<List<SensorAlertDto>>.Success(alertDtos, "Alerts retrieved successfully.");
 
 
         }
@@ -136,6 +247,22 @@ namespace Application.Services.Implementations
 
 
             return ApiResponse<List<SensorReadingDto>>.Success(readingDtos, "Sensor readings retrieved successfully.");
+
+
+
+        }
+
+        public async Task<ApiResponse<bool>> MarkAlertAsResolvedAsync(int alertId)
+        {
+            var alert = await _sensorAlertRepository.GetAlertById(alertId);
+            if (alert == null)
+            {
+                return ApiResponse<bool>.Fail("Alert not found.");
+            }
+
+            await _sensorAlertRepository.MarkAsResolvedAsync(alertId);
+
+            return ApiResponse<bool>.Success(true, "Alert marked as resolved successfully.");
 
 
 
@@ -239,5 +366,10 @@ namespace Application.Services.Implementations
             return ApiResponse<bool>.Success(true, "Sensor updated successfully.");
 
         }
+
+        
+
+
+
     }
 }

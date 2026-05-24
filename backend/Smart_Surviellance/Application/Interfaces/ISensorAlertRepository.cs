@@ -12,5 +12,7 @@ namespace Application.Interfaces
         Task<IEnumerable<SensorAlert>> GetBySensorIdAsync(int sensorId);
         Task<IEnumerable<SensorAlert>> GetUnresolvedAsync();
         Task MarkAsResolvedAsync(int alertId);
+        Task<SensorAlert?> GetAlertById(int alertId);
+
     }
 }
