@@ -82,7 +82,51 @@ namespace Smart_Surviellance.Controllers
             return BadRequest(result);
         }
 
+        [HttpGet("Sensor/alerts")]
+        public async Task<IActionResult> GetAllAlerts()
+        {
+            var result = await _sensorService.GetAllAlertsAsync();
+            if (result.IsSuccess)
+            {
+                return Ok(result);
+            }
+            return BadRequest(result);
+        }
+
+        [HttpGet("Sensor/{id}/alerts")]
+        public async Task<IActionResult> GetAlertBySensorId(int id)
+        {
+            var result = await _sensorService.GetAlertBySensorIdAsync(id);
+            if (result.IsSuccess)
+            {
+                return Ok(result);
+            }
+            return BadRequest(result);
+        }
+
+        [HttpGet("alerts/{alertId}")]
+        public async Task<IActionResult> GetAlertById(int alertId)
+        {
+            var result = await _sensorService.GetAlertByIdAsync(alertId);
+            if (result.IsSuccess)
+            {
+                return Ok(result);
+            }
+            return BadRequest(result);
+        }
+
+        [HttpPut("alerts/{alertId}/resolve")]
+        public async Task<IActionResult> MarkAlertAsResolved(int alertId)
+        {
+            var result = await _sensorService.MarkAlertAsResolvedAsync(alertId);
+            if (result.IsSuccess)
+            {
+                return Ok(result);
+            }
+            return BadRequest(result);
+        }
 
 
-    }
+
+        }
 }

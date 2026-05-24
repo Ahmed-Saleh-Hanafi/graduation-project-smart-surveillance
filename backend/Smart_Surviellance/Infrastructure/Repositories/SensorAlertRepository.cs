@@ -42,5 +42,12 @@ namespace Infrastructure.Repositories
             }
         }
 
+        public async Task<SensorAlert?> GetAlertById(int alertId)
+        {
+            return await _context.SensorAlerts
+        .FirstOrDefaultAsync(a => a.Id == alertId);
+
+        }
+
     }
 }

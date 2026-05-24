@@ -14,7 +14,7 @@ namespace Domain.Entities
         public double Threshold { get; set; }         // the threshold at time of alert
         public string Message { get; set; }           // e.g. "Gas level exceeded threshold"
         public bool IsResolved { get; set; } = false;
-        public DateTime TriggeredAt { get; set; } = DateTime.UtcNow;
+        public DateTime TriggeredAt { get; set; } = DateTime.UtcNow.AddHours(2);
         public Sensor Sensor { get; set; }
 
 

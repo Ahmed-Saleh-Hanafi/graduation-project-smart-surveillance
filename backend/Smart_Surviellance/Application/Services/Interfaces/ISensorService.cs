@@ -17,5 +17,14 @@ namespace Application.Services.Interfaces
         Task<ApiResponse<bool>> UpdateSensorAsync(SensorDto sensorDto);
 
 
+        Task<ApiResponse<List<SensorAlertDto>>> GetAllAlertsAsync();
+        Task<ApiResponse<List<SensorAlertDto>>> GetAlertBySensorIdAsync(int id);
+        Task<ApiResponse<SensorAlertDto>> GetAlertByIdAsync(int alertId);
+        Task<ApiResponse<bool>> MarkAlertAsResolvedAsync(int alertId);
+
+
+
+
+
     }
 }
