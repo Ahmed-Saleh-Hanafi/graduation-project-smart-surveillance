@@ -102,6 +102,8 @@ builder.Services.AddScoped<IEventRecordedRepository, EventRecordedRepository>();
 builder.Services.AddScoped<ISensorRepository , SensorRepository>();
 builder.Services.AddScoped<ISensorReadingRerpository, SensorReadingRepository>();
 builder.Services.AddScoped<ISensorAlertRepository, SensorAlertRepository>();
+builder.Services.AddScoped<IAIScheduleRepository, AIScheduleRepository>();
+
 
 
 // Services
@@ -124,6 +126,7 @@ builder.Services.AddScoped<IEventRecordedService, EventRecordedService>();
 builder.Services.AddScoped<IVideoService, VideoService>();
 builder.Services.AddScoped<ISensorService, SensorService>();
 builder.Services.AddScoped<ISensorNotifier, SensorNotifier>();
+builder.Services.AddScoped<IAIScheduleService, AIScheduleService>();
 
 builder.Services.AddHostedService<MQTTBackgroundService>();
 
