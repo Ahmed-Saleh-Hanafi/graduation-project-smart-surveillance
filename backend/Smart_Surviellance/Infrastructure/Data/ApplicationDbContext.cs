@@ -25,6 +25,8 @@ namespace Infrastructure.Data
         public DbSet<Sensor> Sensors { get; set; }
         public DbSet<SensorReading> SensorReadings { get; set; }
         public DbSet<SensorAlert> SensorAlerts { get; set; }
+        public DbSet<AISchedule> AISchedules { get; set; }
+        public DbSet<AIScheduleInterval> AIScheduleIntervals { get; set; }
 
         protected override void OnModelCreating(ModelBuilder builder)
         {
@@ -89,11 +91,26 @@ namespace Infrastructure.Data
                 .HasForeignKey(sa => sa.SensorId)
                 .OnDelete(DeleteBehavior.Cascade);
 
+            builder.Entity<AIScheduleInterval>()
+                .HasOne(i => i.AISchedule)
+                .WithMany(s => s.Intervals)
+                .HasForeignKey(i => i.AIScheduleId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            builder.Entity<AISchedule>()
+                .HasOne(s => s.Camera)
+                .WithMany()
+                .HasForeignKey(s => s.CameraId)
+                .OnDelete(DeleteBehavior.Cascade);
 
 
 
 
-            
+
+
+
+
+
         }
 
 
