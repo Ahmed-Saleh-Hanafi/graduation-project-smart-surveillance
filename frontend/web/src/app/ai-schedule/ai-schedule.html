@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html class="light" lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta content="width=device-width, initial-scale=1.0" name="viewport" />
+  <title>AI Scheduling</title>
+  <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet" />
+  <script id="tailwind-config">
+    tailwind.config = {
+      darkMode: "class",
+      theme: { extend: { colors: { "surface": "#f8f9fa", "on-surface": "#191c1d" }, fontFamily: { "body": ["Inter"] } } },
+    }
+  </script>
+  <style>
+    body { font-family: 'Inter', sans-serif; }
+    .material-symbols-outlined { font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24; }
+    .custom-scrollbar::-webkit-scrollbar { width: 6px; height: 6px; }
+    .custom-scrollbar::-webkit-scrollbar-thumb { background-color: #cbd5e1; border-radius: 20px; }
+  </style>
+</head>
+
+<body class="bg-surface text-on-surface">
+
+  <header class="fixed top-0 w-full z-50 bg-slate-50/80 backdrop-blur-xl border-b border-slate-200/50 shadow-sm h-16 flex items-center px-6">
+    <img src="imgs/logo.png" alt="logo" style="width:150px; height: fit-content; margin-left: 20px;">
+    <div class="ml-auto flex items-center gap-4">
+      <button class="p-2 text-slate-500 hover:bg-slate-100/50 rounded-full"><span class="material-symbols-outlined">notifications</span></button>
+      <div class="w-8 h-8 rounded-full bg-slate-200 overflow-hidden"><img src="https://lh3.googleusercontent.com/aida-public/AB6AXuD1gFb8rW8bBh7Q7n-fUYlzdznMbfbtPnfUzbwsieTvqtKz4PzrBkZeG-NOgxEs2mGzSllahsVxyX5XHGOQP04N99JQTXuYU3U00E_uiREUq4utywLgBKlWieiJDDBFhfKgbxelAiCMua6NxbIoGZ2XCwGifXbKKLbrr5qJGKyYhRzfkEh8_oqa51KPa5swXJFpNHRHIfiDcmveSaWjidVNcSlOdYO3PSCsZPo7uwta9WrHTd6W5Cxj4f61V1CcTiAWDWPj8aOngNRx" /></div>
+    </div>
+  </header>
+
+  <aside class="fixed left-0 top-16 h-[calc(100vh-4rem)] w-64 z-40 bg-slate-50/80 backdrop-blur-xl flex flex-col py-10 px-2 border-r border-slate-200/20">
+    <nav class="flex-1 space-y-1">
+      <a class="flex items-center gap-3 px-4 py-3 text-sm font-medium text-slate-600 hover:bg-slate-100 rounded-lg" href="/Dashboard"><span class="material-symbols-outlined text-slate-400">dashboard</span> Dashboard</a>
+      <a class="flex items-center gap-3 px-4 py-3 text-sm font-medium text-slate-600 hover:bg-slate-100 rounded-lg" href="/CameraConfiguration"><span class="material-symbols-outlined text-slate-400">videocam</span> Camera Config</a>
+      <a class="flex items-center gap-3 px-4 py-3 text-sm font-medium text-slate-600 hover:bg-slate-100 rounded-lg" href="/SensorManagement"><span class="material-symbols-outlined text-slate-400">sensors</span> Sensor Configuration</a>
+      <a class="flex items-center gap-3 px-4 py-3 text-sm font-medium text-slate-600 hover:bg-slate-100 rounded-lg" href="/usermanagement"><span class="material-symbols-outlined text-slate-400">group</span> User Management</a>
+      <a class="flex items-center gap-3 px-4 py-3 text-sm font-medium text-slate-600 hover:bg-slate-100 transition-colors duration-150 rounded-lg group" href="/rolemanagement">
+        <span class="material-symbols-outlined text-slate-400 group-hover:text-blue-700">key</span> Role Management
+      </a>
+      <a class="flex items-center gap-3 px-4 py-3 text-sm font-medium text-slate-600 hover:bg-slate-100 rounded-lg" href="/detectionmanagement"><span class="material-symbols-outlined text-slate-400">radar</span> Detections</a>
+   
+      <a class="flex items-center gap-3 px-4 py-3 text-sm font-medium bg-blue-50 text-blue-700 border-l-4 border-blue-700 rounded-r-lg" href="/AiScheduleComponent"><span class="material-symbols-outlined text-blue-700" style="font-variation-settings: 'FILL' 1;">smart_toy</span> AI Schedule</a>
+    
+    </nav>
+  </aside>
+
+  <main class="ml-64 mt-16 p-8 min-h-screen bg-surface">
+
+    <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 mb-6 flex justify-between items-center">
+      <div class="flex items-center gap-4">
+        <div class="w-12 h-12 bg-blue-50 text-blue-600 rounded-xl flex items-center justify-center shadow-inner">
+          <span class="material-symbols-outlined text-2xl">event_available</span>
+        </div>
+        <div>
+          <h1 class="text-2xl font-extrabold text-slate-800 tracking-tight">AI Scheduling</h1>
+          <p class="text-sm text-slate-500 font-medium mt-0.5">Control when each AI model runs on your cameras</p>
+        </div>
+      </div>
+      <button (click)="openCreate()" class="flex items-center gap-2 px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-semibold shadow-md transition-all active:scale-95">
+        <span class="material-symbols-outlined text-xl">add</span> Add Schedule Rule
+      </button>
+    </div>
+
+    <div class="flex gap-6 items-start">
+      
+      <div class="w-[350px] bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden shrink-0 sticky top-24">
+        <div class="px-5 py-4 bg-slate-50 border-b border-slate-100 flex items-center gap-2">
+          <span class="relative flex h-3 w-3">
+            <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
+            <span class="relative inline-flex rounded-full h-3 w-3 bg-green-500"></span>
+          </span>
+          <h2 class="text-sm font-extrabold text-slate-800 uppercase tracking-wider">Running Now</h2>
+        </div>
+
+        <div class="p-5 space-y-4">
+          <div *ngIf="activeNow.length === 0" class="text-center py-6 text-slate-400">
+            <span class="material-symbols-outlined text-4xl mb-2 opacity-50">block</span>
+            <p class="text-sm font-medium">No models running at this time.</p>
+          </div>
+
+          <div *ngFor="let act of activeNow" class="bg-slate-50 border border-slate-200 rounded-xl p-3 flex items-start gap-3">
+            <div class="w-8 h-8 rounded-lg flex items-center justify-center shrink-0" [ngClass]="getModelInfo(act.modelName).bg + ' ' + getModelInfo(act.modelName).color">
+              <span class="material-symbols-outlined text-[18px]">{{ getModelInfo(act.modelName).icon }}</span>
+            </div>
+            <div>
+              <h3 class="text-sm font-bold text-slate-800">{{ getModelInfo(act.modelName).label }}</h3>
+              <p class="text-xs text-slate-500 font-medium mt-0.5">Cam: {{ act.cameraName }}</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="flex-1 space-y-4">
+        <div *ngIf="schedules.length === 0" class="bg-white rounded-2xl border border-slate-200 p-12 text-center text-slate-500 shadow-sm">
+          <span class="material-symbols-outlined text-5xl mb-3 opacity-50">calendar_clock</span>
+          <h3 class="text-lg font-bold text-slate-700">No Schedules Configured</h3>
+          <p class="text-sm mt-1">AI models will run using their default settings until you create rules.</p>
+        </div>
+
+        <div *ngFor="let s of schedules" class="bg-white rounded-2xl shadow-sm border border-slate-200 p-5 flex items-center gap-5 transition-all hover:shadow-md group" [ngClass]="{'opacity-60 bg-slate-50': !s.isActive}">
+          
+          <div class="w-12 h-12 rounded-xl flex items-center justify-center shrink-0 border" [ngClass]="getModelInfo(s.modelName).bg + ' ' + getModelInfo(s.modelName).color + (s.isActive ? ' border-transparent' : ' border-slate-200 grayscale')">
+            <span class="material-symbols-outlined text-2xl">{{ getModelInfo(s.modelName).icon }}</span>
+          </div>
+
+          <div class="flex-1">
+            <div class="flex items-center gap-2 mb-1">
+              <h3 class="text-lg font-bold text-slate-800">{{ getModelInfo(s.modelName).label }}</h3>
+              <span class="px-2 py-0.5 text-[10px] font-bold uppercase rounded-md bg-slate-100 text-slate-600 border border-slate-200">{{ s.cameraName }}</span>
+              <span class="px-2 py-0.5 text-[10px] font-bold uppercase rounded-md bg-blue-50 text-blue-700 border border-blue-200">{{ s.dayLabel }}</span>
+            </div>
+            <div class="text-sm font-mono text-slate-500 flex items-center gap-1.5">
+              <span class="material-symbols-outlined text-[14px]">schedule</span>
+              {{ formatIntervals(s.intervals) }}
+            </div>
+          </div>
+
+          <div class="flex items-center gap-4 shrink-0 border-l border-slate-100 pl-5">
+            <label class="relative inline-flex items-center cursor-pointer">
+              <input type="checkbox" class="sr-only peer" [checked]="s.isActive" (change)="toggleSchedule(s)">
+              <div class="w-11 h-6 bg-slate-300 rounded-full peer peer-checked:bg-green-500 transition-colors after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:after:translate-x-full peer-checked:after:border-white"></div>
+            </label>
+            
+            <button (click)="deleteSchedule(s.id)" class="w-9 h-9 rounded-lg flex items-center justify-center text-slate-400 hover:text-red-600 hover:bg-red-50 transition-colors">
+              <span class="material-symbols-outlined text-[20px]">delete</span>
+            </button>
+          </div>
+
+        </div>
+      </div>
+
+    </div>
+  </main>
+
+  <div *ngIf="isModalOpen" class="fixed inset-0 bg-slate-900/40 backdrop-blur-sm flex items-center justify-center z-50 p-4" (click)="closeModal()">
+    <div class="bg-white w-full max-w-[500px] rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh]" (click)="$event.stopPropagation()">
+      <div class="px-6 py-4 border-b border-slate-100 flex justify-between items-center bg-slate-50/50 shrink-0">
+        <h2 class="text-lg font-extrabold text-slate-800 flex items-center gap-2">
+          <span class="material-symbols-outlined text-blue-600">add_task</span>
+          New Schedule Rule
+        </h2>
+        <button (click)="closeModal()" class="text-slate-400 hover:text-slate-600"><span class="material-symbols-outlined">close</span></button>
+      </div>
+
+      <div class="p-6 space-y-5 overflow-y-auto custom-scrollbar">
+        <div class="grid grid-cols-2 gap-4">
+          <div class="col-span-2">
+            <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Target Camera</label>
+            <select [(ngModel)]="form.cameraId" class="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 text-sm font-medium">
+              <option value="" disabled selected>Select a camera...</option>
+              <option *ngFor="let c of cameras" [value]="c.id">{{ c.name }}</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-xs font-bold text-slate-500 uppercase mb-1">AI Model</label>
+            <select [(ngModel)]="form.modelName" class="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 text-sm font-medium">
+              <option *ngFor="let m of models" [value]="m.value">{{ m.label }}</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Active Day</label>
+            <select [(ngModel)]="form.dayOfWeek" class="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 text-sm font-medium">
+              <option *ngFor="let d of days" [value]="d.value">{{ d.label }}</option>
+            </select>
+          </div>
+        </div>
+
+        <div>
+          <div class="flex justify-between items-center mb-2">
+            <label class="block text-xs font-bold text-slate-500 uppercase">Time Windows (Model ON)</label>
+            <button (click)="addInterval()" class="text-[11px] font-bold text-blue-600 hover:bg-blue-50 px-2 py-1 rounded transition-colors">+ Add Window</button>
+          </div>
+          
+          <div class="space-y-2">
+            <div *ngFor="let int of form.intervals; let i = index" class="flex items-center gap-3 p-3 bg-slate-50 border border-slate-200 rounded-xl">
+              <div class="flex-1 flex items-center gap-2">
+                <span class="text-xs font-bold text-slate-400">From</span>
+                <input type="time" [(ngModel)]="int.startTime" class="w-full px-2 py-1.5 border-slate-200 rounded-md text-sm font-mono focus:ring-blue-500">
+              </div>
+              <div class="flex-1 flex items-center gap-2">
+                <span class="text-xs font-bold text-slate-400">To</span>
+                <input type="time" [(ngModel)]="int.endTime" class="w-full px-2 py-1.5 border-slate-200 rounded-md text-sm font-mono focus:ring-blue-500">
+              </div>
+              <button (click)="removeInterval(i)" [disabled]="form.intervals.length === 1" class="w-8 h-8 rounded text-slate-400 hover:text-red-500 hover:bg-red-50 disabled:opacity-30 flex items-center justify-center transition-colors">
+                <span class="material-symbols-outlined text-[18px]">close</span>
+              </button>
+            </div>
+            <p *ngIf="isOvernight(form.intervals[0])" class="text-xs text-orange-600 font-semibold flex items-center gap-1 mt-1">
+              <span class="material-symbols-outlined text-[14px]">warning</span> Overnight window detected
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <div class="px-6 py-4 bg-slate-50 border-t border-slate-100 flex justify-end gap-3 shrink-0">
+        <button (click)="closeModal()" class="px-5 py-2.5 text-sm font-semibold text-slate-600 hover:bg-slate-200 rounded-xl">Cancel</button>
+        <button (click)="save()" class="px-6 py-2.5 bg-blue-600 hover:bg-blue-700 text-white text-sm font-bold rounded-xl shadow-md">Save Rule</button>
+      </div>
+    </div>
+  </div>
+
+</body>
+</html>

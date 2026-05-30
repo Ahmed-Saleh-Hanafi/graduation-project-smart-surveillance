@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html class="light" lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta content="width=device-width, initial-scale=1.0" name="viewport" />
+  <title>Sensor Configuration</title>
+  <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet" />
+  <script id="tailwind-config">
+    tailwind.config = {
+      darkMode: "class",
+      theme: { extend: { colors: { "surface": "#f8f9fa", "on-surface": "#191c1d" }, fontFamily: { "body": ["Inter"] } } },
+    }
+  </script>
+  <style>
+    body { font-family: 'Inter', sans-serif; }
+    .material-symbols-outlined { font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24; }
+    .custom-scrollbar::-webkit-scrollbar { width: 6px; height: 6px; }
+    .custom-scrollbar::-webkit-scrollbar-thumb { background-color: #cbd5e1; border-radius: 20px; }
+  </style>
+</head>
+
+<body class="bg-surface text-on-surface">
+
+  <header class="fixed top-0 w-full z-50 bg-slate-50/80 backdrop-blur-xl border-b border-slate-200/50 shadow-sm h-16 flex items-center px-6">
+    <img src="imgs/logo.png" alt="logo" style="width:150px; height: fit-content; margin-left: 20px;">
+    <div class="ml-auto flex items-center gap-4">
+      <button class="p-2 text-slate-500 hover:bg-slate-100/50 rounded-full"><span class="material-symbols-outlined">notifications</span></button>
+      <div class="w-8 h-8 rounded-full bg-slate-200 overflow-hidden"><img src="https://lh3.googleusercontent.com/aida-public/AB6AXuD1gFb8rW8bBh7Q7n-fUYlzdznMbfbtPnfUzbwsieTvqtKz4PzrBkZeG-NOgxEs2mGzSllahsVxyX5XHGOQP04N99JQTXuYU3U00E_uiREUq4utywLgBKlWieiJDDBFhfKgbxelAiCMua6NxbIoGZ2XCwGifXbKKLbrr5qJGKyYhRzfkEh8_oqa51KPa5swXJFpNHRHIfiDcmveSaWjidVNcSlOdYO3PSCsZPo7uwta9WrHTd6W5Cxj4f61V1CcTiAWDWPj8aOngNRx" /></div>
+    </div>
+  </header>
+
+  <aside class="fixed left-0 top-16 h-[calc(100vh-4rem)] w-64 z-40 bg-slate-50/80 backdrop-blur-xl flex flex-col py-10 px-2 border-r border-slate-200/20">
+    <nav class="flex-1 space-y-1">
+      <a class="flex items-center gap-3 px-4 py-3 text-sm font-medium text-slate-600 hover:bg-slate-100 rounded-lg" href="/Dashboard"><span class="material-symbols-outlined text-slate-400">dashboard</span> Dashboard</a>
+      <a class="flex items-center gap-3 px-4 py-3 text-sm font-medium text-slate-600 hover:bg-slate-100 rounded-lg" href="/CameraConfiguration"><span class="material-symbols-outlined text-slate-400">videocam</span> Camera Config</a>
+      <a class="flex items-center gap-3 px-4 py-3 text-sm font-medium bg-blue-50 text-blue-700 border-l-4 border-blue-700 rounded-r-lg" href="/SensorConfiguration"><span class="material-symbols-outlined text-blue-700" style="font-variation-settings: 'FILL' 1;">sensors</span> Sensor Configuration</a>
+      <a class="flex items-center gap-3 px-4 py-3 text-sm font-medium text-slate-600 hover:bg-slate-100 rounded-lg" href="/usermanagement"><span class="material-symbols-outlined text-slate-400">group</span> User Management</a>
+      <a class="flex items-center gap-3 px-4 py-3 text-sm font-medium text-slate-600 hover:bg-slate-100 rounded-lg" href="/rolemanagement"><span class="material-symbols-outlined text-slate-400">key</span> Role Management</a>
+      <a class="flex items-center gap-3 px-4 py-3 text-sm font-medium text-slate-600 hover:bg-slate-100 rounded-lg" href="/detectionmanagement"><span class="material-symbols-outlined text-slate-400">radar</span> Detections</a>
+           <a class="flex items-center gap-3 px-4 py-3 text-sm font-medium text-slate-600 hover:bg-slate-100 transition-colors duration-150 rounded-lg group" href="/AiScheduleComponent"><span class="material-symbols-outlined text-slate-400 group-hover:text-blue-700">smart_toy</span> AI Schedule</a>
+   
+    </nav>
+  </aside>
+
+  <main class="ml-64 mt-16 p-8 min-h-screen bg-surface">
+
+    <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-6 mb-8 flex justify-between items-center">
+      <div class="flex items-center gap-4">
+        <div class="w-12 h-12 bg-blue-50 text-blue-600 rounded-xl flex items-center justify-center shadow-inner">
+          <span class="material-symbols-outlined text-2xl">router</span>
+        </div>
+        <div>
+          <h1 class="text-2xl font-extrabold text-slate-800 tracking-tight">IoT Sensors</h1>
+          <p class="text-sm text-slate-500 font-medium mt-0.5">Manage connected sensors and monitor real-time readings</p>
+        </div>
+      </div>
+      <button (click)="openCreate()" class="flex items-center gap-2 px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-semibold shadow-md transition-all active:scale-95">
+        <span class="material-symbols-outlined text-xl">add</span> Add Sensor
+      </button>
+    </div>
+
+    <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+      <div class="overflow-x-auto custom-scrollbar">
+        <table class="w-full text-left text-sm whitespace-nowrap">
+          <thead class="bg-slate-50 border-b border-slate-200 text-slate-500">
+            <tr>
+              <th class="px-6 py-4 font-bold uppercase tracking-wider text-[11px] w-16 text-center">ID</th>
+              <th class="px-6 py-4 font-bold uppercase tracking-wider text-[11px]">Sensor Details</th>
+              <th class="px-6 py-4 font-bold uppercase tracking-wider text-[11px]">Threshold</th>
+              <th class="px-6 py-4 font-bold uppercase tracking-wider text-[11px]">Live Reading</th>
+              <th class="px-6 py-4 font-bold uppercase tracking-wider text-[11px]">Status</th>
+              <th class="px-6 py-4 font-bold uppercase tracking-wider text-[11px] text-center">Actions</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-slate-100 text-slate-700">
+            
+            <tr *ngIf="sensors?.length === 0">
+              <td colspan="6" class="px-6 py-12 text-center text-slate-500">
+                <span class="material-symbols-outlined text-4xl mb-2 opacity-50">sensors_off</span>
+                <p class="font-medium">No sensors found. Add your first sensor to get started.</p>
+              </td>
+            </tr>
+
+            <tr *ngFor="let s of sensors" class="hover:bg-slate-50/80 transition-colors duration-150 group">
+              <td class="px-6 py-4 text-center"><span class="inline-flex w-8 h-8 items-center justify-center rounded-lg bg-slate-100 text-slate-600 font-bold text-xs">#{{ s.id }}</span></td>
+              
+              <td class="px-6 py-4">
+                <div class="flex items-center gap-3">
+                  <div class="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center text-blue-600">
+                    <span class="material-symbols-outlined text-[16px]">{{ getSensorIcon(s.sensorType) }}</span>
+                  </div>
+                  <div class="flex flex-col">
+                    <span class="font-bold text-slate-800">{{ s.sensorName }}</span>
+                    <span class="text-[10px] text-slate-400 font-bold uppercase">{{ getSensorTypeName(s.sensorType) }}</span>
+                  </div>
+                </div>
+              </td>
+              
+              <td class="px-6 py-4 font-mono font-semibold text-slate-600">{{ s.threshold }}</td>
+              
+              <td class="px-6 py-4">
+                <div class="flex items-center gap-2">
+                  <span class="w-2 h-2 rounded-full" [ngClass]="liveReadings[s.id] !== undefined ? 'bg-green-500 animate-pulse' : 'bg-slate-300'"></span>
+                  <span class="font-mono font-bold text-lg" [ngClass]="(liveReadings[s.id] > s.threshold) ? 'text-red-600' : 'text-slate-800'">
+                    {{ liveReadings[s.id] !== undefined ? liveReadings[s.id] : '--' }}
+                  </span>
+                </div>
+              </td>
+
+              <td class="px-6 py-4">
+                <span class="px-2.5 py-1 rounded-md text-[10px] font-bold uppercase tracking-wide" 
+                      [ngClass]="s.isActive ? 'bg-green-50 text-green-700 border border-green-200' : 'bg-slate-100 text-slate-500 border border-slate-200'">
+                  {{ s.isActive ? 'Active' : 'Offline' }}
+                </span>
+              </td>
+
+              <td class="px-6 py-4">
+                <div class="flex items-center justify-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                  <button (click)="openAlerts(s)" class="p-2 text-orange-600 bg-orange-50 hover:bg-orange-100 rounded-lg" title="View Alerts"><span class="material-symbols-outlined text-[18px]">warning</span></button>
+                  <button (click)="openEdit(s)" class="p-2 text-blue-600 bg-blue-50 hover:bg-blue-100 rounded-lg" title="Edit"><span class="material-symbols-outlined text-[18px]">edit</span></button>
+                  <button (click)="deleteSensor(s.id)" class="p-2 text-red-600 bg-red-50 hover:bg-red-100 rounded-lg" title="Delete"><span class="material-symbols-outlined text-[18px]">delete</span></button>
+                </div>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </main>
+
+  <div *ngIf="isSensorModalOpen" class="fixed inset-0 bg-slate-900/40 backdrop-blur-sm flex items-center justify-center z-50 p-4" (click)="closeModals()">
+    <div class="bg-white w-full max-w-[450px] rounded-2xl shadow-2xl overflow-hidden" (click)="$event.stopPropagation()">
+      <div class="px-6 py-4 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
+        <h2 class="text-lg font-extrabold text-slate-800 flex items-center gap-2">
+          <span class="material-symbols-outlined text-blue-600">{{ isEditMode ? 'edit' : 'add_circle' }}</span>
+          {{ isEditMode ? 'Edit Sensor' : 'Add New Sensor' }}
+        </h2>
+        <button (click)="closeModals()" class="text-slate-400 hover:text-slate-600"><span class="material-symbols-outlined">close</span></button>
+      </div>
+
+      <div class="p-6 space-y-4">
+        <div>
+          <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Sensor Name</label>
+          <input [(ngModel)]="form.sensorName" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500" />
+        </div>
+        
+        <div class="grid grid-cols-2 gap-4">
+          <div>
+            <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Sensor Type</label>
+            <select [(ngModel)]="form.sensorType" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500">
+              <option value="1">Temperature</option>
+              <option value="2">Motion</option>
+              <option value="3">Gas</option>
+              <option value="4">Sound</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-xs font-bold text-slate-500 uppercase mb-1">Threshold</label>
+            <input [(ngModel)]="form.threshold" type="number" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500" />
+          </div>
+        </div>
+      </div>
+
+      <div class="px-6 py-4 bg-slate-50 border-t border-slate-100 flex justify-end gap-3">
+        <button (click)="closeModals()" class="px-5 py-2.5 text-sm font-semibold text-slate-600 hover:bg-slate-200 rounded-xl">Cancel</button>
+        <button (click)="saveSensor()" class="px-6 py-2.5 bg-blue-600 hover:bg-blue-700 text-white text-sm font-bold rounded-xl shadow-md">Save</button>
+      </div>
+    </div>
+  </div>
+
+  <div *ngIf="isAlertModalOpen" class="fixed inset-0 bg-slate-900/40 backdrop-blur-sm flex items-center justify-center z-50 p-4" (click)="closeModals()">
+    <div class="bg-white w-full max-w-[600px] rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[80vh]" (click)="$event.stopPropagation()">
+      <div class="px-6 py-4 border-b border-slate-100 flex justify-between items-center bg-orange-50">
+        <h2 class="text-lg font-extrabold text-orange-800 flex items-center gap-2">
+          <span class="material-symbols-outlined text-orange-600">warning</span>
+          Alerts: {{ selectedSensorForAlerts?.sensorName }}
+        </h2>
+        <button (click)="closeModals()" class="text-orange-400 hover:text-orange-600"><span class="material-symbols-outlined">close</span></button>
+      </div>
+
+      <div class="p-6 overflow-y-auto custom-scrollbar flex-1 bg-slate-50">
+        <div *ngIf="sensorAlerts.length === 0" class="text-center text-slate-400 py-8">
+          <span class="material-symbols-outlined text-4xl mb-2">check_circle</span>
+          <p>No alerts recorded for this sensor.</p>
+        </div>
+
+        <div class="space-y-3">
+          <div *ngFor="let alert of sensorAlerts" class="p-4 rounded-xl border bg-white shadow-sm flex flex-col gap-3" 
+               [ngClass]="alert.isResolved ? 'border-slate-200 opacity-60' : 'border-red-200 bg-red-50/30'">
+            <div class="flex justify-between items-start">
+              <div>
+                <span class="text-xs font-bold text-slate-400">{{ alert.triggeredAt | date:'medium' }}</span>
+                <p class="text-sm font-semibold mt-1" [ngClass]="alert.isResolved ? 'text-slate-700' : 'text-red-700'">{{ alert.message }}</p>
+                <div class="text-[11px] font-mono mt-1 text-slate-500">
+                  Value: <span class="font-bold">{{ alert.triggeredValue }}</span> | Threshold: {{ alert.threshold }}
+                </div>
+              </div>
+              <span class="px-2 py-0.5 rounded text-[10px] font-bold uppercase" 
+                    [ngClass]="alert.isResolved ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'">
+                {{ alert.isResolved ? 'Resolved' : 'Active' }}
+              </span>
+            </div>
+            
+            <button *ngIf="!alert.isResolved" (click)="resolveAlert(alert)" class="self-end px-4 py-1.5 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded-lg shadow transition-all">
+              Mark as Resolved
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</body>
+</html>
