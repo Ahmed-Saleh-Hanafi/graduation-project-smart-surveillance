@@ -31,6 +31,7 @@ namespace Infrastructure.Repositories
             if (sensor != null)
             {
                 _context.Sensors.Remove(sensor);
+                await _context.SaveChangesAsync();
             }
         }
 

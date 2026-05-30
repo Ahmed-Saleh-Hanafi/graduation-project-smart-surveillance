@@ -69,7 +69,7 @@ namespace Infrastructure.Repositories
         {
             return await _context.AISchedules
             .Include(s => s.Intervals)
-            .Include(s => s.CameraId)
+            .Include(s => s.Camera)
             .ToListAsync();
         }
 

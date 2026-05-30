@@ -20,12 +20,13 @@ namespace Infrastructure.Repositories
         }
         public async Task<IEnumerable<SensorAlert>> GetAllAsync()
             => await _context.SensorAlerts
+                .Include(a => a.Sensor)
                 .OrderByDescending(a => a.TriggeredAt)
                 .ToListAsync();
         public async Task<IEnumerable<SensorAlert>> GetBySensorIdAsync(int sensorId)
             => await _context.SensorAlerts
+                .Include(a => a.Sensor)
                 .Where(a => a.SensorId == sensorId)
-                .OrderByDescending(a => a.TriggeredAt)
                 .ToListAsync();
         public async Task<IEnumerable<SensorAlert>> GetUnresolvedAsync()
             => await _context.SensorAlerts

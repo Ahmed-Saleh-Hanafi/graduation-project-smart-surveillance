@@ -7,5 +7,5 @@ hls: yes
 hlsAddress: :8888
 
 paths:
-  cam1:
-    source: rtsp://localhost:8554/cam1
+  cam:
+    source: rtsp://localhost:3424/cam
