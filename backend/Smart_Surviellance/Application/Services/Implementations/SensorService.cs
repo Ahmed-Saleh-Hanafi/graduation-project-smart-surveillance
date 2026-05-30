@@ -127,7 +127,7 @@ namespace Application.Services.Implementations
 
         public async Task<ApiResponse<List<SensorAlertDto>>> GetAlertBySensorIdAsync(int id)
         {
-            var sensor = _sensorRepository.GetByIdAsync(id);
+            var sensor = await _sensorRepository.GetByIdAsync(id);
             if (sensor == null)
             {
                 return ApiResponse<List<SensorAlertDto>>.Fail("Sensor not found.");

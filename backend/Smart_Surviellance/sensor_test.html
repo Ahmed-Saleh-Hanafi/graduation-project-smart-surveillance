@@ -1,0 +1,964 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>CamGuard — Sensor Real-Time Monitor</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/microsoft-signalr/7.0.5/signalr.min.js"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:      #0b0d12;
+      --surf:    #12151e;
+      --surf2:   #191d2a;
+      --surf3:   #1f2435;
+      --border:  #252c3d;
+      --accent:  #4f8ef7;
+      --purple:  #a855f7;
+      --danger:  #f43f5e;
+      --warn:    #f59e0b;
+      --green:   #22c55e;
+      --text:    #e2e8f0;
+      --muted:   #5a6480;
+      --r:       10px;
+    }
+
+    html, body { height: 100%; background: var(--bg); color: var(--text); font-family: 'Inter', sans-serif; font-size: 14px; }
+
+    /* ── App Shell ── */
+    .app { display: flex; flex-direction: column; height: 100vh; overflow: hidden; }
+
+    /* ── Header ── */
+    header {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 12px 20px; background: var(--surf); border-bottom: 1px solid var(--border);
+      flex-shrink: 0; gap: 12px;
+    }
+    .logo { display: flex; align-items: center; gap: 10px; font-size: 17px; font-weight: 700; }
+    .logo-icon {
+      width: 32px; height: 32px; border-radius: 8px;
+      background: linear-gradient(135deg,var(--accent),var(--purple));
+      display: grid; place-items: center; font-size: 16px;
+    }
+    .header-right { display: flex; align-items: center; gap: 10px; }
+    .conn-badge {
+      display: flex; align-items: center; gap: 6px; padding: 5px 12px;
+      border-radius: 999px; background: var(--surf2); border: 1px solid var(--border);
+      font-size: 12px; font-weight: 500; white-space: nowrap;
+    }
+    .dot { width: 7px; height: 7px; border-radius: 50%; background: var(--muted); flex-shrink: 0; transition: all .3s; }
+    .dot.on  { background: var(--green);  box-shadow: 0 0 7px var(--green); }
+    .dot.ing { background: var(--warn);   animation: blink 1s infinite; }
+    .dot.err { background: var(--danger); box-shadow: 0 0 7px var(--danger); }
+    @keyframes blink { 0%,100%{opacity:1} 50%{opacity:.3} }
+
+    /* ── Main Nav Tabs ── */
+    .nav-tabs {
+      display: flex; gap: 2px; padding: 10px 20px 0;
+      background: var(--surf); border-bottom: 1px solid var(--border);
+      flex-shrink: 0;
+    }
+    .nav-tab {
+      padding: 8px 18px; border-radius: 8px 8px 0 0; font-size: 13px; font-weight: 500;
+      cursor: pointer; border: 1px solid transparent; border-bottom: none;
+      color: var(--muted); background: transparent; transition: all .2s; user-select: none;
+    }
+    .nav-tab:hover { color: var(--text); background: var(--surf2); }
+    .nav-tab.active {
+      color: var(--text); background: var(--bg);
+      border-color: var(--border); margin-bottom: -1px; padding-bottom: 9px;
+    }
+    .nav-badge {
+      display: inline-flex; align-items: center; justify-content: center;
+      min-width: 17px; height: 17px; border-radius: 999px; padding: 0 4px;
+      background: var(--danger); color: #fff; font-size: 10px; font-weight: 700; margin-left: 5px;
+    }
+
+    /* ── Body ── */
+    .body { display: flex; flex: 1; overflow: hidden; }
+
+    /* ── Sidebar ── */
+    .sidebar {
+      width: 290px; flex-shrink: 0; background: var(--surf);
+      border-right: 1px solid var(--border); overflow-y: auto; padding: 16px; display: flex; flex-direction: column; gap: 14px;
+    }
+    .sidebar::-webkit-scrollbar { width: 4px; }
+    .sidebar::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+
+    .sec-label {
+      font-size: 10px; font-weight: 700; letter-spacing: .8px;
+      text-transform: uppercase; color: var(--muted); margin-bottom: 6px;
+    }
+    .card { background: var(--surf2); border: 1px solid var(--border); border-radius: var(--r); padding: 14px; }
+    label { display: block; font-size: 11px; color: var(--muted); margin-bottom: 4px; }
+    input[type=text],input[type=password],input[type=url],input[type=number] {
+      width: 100%; padding: 8px 11px; background: var(--bg); border: 1px solid var(--border);
+      border-radius: 7px; color: var(--text); font-family: inherit; font-size: 13px; outline: none; transition: border-color .2s;
+    }
+    input:focus { border-color: var(--accent); }
+    .igroup { display: flex; flex-direction: column; gap: 9px; }
+    btn, button { font-family: inherit; cursor: pointer; border: none; transition: opacity .2s, transform .1s; }
+    button:hover { opacity: .85; }
+    button:active { transform: scale(.97); }
+    .btn-p { width: 100%; padding: 9px; border-radius: 7px; font-size: 13px; font-weight: 600; background: linear-gradient(135deg,var(--accent),var(--purple)); color: #fff; }
+    .btn-d { width: 100%; padding: 9px; border-radius: 7px; font-size: 13px; font-weight: 600; background: var(--danger); color: #fff; }
+    .btn-g { width: 100%; padding: 9px; border-radius: 7px; font-size: 13px; font-weight: 600; background: var(--green); color: #000; }
+    .btn-s { width: 100%; padding: 9px; border-radius: 7px; font-size: 13px; font-weight: 600; background: var(--surf3); color: var(--muted); border: 1px solid var(--border); }
+
+    .inline-msg { font-size: 12px; padding: 7px 10px; border-radius: 6px; margin-top: 2px; }
+    .inline-msg.err { background: rgba(244,63,94,.1); color: var(--danger); border: 1px solid rgba(244,63,94,.25); }
+    .inline-msg.ok  { background: rgba(34,197,94,.1);  color: var(--green);  border: 1px solid rgba(34,197,94,.25); }
+
+    .stats-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+    .stat { background: var(--bg); border: 1px solid var(--border); border-radius: 7px; padding: 9px 11px; }
+    .stat .v { font-size: 20px; font-weight: 700; }
+    .stat .l { font-size: 11px; color: var(--muted); }
+
+    /* ── Page Panels ── */
+    .page { display: none; flex: 1; flex-direction: column; overflow: hidden; }
+    .page.active { display: flex; }
+
+    /* ───────────────────────── SENSORS TAB ─────────────────────────── */
+    .sensors-page { padding: 16px; gap: 14px; overflow: hidden; }
+
+    .sensors-toolbar {
+      display: flex; align-items: center; gap: 10px; flex-shrink: 0;
+    }
+    .search-box {
+      flex: 1; padding: 8px 12px; background: var(--surf); border: 1px solid var(--border);
+      border-radius: 7px; color: var(--text); font-family: inherit; font-size: 13px; outline: none;
+    }
+    .search-box:focus { border-color: var(--accent); }
+
+    .filter-btn {
+      padding: 8px 14px; border-radius: 7px; font-size: 12px; font-weight: 500;
+      background: var(--surf); border: 1px solid var(--border); color: var(--muted);
+      cursor: pointer; transition: all .2s; white-space: nowrap;
+    }
+    .filter-btn.active { background: var(--surf3); color: var(--text); border-color: var(--accent); }
+
+    .sensors-grid {
+      display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+      gap: 14px; overflow-y: auto; padding-bottom: 4px;
+    }
+    .sensors-grid::-webkit-scrollbar { width: 4px; }
+    .sensors-grid::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+
+    /* Sensor Card */
+    .sensor-card {
+      background: var(--surf); border: 1px solid var(--border); border-radius: var(--r);
+      display: flex; flex-direction: column; overflow: hidden;
+      transition: border-color .3s, box-shadow .3s;
+    }
+    .sensor-card.pulsing {
+      border-color: var(--accent);
+      box-shadow: 0 0 16px rgba(79,142,247,.2);
+      animation: cardPulse .5s ease;
+    }
+    .sensor-card.alerting {
+      border-color: var(--danger) !important;
+      box-shadow: 0 0 20px rgba(244,63,94,.25) !important;
+    }
+    @keyframes cardPulse {
+      0%   { box-shadow: 0 0 0 rgba(79,142,247,.4); }
+      50%  { box-shadow: 0 0 20px rgba(79,142,247,.4); }
+      100% { box-shadow: 0 0 16px rgba(79,142,247,.2); }
+    }
+
+    .sc-header {
+      display: flex; align-items: center; gap: 10px; padding: 12px 14px;
+      border-bottom: 1px solid var(--border); flex-shrink: 0;
+    }
+    .sc-icon {
+      width: 36px; height: 36px; border-radius: 8px; flex-shrink: 0;
+      display: grid; place-items: center; font-size: 18px;
+    }
+    .sc-icon.temp   { background: rgba(245,158,11,.15); }
+    .sc-icon.gas    { background: rgba(168,85,247,.15); }
+    .sc-icon.motion { background: rgba(34,197,94,.15); }
+    .sc-icon.def    { background: rgba(79,142,247,.15); }
+
+    .sc-title { flex: 1; min-width: 0; }
+    .sc-name { font-weight: 600; font-size: 14px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .sc-type { font-size: 11px; color: var(--muted); margin-top: 2px; }
+    .sc-status-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--muted); flex-shrink: 0; }
+    .sc-status-dot.live { background: var(--green); box-shadow: 0 0 6px var(--green); animation: blink 2s infinite; }
+
+    /* Gauge */
+    .sc-gauge { padding: 14px; border-bottom: 1px solid var(--border); }
+    .gauge-row { display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 8px; }
+    .gauge-val { font-size: 28px; font-weight: 700; line-height: 1; }
+    .gauge-val.ok   { color: var(--green); }
+    .gauge-val.warn { color: var(--warn); }
+    .gauge-val.over { color: var(--danger); }
+    .gauge-meta { text-align: right; }
+    .gauge-threshold { font-size: 11px; color: var(--muted); }
+    .gauge-pct { font-size: 12px; font-weight: 600; }
+
+    .gauge-bar { height: 6px; background: var(--surf3); border-radius: 999px; overflow: hidden; }
+    .gauge-fill { height: 100%; border-radius: 999px; transition: width .5s ease, background .5s ease; }
+
+    /* Mini history feed */
+    .sc-history { flex: 1; overflow: hidden; }
+    .sc-history-header {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 8px 14px; border-bottom: 1px solid var(--border);
+      font-size: 11px; color: var(--muted); font-weight: 500;
+    }
+    .sc-readings { max-height: 130px; overflow-y: auto; padding: 6px 14px; display: flex; flex-direction: column; gap: 4px; }
+    .sc-readings::-webkit-scrollbar { width: 3px; }
+    .sc-readings::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+
+    .reading-row {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 4px 0; border-bottom: 1px solid rgba(37,44,61,.5);
+      font-size: 12px; animation: fadeSlide .25s ease;
+    }
+    @keyframes fadeSlide { from { opacity:0; transform:translateY(-4px); } to { opacity:1; transform:translateY(0); } }
+    .reading-row:last-child { border-bottom: none; }
+    .rr-time { color: var(--muted); font-size: 11px; }
+    .rr-val { font-weight: 600; }
+    .rr-val.ok   { color: var(--green); }
+    .rr-val.over { color: var(--danger); }
+    .rr-alert { font-size: 10px; color: var(--danger); margin-left: 4px; }
+
+    .sc-empty { padding: 20px; text-align: center; color: var(--muted); font-size: 12px; }
+
+    /* ── Feed page ── */
+    .feed-page { padding: 16px; gap: 14px; }
+    .top-cards { display: flex; gap: 12px; flex-shrink: 0; }
+    .top-card { flex: 1; background: var(--surf); border: 1px solid var(--border); border-radius: var(--r); padding: 13px 15px; }
+    .top-card h3 { font-size: 11px; color: var(--muted); margin-bottom: 5px; }
+    .top-card .big { font-size: 26px; font-weight: 700; }
+    .top-card .sub { font-size: 11px; color: var(--muted); margin-top: 2px; }
+
+    .feed-box {
+      flex: 1; background: var(--surf); border: 1px solid var(--border); border-radius: var(--r);
+      display: flex; flex-direction: column; overflow: hidden;
+    }
+    .feed-box-header {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 11px 15px; border-bottom: 1px solid var(--border); flex-shrink: 0;
+    }
+    .feed-box-header h2 { font-size: 13px; font-weight: 600; }
+    .sub-tabs { display: flex; gap: 5px; }
+    .sub-tab {
+      padding: 4px 12px; border-radius: 6px; font-size: 12px; font-weight: 500;
+      cursor: pointer; color: var(--muted); background: transparent;
+      border: 1px solid transparent; transition: all .2s;
+    }
+    .sub-tab.active { background: var(--surf2); color: var(--text); border-color: var(--border); }
+
+    .feed-panel { display: none; flex: 1; flex-direction: column; overflow: hidden; }
+    .feed-panel.active { display: flex; }
+    .feed-list { flex: 1; overflow-y: auto; padding: 10px 12px; display: flex; flex-direction: column; gap: 7px; }
+    .feed-list::-webkit-scrollbar { width: 4px; }
+    .feed-list::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+
+    .feed-item {
+      background: var(--surf2); border: 1px solid var(--border); border-radius: 8px;
+      padding: 10px 13px; display: flex; flex-direction: column; gap: 4px;
+      animation: fadeSlide .25s ease;
+    }
+    .feed-item.a { border-left: 3px solid var(--danger); }
+    .feed-item.r { border-left: 3px solid var(--accent); }
+    .fi-header { display: flex; align-items: center; gap: 7px; flex-wrap: wrap; }
+    .chip {
+      font-size: 10px; font-weight: 700; padding: 2px 8px; border-radius: 999px;
+      text-transform: uppercase; letter-spacing: .4px;
+    }
+    .chip.alert   { background: rgba(244,63,94,.15);  color: var(--danger); }
+    .chip.reading { background: rgba(79,142,247,.15); color: var(--accent); }
+    .chip.temp    { background: rgba(245,158,11,.15); color: var(--warn); }
+    .chip.gas     { background: rgba(168,85,247,.15); color: var(--purple); }
+    .chip.motion  { background: rgba(34,197,94,.15);  color: var(--green); }
+    .fi-name { font-weight: 600; font-size: 13px; }
+    .fi-time { font-size: 11px; color: var(--muted); margin-left: auto; }
+    .fi-msg  { font-size: 12px; color: var(--muted); }
+    .fi-vals { display: flex; gap: 12px; }
+    .kv .k { color: var(--muted); font-size: 12px; }
+    .kv .v { font-weight: 600; font-size: 12px; }
+    .kv .v.over { color: var(--danger); }
+    .resolve-btn {
+      align-self: flex-start; margin-top: 3px; padding: 3px 10px;
+      border-radius: 5px; font-size: 11px; font-weight: 600;
+      background: rgba(34,197,94,.1); color: var(--green);
+      border: 1px solid rgba(34,197,94,.25);
+    }
+    .empty-state { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 7px; color: var(--muted); }
+    .empty-state .ei { font-size: 34px; }
+  </style>
+</head>
+<body>
+<div class="app">
+
+  <!-- ══ Header ══ -->
+  <header>
+    <div class="logo">
+      <div class="logo-icon">🛡️</div>
+      CamGuard <span style="color:var(--muted);font-weight:400;font-size:13px;margin-left:4px">/ Sensor Monitor</span>
+    </div>
+    <div class="header-right">
+      <div class="conn-badge">
+        <div class="dot" id="dot"></div>
+        <span id="conn-text">Disconnected</span>
+      </div>
+    </div>
+  </header>
+
+  <!-- ══ Navigation Tabs ══ -->
+  <div class="nav-tabs">
+    <div class="nav-tab active" onclick="navTo('sensors',this)" id="nav-sensors">
+      📡 Sensors <span class="nav-badge" id="nb-sensors" style="background:var(--accent)">0</span>
+    </div>
+    <div class="nav-tab" onclick="navTo('feed',this)" id="nav-feed">
+      📋 Live Feed
+      <span class="nav-badge" id="nb-feed">0</span>
+    </div>
+  </div>
+
+  <!-- ══ Body ══ -->
+  <div class="body">
+
+    <!-- ── Sidebar ── -->
+    <aside class="sidebar">
+
+      <!-- Login / Connect -->
+      <div>
+        <div class="sec-label">Connection</div>
+        <div class="card igroup">
+          <div>
+            <label>API Base URL</label>
+            <input id="apiUrl" type="url" value="http://localhost:5198" />
+          </div>
+          <div>
+            <label>Email</label>
+            <input id="loginEmail" type="text" value="admin@camguard.com" />
+          </div>
+          <div>
+            <label>Password</label>
+            <input id="loginPass" type="password" placeholder="Enter password" />
+          </div>
+          <button class="btn-p" id="btn-connect" onclick="loginAndConnect()">🔌 Login &amp; Connect</button>
+          <button class="btn-d" id="btn-disconnect" style="display:none" onclick="disconnectHub()">✖ Disconnect</button>
+          <div id="conn-msg"></div>
+        </div>
+      </div>
+
+      <!-- Stats -->
+      <div>
+        <div class="sec-label">Live Stats</div>
+        <div class="card">
+          <div class="stats-grid">
+            <div class="stat">
+              <div class="v" id="s-sensors" style="color:var(--accent)">0</div>
+              <div class="l">Sensors</div>
+            </div>
+            <div class="stat">
+              <div class="v" id="s-readings" style="color:var(--accent)">0</div>
+              <div class="l">Readings</div>
+            </div>
+            <div class="stat">
+              <div class="v" id="s-alerts" style="color:var(--danger)">0</div>
+              <div class="l">Alerts</div>
+            </div>
+            <div class="stat">
+              <div class="v" id="s-unresolved" style="color:var(--warn)">0</div>
+              <div class="l">Unresolved</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Manual test reading -->
+      <div>
+        <div class="sec-label">Send Test Reading</div>
+        <div class="card igroup">
+          <div>
+            <label>Sensor ID</label>
+            <input id="test-id" type="number" value="1" min="1" />
+          </div>
+          <div>
+            <label>Value</label>
+            <input id="test-val" type="number" value="100" step="0.1" />
+          </div>
+          <button class="btn-g" onclick="sendTestReading()">📡 Record Reading</button>
+          <div id="test-msg"></div>
+        </div>
+      </div>
+
+      <!-- Refresh sensors -->
+      <button class="btn-s" onclick="loadSensors()" id="btn-refresh">↻ Refresh Sensors</button>
+      <button class="btn-s" onclick="clearFeed()">🗑 Clear Feed</button>
+
+    </aside>
+
+    <!-- ══ Pages ══ -->
+
+    <!-- ── SENSORS PAGE ── -->
+    <div class="page sensors-page active" id="page-sensors">
+      <div class="sensors-toolbar">
+        <input class="search-box" id="search-input" type="text" placeholder="🔍  Search sensors…" oninput="renderSensorGrid()" />
+        <button class="filter-btn active" onclick="setFilter('all',this)">All</button>
+        <button class="filter-btn" onclick="setFilter('Temperature',this)">🌡 Temp</button>
+        <button class="filter-btn" onclick="setFilter('Gas',this)">💨 Gas</button>
+        <button class="filter-btn" onclick="setFilter('Motion',this)">👁 Motion</button>
+      </div>
+
+      <div class="sensors-grid" id="sensors-grid">
+        <div class="empty-state" style="grid-column:1/-1">
+          <div class="ei">📡</div>
+          <p>Connect and click "Refresh Sensors" to load sensor cards.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── FEED PAGE ── -->
+    <div class="page feed-page" id="page-feed">
+      <div class="top-cards">
+        <div class="top-card">
+          <h3>🚨 Alerts</h3>
+          <div class="big" id="big-alerts" style="color:var(--danger)">0</div>
+          <div class="sub">Real-time via SignalR</div>
+        </div>
+        <div class="top-card">
+          <h3>📊 Readings</h3>
+          <div class="big" id="big-readings" style="color:var(--accent)">0</div>
+          <div class="sub">Arrived via MQTT → SignalR</div>
+        </div>
+        <div class="top-card">
+          <h3>⏱ Last Event</h3>
+          <div class="big" id="big-last" style="font-size:15px;margin-top:5px">—</div>
+          <div class="sub" id="big-last-t">No events yet</div>
+        </div>
+      </div>
+
+      <div class="feed-box">
+        <div class="feed-box-header">
+          <h2>📡 Live Event Stream</h2>
+          <div class="sub-tabs">
+            <div class="sub-tab active" onclick="subTab('all',this)">All <span class="nav-badge" id="st-all" style="background:var(--accent)">0</span></div>
+            <div class="sub-tab" onclick="subTab('alerts',this)">🚨 Alerts <span class="nav-badge" id="st-alerts">0</span></div>
+            <div class="sub-tab" onclick="subTab('readings',this)">📊 Readings <span class="nav-badge" id="st-readings" style="background:var(--accent)">0</span></div>
+          </div>
+        </div>
+
+        <div class="feed-panel active" id="fp-all">
+          <div class="feed-list" id="fl-all">
+            <div class="empty-state"><div class="ei">📡</div><p>No events yet</p></div>
+          </div>
+        </div>
+        <div class="feed-panel" id="fp-alerts">
+          <div class="feed-list" id="fl-alerts">
+            <div class="empty-state"><div class="ei">🚨</div><p>No alerts yet</p></div>
+          </div>
+        </div>
+        <div class="feed-panel" id="fp-readings">
+          <div class="feed-list" id="fl-readings">
+            <div class="empty-state"><div class="ei">📊</div><p>No readings yet</p></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- /body -->
+</div><!-- /app -->
+
+<script>
+// ════════════════════════════════════════════════════
+// STATE
+// ════════════════════════════════════════════════════
+let connection  = null;
+let token       = null;
+let sensors     = [];          // [{id,sensorName,sensorType,threshold,isActive}]
+let sensorData  = {};          // { sensorId: { readings:[], lastValue, lastTime } }
+let filterType  = 'all';
+let totalAlerts = 0, totalReadings = 0, unresolvedAlerts = 0, totalFeed = 0;
+
+// ════════════════════════════════════════════════════
+// NAVIGATION
+// ════════════════════════════════════════════════════
+function navTo(page, el) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
+  document.getElementById('page-' + page).classList.add('active');
+  el.classList.add('active');
+}
+
+function subTab(name, el) {
+  document.querySelectorAll('.sub-tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.feed-panel').forEach(p => p.classList.remove('active'));
+  el.classList.add('active');
+  document.getElementById('fp-' + name).classList.add('active');
+}
+
+function setFilter(type, el) {
+  document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+  el.classList.add('active');
+  filterType = type;
+  renderSensorGrid();
+}
+
+// ════════════════════════════════════════════════════
+// CONNECTION
+// ════════════════════════════════════════════════════
+function setStatus(state, text) {
+  document.getElementById('dot').className = 'dot ' + state;
+  document.getElementById('conn-text').textContent = text;
+}
+
+function showMsg(id, text, type='err') {
+  const el = document.getElementById(id);
+  el.className = 'inline-msg ' + type;
+  el.textContent = text;
+  if (type === 'ok') setTimeout(() => el.textContent = '', 4000);
+}
+
+async function loginAndConnect() {
+  const base  = base64();
+  const email = document.getElementById('loginEmail').value.trim();
+  const pass  = document.getElementById('loginPass').value;
+  if (!email || !pass) { showMsg('conn-msg','Email and password required'); return; }
+
+  setStatus('ing', 'Logging in…');
+  showMsg('conn-msg','Authenticating…','ok');
+
+  try {
+    const res  = await fetch(`${base}/api/Account/login`, {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ email, password: pass })
+    });
+    const body = await res.json();
+    token = body?.data?.token || body?.token;
+    if (!token) throw new Error(body?.message || 'No token returned');
+
+    showMsg('conn-msg','✅ Logged in! Connecting hub…','ok');
+    await connectSignalR(base);
+
+  } catch(e) {
+    setStatus('err','Login failed');
+    showMsg('conn-msg','❌ ' + e.message);
+  }
+}
+
+async function connectSignalR(base) {
+  if (connection) { try { await connection.stop(); } catch{} }
+
+  connection = new signalR.HubConnectionBuilder()
+    .withUrl(`${base}/hub/alerts?access_token=${token}`)
+    .withAutomaticReconnect([0,2000,5000,10000])
+    .configureLogging(signalR.LogLevel.Warning)
+    .build();
+
+  connection.on('ReceiveSensorReading', onReading);
+  connection.on('ReceiveSensorAlert',   onAlert);
+
+  connection.onreconnecting(() => setStatus('ing','Reconnecting…'));
+  connection.onreconnected(()  => setStatus('on', 'Connected ✓'));
+  connection.onclose(()        => {
+    setStatus('','Disconnected');
+    document.getElementById('btn-connect').style.display    = '';
+    document.getElementById('btn-disconnect').style.display = 'none';
+  });
+
+  try {
+    await connection.start();
+    setStatus('on','Connected ✓');
+    showMsg('conn-msg','✅ SignalR connected!','ok');
+    document.getElementById('btn-connect').style.display    = 'none';
+    document.getElementById('btn-disconnect').style.display = '';
+    // Auto-load sensors after connect
+    await loadSensors();
+  } catch(e) {
+    setStatus('err','Hub error');
+    showMsg('conn-msg','❌ Hub: ' + e.message);
+  }
+}
+
+async function disconnectHub() {
+  if (connection) { await connection.stop(); connection = null; }
+  setStatus('','Disconnected');
+  document.getElementById('btn-connect').style.display    = '';
+  document.getElementById('btn-disconnect').style.display = 'none';
+}
+
+function base64() { return document.getElementById('apiUrl').value.replace(/\/$/,''); }
+
+// ════════════════════════════════════════════════════
+// LOAD SENSORS FROM API
+// ════════════════════════════════════════════════════
+async function loadSensors() {
+  const base = base64();
+  if (!token) { showMsg('conn-msg','Connect first'); return; }
+
+  try {
+    const res  = await fetch(`${base}/api/Sensor/GetAll`, {
+      headers: { 'Authorization': `Bearer ${token}` }
+    });
+    const body = await res.json();
+    if (!body.isSuccess) throw new Error(body.message);
+
+    sensors = body.data || [];
+
+    // Initialize sensorData state for each sensor
+    sensors.forEach(s => {
+      if (!sensorData[s.id]) {
+        sensorData[s.id] = { readings: [], lastValue: null, lastTime: null };
+      }
+    });
+
+    document.getElementById('s-sensors').textContent = sensors.length;
+    document.getElementById('nb-sensors').textContent = sensors.length;
+    renderSensorGrid();
+
+  } catch(e) {
+    showMsg('conn-msg','❌ Sensors: ' + e.message);
+  }
+}
+
+// ════════════════════════════════════════════════════
+// RENDER SENSOR GRID
+// ════════════════════════════════════════════════════
+function renderSensorGrid() {
+  const grid   = document.getElementById('sensors-grid');
+  const search = document.getElementById('search-input').value.toLowerCase();
+
+  const filtered = sensors.filter(s => {
+    const matchType = filterType === 'all' || (s.sensorType || '').toString() === filterType;
+    const matchSearch = !search || s.sensorName.toLowerCase().includes(search);
+    return matchType && matchSearch;
+  });
+
+  if (filtered.length === 0) {
+    grid.innerHTML = `<div class="empty-state" style="grid-column:1/-1">
+      <div class="ei">🔍</div><p>No sensors match your filter.</p></div>`;
+    return;
+  }
+
+  // Build or update cards
+  grid.innerHTML = '';
+  filtered.forEach(s => {
+    const card = buildSensorCard(s);
+    grid.appendChild(card);
+  });
+}
+
+function buildSensorCard(s) {
+  const d     = sensorData[s.id] || { readings: [], lastValue: null };
+  const tStr  = (s.sensorType || '').toString().toLowerCase();
+  const icon  = tStr.includes('temp') ? '🌡️' : tStr.includes('gas') ? '💨' : tStr.includes('motion') ? '👁️' : '📡';
+  const cls   = tStr.includes('temp') ? 'temp' : tStr.includes('gas') ? 'gas' : tStr.includes('motion') ? 'motion' : 'def';
+  const typeLabel = (s.sensorType || '').toString();
+
+  const div = document.createElement('div');
+  div.className = 'sensor-card';
+  div.id = `sc-${s.id}`;
+
+  div.innerHTML = `
+    <div class="sc-header">
+      <div class="sc-icon ${cls}">${icon}</div>
+      <div class="sc-title">
+        <div class="sc-name">${s.sensorName}</div>
+        <div class="sc-type">${typeLabel} • ID #${s.id}</div>
+      </div>
+      <div class="sc-status-dot" id="scdot-${s.id}" title="Waiting for data…"></div>
+    </div>
+
+    <div class="sc-gauge" id="sc-gauge-${s.id}">
+      <div class="gauge-row">
+        <div class="gauge-val" id="sc-val-${s.id}">—</div>
+        <div class="gauge-meta">
+          <div class="gauge-threshold">Threshold: <b>${s.threshold}</b></div>
+          <div class="gauge-pct" id="sc-pct-${s.id}"></div>
+        </div>
+      </div>
+      <div class="gauge-bar">
+        <div class="gauge-fill" id="sc-bar-${s.id}" style="width:0%;background:var(--accent)"></div>
+      </div>
+    </div>
+
+    <div class="sc-history">
+      <div class="sc-history-header">
+        <span>Recent Readings (MQTT)</span>
+        <span id="sc-count-${s.id}" style="color:var(--accent)">0 total</span>
+      </div>
+      <div class="sc-readings" id="sc-readings-${s.id}">
+        <div class="sc-empty">Waiting for MQTT data…</div>
+      </div>
+    </div>`;
+
+  return div;
+}
+
+// ════════════════════════════════════════════════════
+// SIGNALR HANDLERS
+// ════════════════════════════════════════════════════
+function onReading(data) {
+  // data: { id, sensorId, sensorName, sensorType, sensorValue, threshold }
+  totalReadings++;
+  totalFeed++;
+  updateStats();
+  updateFeedLastEvent(data.sensorName, '📊 Reading');
+
+  // Update sensor card
+  const sid = data.sensorId;
+  if (!sensorData[sid]) sensorData[sid] = { readings: [], lastValue: null, lastTime: null };
+  const state = sensorData[sid];
+  const now   = new Date();
+
+  state.lastValue = data.sensorValue;
+  state.lastTime  = now;
+  state.readings.unshift({ value: data.sensorValue, time: now, over: data.threshold != null && data.sensorValue > data.threshold });
+  if (state.readings.length > 20) state.readings.pop(); // keep last 20
+
+  updateSensorCard(sid, data);
+
+  // Feed
+  const html = buildReadingHtml(data);
+  prependFeed('fl-all',     html, 'r');
+  prependFeed('fl-readings',html, 'r');
+  document.getElementById('st-all').textContent      = totalFeed;
+  document.getElementById('st-readings').textContent = totalReadings;
+  document.getElementById('nb-feed').textContent     = totalFeed;
+}
+
+function onAlert(data) {
+  // data: { id, sensorId, sensorName, sensorType, triggeredValue, threshold, message, isResolved, triggeredAt }
+  totalAlerts++;
+  totalFeed++;
+  if (!data.isResolved) unresolvedAlerts++;
+  updateStats();
+  updateFeedLastEvent(data.sensorName, '🚨 Alert');
+
+  // Flash card red
+  const card = document.getElementById(`sc-${data.sensorId}`);
+  if (card) {
+    card.classList.add('alerting');
+    setTimeout(() => card.classList.remove('alerting'), 3000);
+  }
+
+  const html = buildAlertHtml(data);
+  prependFeed('fl-all',   html, 'a');
+  prependFeed('fl-alerts',html, 'a');
+  document.getElementById('st-all').textContent    = totalFeed;
+  document.getElementById('st-alerts').textContent = totalAlerts;
+  document.getElementById('nb-feed').textContent   = totalFeed;
+}
+
+// ════════════════════════════════════════════════════
+// UPDATE SENSOR CARD UI
+// ════════════════════════════════════════════════════
+function updateSensorCard(sid, data) {
+  const val  = data.sensorValue;
+  const thr  = data.threshold;
+  const card = document.getElementById(`sc-${sid}`);
+  if (!card) return;
+
+  // Pulse animation
+  card.classList.remove('pulsing');
+  void card.offsetWidth; // reflow trick
+  card.classList.add('pulsing');
+  setTimeout(() => card.classList.remove('pulsing'), 600);
+
+  // Status dot
+  const dot = document.getElementById(`scdot-${sid}`);
+  if (dot) { dot.className = 'sc-status-dot live'; dot.title = 'Live — last update ' + fmtTime(new Date()); }
+
+  // Value
+  const valEl = document.getElementById(`sc-val-${sid}`);
+  if (valEl) {
+    const isOver = thr != null && val > thr;
+    valEl.className = 'gauge-val ' + (isOver ? 'over' : val > thr * 0.8 ? 'warn' : 'ok');
+    valEl.textContent = val;
+  }
+
+  // Bar
+  const bar = document.getElementById(`sc-bar-${sid}`);
+  if (bar && thr) {
+    const pct = Math.min(100, Math.round((val / thr) * 100));
+    bar.style.width = pct + '%';
+    bar.style.background = pct >= 100 ? 'var(--danger)' : pct >= 80 ? 'var(--warn)' : 'var(--accent)';
+
+    const pctEl = document.getElementById(`sc-pct-${sid}`);
+    if (pctEl) { pctEl.textContent = pct + '% of threshold'; pctEl.style.color = pct>=100?'var(--danger)':pct>=80?'var(--warn)':'var(--muted)'; }
+  }
+
+  // Mini reading list
+  const state   = sensorData[sid];
+  const listEl  = document.getElementById(`sc-readings-${sid}`);
+  const countEl = document.getElementById(`sc-count-${sid}`);
+
+  if (listEl) {
+    listEl.innerHTML = '';
+    state.readings.forEach(r => {
+      const row = document.createElement('div');
+      row.className = 'reading-row';
+      row.innerHTML = `
+        <span class="rr-time">${fmtTime(r.time)}</span>
+        <span class="rr-val ${r.over ? 'over' : 'ok'}">${r.value}${r.over ? ' <span class="rr-alert">⚠</span>' : ''}</span>`;
+      listEl.appendChild(row);
+    });
+  }
+
+  if (countEl) countEl.textContent = (state.readings.length) + ' readings';
+}
+
+// ════════════════════════════════════════════════════
+// HTML BUILDERS
+// ════════════════════════════════════════════════════
+function chipClass(type) {
+  const t = (type||'').toLowerCase();
+  return t.includes('temp') ? 'temp' : t.includes('gas') ? 'gas' : t.includes('motion') ? 'motion' : 'reading';
+}
+
+function buildReadingHtml(d) {
+  const isOver = d.threshold != null && d.sensorValue > d.threshold;
+  return `<div class="feed-item r">
+    <div class="fi-header">
+      <span class="chip reading">📊 Reading</span>
+      <span class="chip ${chipClass(d.sensorType)}">${d.sensorType}</span>
+      <span class="fi-name">${d.sensorName}</span>
+      <span class="fi-time">${fmtTime()}</span>
+    </div>
+    <div class="fi-vals">
+      <div class="kv"><span class="k">Value: </span><span class="v ${isOver?'over':''}">${d.sensorValue}</span></div>
+      ${d.threshold != null ? `<div class="kv"><span class="k">Threshold: </span><span class="v">${d.threshold}</span></div>` : ''}
+      <div class="kv"><span class="k">ID: </span><span class="v">#${d.sensorId}</span></div>
+      ${isOver ? `<div class="kv" style="color:var(--warn)">⚠️ Over threshold</div>` : ''}
+    </div>
+  </div>`;
+}
+
+function buildAlertHtml(d) {
+  const isOver = d.triggeredValue > d.threshold;
+  return `<div class="feed-item a">
+    <div class="fi-header">
+      <span class="chip alert">🚨 Alert</span>
+      <span class="chip ${chipClass(d.sensorType)}">${d.sensorType}</span>
+      <span class="fi-name">${d.sensorName}</span>
+      <span class="fi-time">${fmtTime(d.triggeredAt)}</span>
+    </div>
+    <div class="fi-msg">${d.message}</div>
+    <div class="fi-vals">
+      <div class="kv"><span class="k">Value: </span><span class="v ${isOver?'over':''}">${d.triggeredValue}</span></div>
+      <div class="kv"><span class="k">Threshold: </span><span class="v">${d.threshold}</span></div>
+      <div class="kv"><span class="k">ID: </span><span class="v">#${d.sensorId}</span></div>
+    </div>
+    <button class="resolve-btn" onclick="resolveAlert(${d.id},this)">Mark Resolved</button>
+  </div>`;
+}
+
+// ════════════════════════════════════════════════════
+// FEED HELPERS
+// ════════════════════════════════════════════════════
+function prependFeed(listId, html) {
+  const list = document.getElementById(listId);
+  const empty = list.querySelector('.empty-state');
+  if (empty) empty.remove();
+  const div = document.createElement('div');
+  div.innerHTML = html;
+  list.insertBefore(div.firstElementChild, list.firstChild);
+  while (list.children.length > 80) list.removeChild(list.lastChild);
+}
+
+function updateStats() {
+  document.getElementById('s-alerts').textContent      = totalAlerts;
+  document.getElementById('s-readings').textContent    = totalReadings;
+  document.getElementById('s-unresolved').textContent  = unresolvedAlerts;
+  document.getElementById('big-alerts').textContent    = totalAlerts;
+  document.getElementById('big-readings').textContent  = totalReadings;
+}
+
+function updateFeedLastEvent(name, type) {
+  document.getElementById('big-last').textContent   = name;
+  document.getElementById('big-last-t').textContent = type + ' — ' + fmtTime();
+}
+
+function clearFeed() {
+  ['fl-all','fl-alerts','fl-readings'].forEach(id => {
+    document.getElementById(id).innerHTML = `<div class="empty-state"><div class="ei">🗑</div><p>Cleared</p></div>`;
+  });
+  totalAlerts = totalReadings = unresolvedAlerts = totalFeed = 0;
+  document.getElementById('st-all').textContent      = 0;
+  document.getElementById('st-alerts').textContent   = 0;
+  document.getElementById('st-readings').textContent = 0;
+  document.getElementById('nb-feed').textContent     = 0;
+  updateStats();
+}
+
+// ════════════════════════════════════════════════════
+// RESOLVE ALERT
+// ════════════════════════════════════════════════════
+async function resolveAlert(alertId, btn) {
+  const base = base64();
+  if (!token) { alert('Connect first'); return; }
+  try {
+    const res  = await fetch(`${base}/api/Sensor/alerts/${alertId}/resolve`, {
+      method:'PUT', headers:{'Authorization':`Bearer ${token}`}
+    });
+    const body = await res.json();
+    if (!body.isSuccess) throw new Error(body.message);
+    btn.textContent = '✅ Resolved';
+    btn.disabled    = true;
+    btn.style.opacity = '.5';
+    if (unresolvedAlerts > 0) { unresolvedAlerts--; updateStats(); }
+  } catch(e) { alert('Error: ' + e.message); }
+}
+
+// ════════════════════════════════════════════════════
+// TEST READING (manual)
+// ════════════════════════════════════════════════════
+async function sendTestReading() {
+  const base = base64();
+  const sid  = document.getElementById('test-id').value;
+  const val  = document.getElementById('test-val').value;
+  if (!token) { showMsg('test-msg','❌ Connect first'); return; }
+  try {
+    const res  = await fetch(`${base}/api/Sensor/${sid}/readings?value=${val}`, {
+      method:'GET', headers:{'Authorization':`Bearer ${token}`}
+    });
+    // The actual POST endpoint for recording a reading:
+    const res2 = await fetch(`${base}/api/Sensor/add`, {
+      method:'POST', headers:{'Authorization':`Bearer ${token}`,'Content-Type':'application/json'},
+    });
+    // Use the correct endpoint for recording reading
+    showMsg('test-msg','Sending…','ok');
+
+    // Correct endpoint: POST to a sensor reading endpoint
+    const r = await fetch(`${base}/api/Sensor/${sid}/readings`, {
+      method:'POST',
+      headers:{'Authorization':`Bearer ${token}`,'Content-Type':'application/json'},
+      body: JSON.stringify({ value: parseFloat(val) })
+    });
+    const b = await r.json();
+    if (!b.isSuccess) throw new Error(b.message || r.statusText);
+    showMsg('test-msg',`✅ Sent value ${val}`,'ok');
+  } catch(e) {
+    // Try alternate route from SensorController: RecordReadingAsync is called via MQTT
+    // The manual REST trigger uses query param
+    try {
+      const r = await fetch(`${base}/api/Sensor/${sid}/reading?value=${val}`, {
+        method:'POST', headers:{'Authorization':`Bearer ${token}`}
+      });
+      const b = await r.json();
+      if (!b.isSuccess) throw new Error(b.message);
+      showMsg('test-msg',`✅ Sent: ${val}`,'ok');
+    } catch(e2) {
+      showMsg('test-msg','❌ ' + e2.message);
+    }
+  }
+}
+
+// ════════════════════════════════════════════════════
+// UTILS
+// ════════════════════════════════════════════════════
+function fmtTime(dt) {
+  const d = dt ? new Date(dt) : new Date();
+  return d.toLocaleTimeString('en-GB', { hour12: false });
+}
+</script>
+</body>
+</html>
