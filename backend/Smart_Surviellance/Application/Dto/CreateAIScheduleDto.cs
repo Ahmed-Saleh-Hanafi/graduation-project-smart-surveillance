@@ -11,7 +11,7 @@ namespace Application.Dto
 
         public string ModelName { get; set; }
         public int? DayOfWeek { get; set; }
-        public List<AIScheduleIntervalDto> Intervals { get; set; } = new List<AIScheduleIntervalDto>();
+        public List<CreateAIScheduleIntervalDto> Intervals { get; set; } = new List<CreateAIScheduleIntervalDto>();
 
     }
 }
