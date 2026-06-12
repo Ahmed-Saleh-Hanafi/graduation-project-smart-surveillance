@@ -29,8 +29,8 @@ namespace Application.Services.Implementations
 
         private async Task<string> BuildRtspUrl(Camera c)
         {
-            //return $"rtsp://{c.Username}:{c.Password}@{c.IpAddress}:{c.Port}{c.Path}";
-            return $"rtsp://{c.IpAddress}:{c.Port}{c.Path}";
+            return $"rtsp://{c.Username}:{c.Password}@{c.IpAddress}:{c.Port}{c.Path}";
+            //return $"rtsp://{c.IpAddress}:{c.Port}{c.Path}";
         }
 
 

@@ -38,7 +38,7 @@ export default function App() {
     setLoading(true);
 
     try {
-      const API_URL = "http://192.168.1.229:5198/api/Account/login";
+      const API_URL = "http://192.168.1.2:5198/api/Account/login";
       const response = await axios.post(API_URL, {
         email: email,
         password: password,
