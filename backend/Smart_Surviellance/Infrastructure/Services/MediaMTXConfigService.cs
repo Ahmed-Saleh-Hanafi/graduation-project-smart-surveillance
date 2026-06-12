@@ -28,8 +28,8 @@ namespace Infrastructure.Services
 
         private string BuildRtspUrl(Camera c)
         {
-            //return $"rtsp://{c.Username}:{c.Password}@{c.IpAddress}:{c.Port}{c.Path}";
-            return $"rtsp://{c.IpAddress}:{c.Port}{c.Path}";
+            return $"rtsp://{c.Username}:{c.Password}@{c.IpAddress}:{c.Port}{c.Path}";
+            //return $"rtsp://{c.IpAddress}:{c.Port}{c.Path}";
         }
 
         public async Task GenerateConfigAsync()
@@ -54,13 +54,15 @@ namespace Infrastructure.Services
             yaml.AppendLine("paths:");
 
 
+
             foreach (var cam in cameras)
             {
                 var path = cam.Path.TrimStart('/');
 
                 yaml.AppendLine($"  {path}:");
-                yaml.AppendLine($"    source: {BuildRtspUrl(cam)}");
+                yaml.AppendLine($"    source: \"{BuildRtspUrl(cam)}\"");
             }
+
 
             await File.WriteAllTextAsync(_configPath, yaml.ToString());
 

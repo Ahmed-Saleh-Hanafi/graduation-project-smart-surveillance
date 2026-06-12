@@ -348,7 +348,7 @@ namespace Application.Services.Implementations
 
         public async Task<ApiResponse<bool>> UpdateSensorAsync(SensorDto sensorDto)
         {
-            var sensor = _sensorRepository.GetByIdAsync(sensorDto.Id);
+            var sensor = await _sensorRepository.GetByIdAsync(sensorDto.Id);
             if(sensor == null)
             {
                 return ApiResponse<bool>.Fail("Sensor not found.");

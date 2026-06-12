@@ -71,6 +71,15 @@ namespace Smart_Surviellance.Controllers
             return BadRequest(result);
         }
 
+        [HttpPatch("{id}/toggle")]
+        public async Task<IActionResult> Toggle(int id, [FromQuery] bool isActive)
+        {
+            var result = await _scheduleService.ToggleAsync(id, isActive);
+            if (result.IsSuccess)
+                return Ok(result);
+            return BadRequest(result);
+        }
+
 
     }
 }
